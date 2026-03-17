@@ -1,22 +1,22 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { MailCheck } from 'lucide-react'
 
 export default function RegisterPage() {
-  const router = useRouter()
   const [name, setName] = useState('')
   const [officeName, setOfficeName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [done, setDone] = useState(false)
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
@@ -25,12 +25,15 @@ export default function RegisterPage() {
 
     const supabase = createClient()
 
-    // 1. Create auth user
+    // 1. Create auth user — emailRedirectTo points to our confirm route
+    const emailRedirectTo = `${window.location.origin}/auth/confirm`
+
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: { name, office_name: officeName },
+        emailRedirectTo,
       },
     })
 
@@ -40,7 +43,7 @@ export default function RegisterPage() {
       return
     }
 
-    // 2. Create workspace + user record via API
+    // 2. Create workspace + user record via API (uses service role — works before email confirmation)
     const res = await fetch('/api/workspace/setup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -53,8 +56,31 @@ export default function RegisterPage() {
       return
     }
 
-    router.push('/dashboard')
-    router.refresh()
+    // Registration complete — now wait for email confirmation
+    setDone(true)
+    setLoading(false)
+  }
+
+  if (done) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center gap-4 py-10 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-50">
+            <MailCheck className="h-7 w-7 text-green-600" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold">Controlla la tua email</h2>
+            <p className="text-sm text-neutral-500 mt-1">
+              Abbiamo inviato un link di conferma a <strong>{email}</strong>.
+              Clicca il link per attivare il tuo account e accedere.
+            </p>
+          </div>
+          <p className="text-xs text-neutral-400">
+            Non trovi l&apos;email? Controlla la cartella spam.
+          </p>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (

@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type UserRole = 'admin' | 'agent'
+export type UserRole = 'group_admin' | 'admin' | 'agent'
 export type ListingStatus = 'draft' | 'published'
 export type PropertyType =
   | 'apartment'
@@ -18,6 +18,14 @@ export type PropertyType =
   | 'other'
 export type Tone = 'standard' | 'luxury' | 'approachable' | 'investment'
 
+export interface Group {
+  id: string
+  name: string
+  logo_url: string | null
+  show_cross_agency_results: boolean
+  created_at: string
+}
+
 export interface Workspace {
   id: string
   name: string
@@ -25,6 +33,7 @@ export interface Workspace {
   tone_default: Tone
   plan: 'trial' | 'starter' | 'growth' | 'network'
   stripe_customer_id: string | null
+  group_id: string | null
   created_at: string
 }
 
@@ -34,6 +43,12 @@ export interface User {
   name: string
   email: string
   role: UserRole
+  group_id: string | null
+  phone: string | null
+  address: string | null
+  partita_iva: string | null
+  avatar_url: string | null
+  bio: string | null
   created_at: string
 }
 
@@ -73,6 +88,11 @@ export interface GeneratedContent {
 export interface Database {
   public: {
     Tables: {
+      groups: {
+        Row: Group
+        Insert: Omit<Group, 'id' | 'created_at'>
+        Update: Partial<Omit<Group, 'id' | 'created_at'>>
+      }
       workspaces: {
         Row: Workspace
         Insert: Omit<Workspace, 'id' | 'created_at'>

@@ -1,9 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { PlusSquare, FileText, Clock } from 'lucide-react'
+import { PlusSquare, FileText, Euro, Maximize2, Home, User } from 'lucide-react'
 import type { Listing } from '@/lib/supabase/types'
 
 const TONE_LABELS: Record<string, string> = {
@@ -23,99 +24,158 @@ const TYPE_LABELS: Record<string, string> = {
   other: 'Altro',
 }
 
+type ListingWithAgent = Listing & { agent: { name: string } | null }
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString('it-IT', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
 export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
-  const { data: profileData } = await supabase
+  const admin = createAdminClient()
+  const { data: profileData } = await admin
     .from('users')
     .select('role, workspace_id')
     .eq('id', user!.id)
     .single()
 
   const profile = profileData as { role: string; workspace_id: string } | null
-  const isAdmin = profile?.role === 'admin'
-
-  // Agents see their own; admins see all workspace listings
-  let listingsQuery = supabase
+  // All users (admin and agents) see all workspace listings
+  const listingsQuery = admin
     .from('listings')
-    .select('*')
+    .select('*, agent:users!agent_id(name)')
+    .eq('workspace_id', profile?.workspace_id ?? '')
     .order('created_at', { ascending: false })
     .limit(20)
 
-  if (!isAdmin) {
-    listingsQuery = listingsQuery.eq('agent_id', user!.id) as typeof listingsQuery
-  }
-
   const { data: listings } = await listingsQuery
+  const items = (listings ?? []) as ListingWithAgent[]
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-8">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-neutral-500 text-sm">I tuoi ultimi annunci generati</p>
+          <h1 className="text-2xl font-bold tracking-tight">Annunci</h1>
+          <p className="text-neutral-500 text-sm mt-0.5">
+            {items.length > 0 ? `${items.length} annunci generati` : 'Nessun annuncio ancora'}
+          </p>
         </div>
-        <Button render={<Link href="/listing/new" />}>
-          <PlusSquare className="mr-2 h-4 w-4" />
+        <Button nativeButton={false} render={<Link href="/listing/new" />} className="gap-2">
+          <PlusSquare className="h-4 w-4" />
           Nuovo annuncio
         </Button>
       </div>
 
-      {!listings || listings.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <FileText className="h-12 w-12 text-neutral-300 mb-4" />
-            <CardTitle className="text-lg mb-2">Nessun annuncio ancora</CardTitle>
-            <CardDescription className="mb-4">
-              Crea il tuo primo annuncio e genera in secondi descrizioni, post social e molto altro.
-            </CardDescription>
-            <Button render={<Link href="/listing/new" />}>
-              <PlusSquare className="mr-2 h-4 w-4" />
-              Crea il primo annuncio
-            </Button>
-          </CardContent>
-        </Card>
+      {items.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 py-20 text-center">
+          <div className="mb-4 rounded-full bg-neutral-100 p-4">
+            <FileText className="h-8 w-8 text-neutral-400" />
+          </div>
+          <h2 className="text-base font-semibold text-neutral-800">Nessun annuncio ancora</h2>
+          <p className="mt-1 text-sm text-neutral-500 max-w-xs">
+            Crea il primo annuncio e genera descrizioni, post social e molto altro in pochi secondi.
+          </p>
+          <Button nativeButton={false} render={<Link href="/listing/new" />} className="mt-6 gap-2">
+            <PlusSquare className="h-4 w-4" />
+            Crea il primo annuncio
+          </Button>
+        </div>
       ) : (
-        <div className="grid gap-3">
-          {listings.map((listing: Listing) => (
-            <Link key={listing.id} href={`/listing/${listing.id}`}>
-              <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <CardTitle className="text-base truncate">{listing.address}</CardTitle>
-                      <CardDescription>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {items.map((listing) => {
+            const thumb = Array.isArray(listing.photos_urls) && listing.photos_urls.length > 0
+              ? (listing.photos_urls as string[])[0]
+              : null
+
+            return (
+              <Link key={listing.id} href={`/listing/${listing.id}`} className="group block">
+                <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5">
+                  {/* Photo / placeholder */}
+                  <div className="relative h-44 w-full bg-neutral-100">
+                    {thumb ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={thumb}
+                        alt={listing.address}
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center">
+                        <Home className="h-10 w-10 text-neutral-300" />
+                      </div>
+                    )}
+                    {/* Status badge overlay */}
+                    <div className="absolute top-2.5 right-2.5">
+                      {listing.generated_content ? (
+                        <span className="inline-flex items-center rounded-full bg-green-500 px-2 py-0.5 text-xs font-medium text-white shadow">
+                          Generato
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full bg-neutral-800/70 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
+                          Bozza
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-4 space-y-3">
+                    <div>
+                      <h3 className="font-semibold text-neutral-900 truncate text-sm leading-snug">
+                        {listing.address}
+                      </h3>
+                      <p className="text-xs text-neutral-500 mt-0.5">
                         {TYPE_LABELS[listing.property_type]} · {listing.city}
                         {listing.property_type === 'apartment' && listing.floor != null
                           ? ` · Piano ${listing.floor}`
                           : ''}
-                      </CardDescription>
+                      </p>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Badge variant="secondary">{TONE_LABELS[listing.tone]}</Badge>
-                      {listing.generated_content ? (
-                        <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Generato</Badge>
-                      ) : (
-                        <Badge variant="outline">Bozza</Badge>
-                      )}
+
+                    {/* Stats row */}
+                    <div className="flex items-center gap-3 text-xs text-neutral-600">
+                      <span className="flex items-center gap-1 font-medium">
+                        <Euro className="h-3 w-3 text-neutral-400" />
+                        {listing.price.toLocaleString('it-IT')}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Maximize2 className="h-3 w-3 text-neutral-400" />
+                        {listing.sqm} m²
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Home className="h-3 w-3 text-neutral-400" />
+                        {listing.rooms} loc.
+                      </span>
+                    </div>
+
+                    {/* Footer: agent + date + tone */}
+                    <div className="flex items-center justify-between border-t border-neutral-100 pt-3">
+                      <span className="flex items-center gap-1.5 text-xs text-neutral-500">
+                        <User className="h-3 w-3" />
+                        {listing.agent?.name ?? '—'}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                          {TONE_LABELS[listing.tone]}
+                        </Badge>
+                        <span className="text-[11px] text-neutral-400">
+                          {formatDate(listing.created_at)}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="flex items-center gap-4 text-sm text-neutral-500">
-                    <span>€{listing.price.toLocaleString('it-IT')}</span>
-                    <span>{listing.sqm} m²</span>
-                    <span>{listing.rooms} locali</span>
-                    <span className="ml-auto flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {new Date(listing.created_at).toLocaleDateString('it-IT')}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+                </div>
+              </Link>
+            )
+          })}
         </div>
       )}
     </div>

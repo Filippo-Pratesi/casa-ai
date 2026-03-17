@@ -36,17 +36,19 @@ export async function updateSession(request: NextRequest) {
   const publicRoutes = ['/login', '/register', '/invite']
   const isPublicRoute = publicRoutes.some((r) => pathname.startsWith(r))
 
-  if (!user && !isPublicRoute) {
+  // Helper: redirect while preserving refreshed session cookies
+  function redirectWith(pathname: string) {
     const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
+    url.pathname = pathname
+    const res = NextResponse.redirect(url)
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      res.cookies.set(cookie.name, cookie.value, cookie as Parameters<typeof res.cookies.set>[2])
+    })
+    return res
   }
 
-  if (user && isPublicRoute) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
-    return NextResponse.redirect(url)
-  }
+  if (!user && !isPublicRoute) return redirectWith('/login')
+  if (user && isPublicRoute) return redirectWith('/dashboard')
 
   return supabaseResponse
 }

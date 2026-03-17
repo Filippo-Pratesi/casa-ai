@@ -1,0 +1,131 @@
+'use client'
+
+import { useState } from 'react'
+import Image from 'next/image'
+import { X, ChevronLeft, ChevronRight } from 'lucide-react'
+
+interface PhotoGalleryProps {
+  urls: string[]
+}
+
+export function PhotoGallery({ urls }: PhotoGalleryProps) {
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+
+  if (urls.length === 0) return null
+
+  function prev() {
+    setLightboxIndex((i) => (i === null ? 0 : (i - 1 + urls.length) % urls.length))
+  }
+
+  function next() {
+    setLightboxIndex((i) => (i === null ? 0 : (i + 1) % urls.length))
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'ArrowLeft') prev()
+    if (e.key === 'ArrowRight') next()
+    if (e.key === 'Escape') setLightboxIndex(null)
+  }
+
+  const main = urls[0]
+  const rest = urls.slice(1, 5) // show up to 4 in the grid
+
+  return (
+    <>
+      {/* Gallery grid */}
+      <div className="grid grid-cols-4 gap-1.5 rounded-2xl overflow-hidden h-56">
+        {/* Main large photo */}
+        <button
+          className="col-span-2 row-span-2 relative overflow-hidden focus:outline-none"
+          onClick={() => setLightboxIndex(0)}
+        >
+          <Image
+            src={main}
+            alt="Foto 1"
+            fill
+            priority
+            loading="eager"
+            className="object-cover hover:scale-105 transition-transform duration-300"
+            sizes="(max-width: 768px) 50vw, 400px"
+          />
+        </button>
+
+        {/* Side thumbnails */}
+        {rest.map((url, i) => (
+          <button
+            key={url}
+            className="relative overflow-hidden focus:outline-none"
+            onClick={() => setLightboxIndex(i + 1)}
+          >
+            <Image
+              src={url}
+              alt={`Foto ${i + 2}`}
+              fill
+              className="object-cover hover:scale-105 transition-transform duration-300"
+              sizes="(max-width: 768px) 25vw, 200px"
+            />
+            {/* "more" overlay on last visible thumb */}
+            {i === 3 && urls.length > 5 && (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                <span className="text-white font-semibold text-sm">+{urls.length - 5}</span>
+              </div>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Lightbox */}
+      {lightboxIndex !== null && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90"
+          onClick={() => setLightboxIndex(null)}
+          onKeyDown={handleKeyDown}
+          tabIndex={0}
+          role="dialog"
+          aria-modal="true"
+        >
+          {/* Close */}
+          <button
+            className="absolute top-4 right-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition"
+            onClick={() => setLightboxIndex(null)}
+          >
+            <X className="h-5 w-5" />
+          </button>
+
+          {/* Prev */}
+          {urls.length > 1 && (
+            <button
+              className="absolute left-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition"
+              onClick={(e) => { e.stopPropagation(); prev() }}
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+          )}
+
+          {/* Lightbox image — use <img> here since lightbox shows full-size arbitrary dimensions */}
+          <div className="relative max-h-[90vh] max-w-[90vw]" onClick={(e) => e.stopPropagation()}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={urls[lightboxIndex]}
+              alt={`Foto ${lightboxIndex + 1}`}
+              className="max-h-[90vh] max-w-[90vw] rounded-lg object-contain"
+            />
+            <span className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 text-xs text-white">
+              {lightboxIndex + 1} / {urls.length}
+            </span>
+          </div>
+
+          {/* Next */}
+          {urls.length > 1 && (
+            <button
+              className="absolute right-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition"
+              onClick={(e) => { e.stopPropagation(); next() }}
+            >
+              <ChevronRight className="h-6 w-6" />
+            </button>
+          )}
+        </div>
+      )}
+    </>
+  )
+}
