@@ -81,8 +81,9 @@ export default async function CampaignsPage() {
           {campaigns.map((c) => {
             const cfg = statusConfig[c.status] ?? statusConfig.draft
             const StatusIcon = cfg.icon
-            return (
-              <div key={c.id} className="card-lift flex items-center gap-4 rounded-2xl border border-border bg-card px-5 py-4">
+            const isDraft = c.status === 'draft'
+            const cardContent = (
+              <>
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[oklch(0.57_0.20_33/0.12)] to-[oklch(0.66_0.15_188/0.12)] ring-1 ring-[oklch(0.57_0.20_33/0.2)]">
                   <Mail className="h-4 w-4 text-[oklch(0.57_0.20_33)]" />
                 </div>
@@ -106,6 +107,19 @@ export default async function CampaignsPage() {
                     {cfg.label}
                   </Badge>
                 </div>
+              </>
+            )
+            return isDraft ? (
+              <Link
+                key={c.id}
+                href={`/campaigns/${c.id}/edit`}
+                className="card-lift flex items-center gap-4 rounded-2xl border border-border bg-card px-5 py-4 transition-colors hover:bg-muted/40"
+              >
+                {cardContent}
+              </Link>
+            ) : (
+              <div key={c.id} className="card-lift flex items-center gap-4 rounded-2xl border border-border bg-card px-5 py-4">
+                {cardContent}
               </div>
             )
           })}
