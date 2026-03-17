@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import Link from 'next/link'
 import { Bell, Cake } from 'lucide-react'
 import { MarkNotificationsReadButton } from '@/components/notifications/mark-read-button'
+import { getTranslations } from '@/lib/i18n/server'
 
 interface Notification {
   id: string
@@ -17,6 +18,7 @@ interface Notification {
 export default async function NotificationsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  const { t, locale } = await getTranslations()
 
   const admin = createAdminClient()
 
@@ -35,9 +37,9 @@ export default async function NotificationsPage() {
     <div className="max-w-2xl mx-auto space-y-6 pb-12">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Notifiche</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{t('notifications.title')}</h1>
           <p className="text-neutral-500 text-sm mt-0.5">
-            {unread > 0 ? `${unread} non lette` : 'Tutte lette'}
+            {unread > 0 ? `${unread} ${t('notifications.unread')}` : t('notifications.allRead')}
           </p>
         </div>
         {unread > 0 && <MarkNotificationsReadButton />}
@@ -48,10 +50,8 @@ export default async function NotificationsPage() {
           <div className="mb-4 rounded-full bg-neutral-100 p-4">
             <Bell className="h-8 w-8 text-neutral-400" />
           </div>
-          <h2 className="text-base font-semibold text-neutral-800">Nessuna notifica</h2>
-          <p className="mt-1 text-sm text-neutral-500 max-w-xs">
-            Le notifiche appariranno qui — ad esempio i messaggi di compleanno generati per i tuoi clienti.
-          </p>
+          <h2 className="text-base font-semibold text-neutral-800">{t('notifications.empty.title')}</h2>
+          <p className="mt-1 text-sm text-neutral-500 max-w-xs">{t('notifications.empty.body')}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -70,7 +70,7 @@ export default async function NotificationsPage() {
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-sm font-semibold text-neutral-900 truncate">{n.title}</p>
                     <p className="text-[11px] text-neutral-400 shrink-0">
-                      {new Date(n.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}
+                      {new Date(n.created_at).toLocaleDateString(locale === 'en' ? 'en-GB' : 'it-IT', { day: '2-digit', month: 'short' })}
                     </p>
                   </div>
                   <p className="text-sm text-neutral-600 mt-1 whitespace-pre-wrap leading-relaxed">{n.body}</p>
@@ -79,7 +79,7 @@ export default async function NotificationsPage() {
                       href={`/contacts/${n.contact_id}`}
                       className="inline-block mt-2 text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
                     >
-                      Vai al contatto →
+                      {t('notifications.goToContact')}
                     </Link>
                   )}
                 </div>

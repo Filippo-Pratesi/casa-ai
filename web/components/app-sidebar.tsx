@@ -3,7 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, PlusSquare, Settings, LogOut, Users, UserRound, Archive, UserIcon, CreditCard, Mail, Bell, CalendarDays, Building2 } from 'lucide-react'
+import { LayoutDashboard, Settings, LogOut, Users, UserRound, Archive, UserIcon, CreditCard, Mail, Bell, CalendarDays, Building2, CheckSquare } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -40,6 +40,7 @@ interface AppSidebarProps {
   unreadNotifications: number
   birthdayCount: number
   hasGroup?: boolean
+  pendingTodos?: number
 }
 
 export function AppSidebar({
@@ -52,6 +53,7 @@ export function AppSidebar({
   unreadNotifications,
   birthdayCount,
   hasGroup = false,
+  pendingTodos = 0,
 }: AppSidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
@@ -125,8 +127,8 @@ export function AppSidebar({
           <SidebarGroupContent>
             <SidebarMenu className="space-y-0.5">
               <NavItem href="/dashboard" icon={LayoutDashboard} label={t('nav.listings')} />
-              <NavItem href="/listing/new" icon={PlusSquare} label={t('nav.newListing')} />
               <NavItem href="/contacts" icon={UserRound} label={t('nav.contacts')} badge={birthdayCount} />
+              <NavItem href="/todos" icon={CheckSquare} label={t('nav.todos')} badge={pendingTodos} />
               <NavItem href="/notifications" icon={Bell} label={t('nav.notifications')} badge={unreadNotifications} />
               <NavItem href="/calendar" icon={CalendarDays} label={t('nav.calendar')} exact={false} />
               {hasGroup && <NavItem href="/mls" icon={Building2} label={t('nav.mls')} exact={false} />}

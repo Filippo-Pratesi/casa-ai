@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Archive, Home, UserRound, CheckCircle2, Trash2, ChevronRight } from 'lucide-react'
+import { getTranslations } from '@/lib/i18n/server'
 
 interface ArchivedListing {
   id: string
@@ -35,26 +36,32 @@ interface ArchivedContact {
   archived_at: string
 }
 
-const TYPE_LABELS: Record<string, string> = {
-  buyer: 'Acquirente', seller: 'Venditore', renter: 'Affittuario',
-  landlord: 'Proprietario', other: 'Altro',
-}
-
-const PROP_LABELS: Record<string, string> = {
-  apartment: 'Appartamento', house: 'Casa', villa: 'Villa',
-  commercial: 'Commerciale', land: 'Terreno', garage: 'Garage', other: 'Altro',
-}
-
-function fmt(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })
-}
-
 export default async function ArchivePage({
   searchParams,
 }: {
   searchParams: Promise<{ filter?: string }>
 }) {
   const { filter = 'all' } = await searchParams
+  const { t, locale } = await getTranslations()
+  const dateLocale = locale === 'en' ? 'en-GB' : 'it-IT'
+
+  const propLabels: Record<string, string> = {
+    apartment: t('property.apartment'),
+    house: t('property.house'),
+    villa: t('property.villa'),
+    commercial: t('property.commercial'),
+    land: t('property.land'),
+    garage: t('property.garage'),
+    other: t('property.other'),
+  }
+
+  const typeLabels: Record<string, string> = {
+    buyer: t('contacts.type.buyer'),
+    seller: t('contacts.type.seller'),
+    renter: t('contacts.type.renter'),
+    landlord: t('contacts.type.landlord'),
+    other: t('contacts.type.other'),
+  }
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -70,7 +77,6 @@ export default async function ArchivePage({
   const profile = profileData as { workspace_id: string } | null
   if (!profile) redirect('/dashboard')
 
-  // Fetch workspace agents for name lookup
   const { data: agentsData } = await admin
     .from('users')
     .select('id, name')
@@ -102,10 +108,12 @@ export default async function ArchivePage({
   const removedListings = allListings.filter(l => !l.sold)
   const displayListings = filter === 'sold' ? soldListings : filter === 'removed' ? removedListings : allListings
 
+  const fmt = (d: string) => new Date(d).toLocaleDateString(dateLocale, { day: '2-digit', month: 'short', year: 'numeric' })
+
   const TABS = [
-    { id: 'all',     label: `Tutti (${allListings.length})` },
-    { id: 'sold',    label: `Venduti (${soldListings.length})` },
-    { id: 'removed', label: `Eliminati (${removedListings.length})` },
+    { id: 'all',     label: `${t('archive.filter.all')} (${allListings.length})` },
+    { id: 'sold',    label: `${t('archive.filter.sold')} (${soldListings.length})` },
+    { id: 'removed', label: `${t('archive.filter.removed')} (${removedListings.length})` },
   ]
 
   return (
@@ -116,8 +124,8 @@ export default async function ArchivePage({
           <Archive className="h-4 w-4" />
         </div>
         <div>
-          <h1 className="text-xl font-semibold text-neutral-900">Archivio</h1>
-          <p className="text-sm text-neutral-500">Annunci e clienti rimossi dal database</p>
+          <h1 className="text-xl font-semibold text-neutral-900">{t('archive.title')}</h1>
+          <p className="text-sm text-neutral-500">{t('archive.subtitle')}</p>
         </div>
       </div>
 
@@ -127,10 +135,9 @@ export default async function ArchivePage({
           <div className="flex items-center gap-2">
             <Home className="h-4 w-4 text-neutral-400" />
             <h2 className="text-sm font-semibold text-neutral-700 uppercase tracking-wide">
-              Annunci archiviati
+              {t('archive.listings.title')}
             </h2>
           </div>
-          {/* Filter tabs */}
           <div className="flex rounded-lg border border-neutral-200 bg-white overflow-hidden">
             {TABS.map(tab => (
               <Link
@@ -149,7 +156,7 @@ export default async function ArchivePage({
         </div>
 
         {displayListings.length === 0 ? (
-          <p className="text-sm text-neutral-400 italic">Nessun annuncio in questa categoria.</p>
+          <p className="text-sm text-neutral-400 italic">{t('archive.empty')}</p>
         ) : (
           <div className="divide-y divide-neutral-100 rounded-xl border border-neutral-200 bg-white overflow-hidden">
             {displayListings.map((l) => {
@@ -162,7 +169,6 @@ export default async function ArchivePage({
                   href={`/archive/${l.id}`}
                   className="flex items-start gap-4 px-4 py-3.5 hover:bg-neutral-50 transition-colors group"
                 >
-                  {/* Status icon */}
                   <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
                     l.sold ? 'bg-green-100' : 'bg-neutral-100'
                   }`}>
@@ -180,26 +186,26 @@ export default async function ArchivePage({
                       {l.sold ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-green-50 border border-green-200 px-2 py-0.5 text-[11px] font-medium text-green-700">
                           <CheckCircle2 className="h-3 w-3" />
-                          Venduto
+                          {t('archive.badge.sold')}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 border border-neutral-200 px-2 py-0.5 text-[11px] font-medium text-neutral-500">
                           <Trash2 className="h-3 w-3" />
-                          Eliminato
+                          {t('archive.badge.removed')}
                         </span>
                       )}
                     </div>
                     <div className="flex items-center gap-3 mt-0.5 text-xs text-neutral-500 flex-wrap">
-                      <span>{PROP_LABELS[l.property_type] ?? l.property_type}</span>
-                      <span>€{l.price.toLocaleString('it-IT')}</span>
+                      <span>{propLabels[l.property_type] ?? l.property_type}</span>
+                      <span>€{l.price.toLocaleString(dateLocale)}</span>
                       <span>{l.sqm} m²</span>
-                      <span>{l.rooms} loc.</span>
-                      {sellerAgent && <span className="text-neutral-400">Agente: {sellerAgent}</span>}
+                      <span>{l.rooms} {locale === 'en' ? 'rooms' : 'loc.'}</span>
+                      {sellerAgent && <span className="text-neutral-400">{t('archive.agent')}: {sellerAgent}</span>}
                       {l.sold && l.sold_to_name && (
                         <span className="text-green-600 font-medium">→ {l.sold_to_name}</span>
                       )}
                       {l.sold && soldByAgent && (
-                        <span className="text-green-600">venduto da {soldByAgent}</span>
+                        <span className="text-green-600">{t('archive.soldBy')} {soldByAgent}</span>
                       )}
                     </div>
                   </div>
@@ -220,12 +226,12 @@ export default async function ArchivePage({
         <div className="flex items-center gap-2">
           <UserRound className="h-4 w-4 text-neutral-400" />
           <h2 className="text-sm font-semibold text-neutral-700 uppercase tracking-wide">
-            Clienti archiviati ({contacts.length})
+            {t('archive.contacts.title')} ({contacts.length})
           </h2>
         </div>
 
         {contacts.length === 0 ? (
-          <p className="text-sm text-neutral-400 italic">Nessun cliente archiviato.</p>
+          <p className="text-sm text-neutral-400 italic">{t('archive.emptyContacts')}</p>
         ) : (
           <div className="divide-y divide-neutral-100 rounded-xl border border-neutral-200 bg-white overflow-hidden">
             {contacts.map((c) => (
@@ -236,12 +242,12 @@ export default async function ArchivePage({
                     {c.bought_listing && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2 py-0.5 text-[11px] font-medium text-blue-700">
                         <CheckCircle2 className="h-3 w-3" />
-                        Ha acquistato
+                        {t('archive.badge.bought')}
                       </span>
                     )}
                   </div>
                   <div className="flex items-center gap-3 mt-0.5 text-xs text-neutral-500 flex-wrap">
-                    <span>{TYPE_LABELS[c.type] ?? c.type}</span>
+                    <span>{typeLabels[c.type] ?? c.type}</span>
                     {c.phone && <span>{c.phone}</span>}
                     {c.email && <span>{c.email}</span>}
                     {c.bought_listing && c.bought_listing_address && (
