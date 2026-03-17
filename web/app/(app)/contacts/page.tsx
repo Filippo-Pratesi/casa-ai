@@ -105,9 +105,9 @@ export default async function ContactsPage() {
                 <div className="flex items-start justify-between gap-2">
                   <Link href={`/contacts/${c.id}`} className="min-w-0 flex-1">
                     <h3 className="font-semibold text-neutral-900 truncate text-sm">{c.name}</h3>
-                    {c.preferred_cities.length > 0 && (
+                    {(c.preferred_cities ?? []).length > 0 && (
                       <p className="text-xs text-neutral-500 mt-0.5 truncate">
-                        {c.preferred_cities.join(', ')}
+                        {(c.preferred_cities ?? []).join(', ')}
                       </p>
                     )}
                   </Link>

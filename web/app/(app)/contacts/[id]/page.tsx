@@ -56,11 +56,11 @@ interface Contact {
   address_of_residence: string | null
   budget_min: number | null
   budget_max: number | null
-  preferred_cities: string[]
-  preferred_types: string[]
+  preferred_cities: string[] | null
+  preferred_types: string[] | null
   min_sqm: number | null
   min_rooms: number | null
-  desired_features: string[]
+  desired_features: string[] | null
   created_at: string
   agent_id: string | null
   privacy_consent: boolean
@@ -125,8 +125,8 @@ export default async function ContactDetailPage({
 
     matchingListings = ((allListings ?? []) as Array<MatchingListing>).filter(l => {
       if (contact.budget_max !== null && l.price > contact.budget_max) return false
-      if (contact.preferred_cities.length > 0 && !contact.preferred_cities.map(s => s.toLowerCase()).includes(l.city.toLowerCase())) return false
-      if (contact.preferred_types.length > 0 && !contact.preferred_types.includes(l.property_type)) return false
+      if ((contact.preferred_cities ?? []).length > 0 && !(contact.preferred_cities ?? []).map(s => s.toLowerCase()).includes(l.city.toLowerCase())) return false
+      if ((contact.preferred_types ?? []).length > 0 && !(contact.preferred_types ?? []).includes(l.property_type)) return false
       if (contact.min_rooms !== null && l.rooms < contact.min_rooms) return false
       if (contact.min_sqm !== null && l.sqm < contact.min_sqm) return false
       return true
@@ -147,8 +147,8 @@ export default async function ContactDetailPage({
 
   const hasPreferences = isBuyerLike && (
     contact.budget_min || contact.budget_max ||
-    contact.preferred_cities.length > 0 ||
-    contact.preferred_types.length > 0 ||
+    (contact.preferred_cities ?? []).length > 0 ||
+    (contact.preferred_types ?? []).length > 0 ||
     contact.min_sqm || contact.min_rooms
   )
 
@@ -265,22 +265,22 @@ export default async function ContactDetailPage({
             )}
           </div>
 
-          {contact.preferred_cities.length > 0 && (
+          {(contact.preferred_cities ?? []).length > 0 && (
             <div className="rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-3">
               <p className="text-xs text-neutral-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                 <MapPin className="h-3 w-3" /> Zone preferite
               </p>
               <div className="flex flex-wrap gap-2">
-                {contact.preferred_cities.map((city) => (
+                {(contact.preferred_cities ?? []).map((city) => (
                   <Badge key={city} variant="secondary" className="rounded-full text-xs">{city}</Badge>
                 ))}
               </div>
             </div>
           )}
 
-          {contact.preferred_types.length > 0 && (
+          {(contact.preferred_types ?? []).length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {contact.preferred_types.map((t) => (
+              {(contact.preferred_types ?? []).map((t) => (
                 <Badge key={t} variant="outline" className="rounded-full text-xs">
                   {PROPERTY_TYPE_LABELS[t] ?? t}
                 </Badge>
