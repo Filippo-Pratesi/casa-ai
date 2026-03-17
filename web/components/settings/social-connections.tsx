@@ -75,7 +75,7 @@ export function SocialConnections({ connections: initialConnections }: SocialCon
         const connected = connections.filter((c) => c.platform === platform)
 
         return (
-          <div key={platform} className="rounded-xl border border-neutral-200 p-4">
+          <div key={platform} className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${meta.bg}`}>
@@ -86,12 +86,12 @@ export function SocialConnections({ connections: initialConnections }: SocialCon
                   {connected.length > 0 ? (
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <CheckCircle className="h-3.5 w-3.5 text-green-600" />
-                      <span className="text-xs text-neutral-500">
+                      <span className="text-xs text-muted-foreground">
                         {connected.map((c) => c.page_name ?? c.page_id).join(', ')}
                       </span>
                     </div>
                   ) : (
-                    <p className="text-xs text-neutral-400 mt-0.5">Non connesso</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Non connesso</p>
                   )}
                 </div>
               </div>
@@ -107,7 +107,7 @@ export function SocialConnections({ connections: initialConnections }: SocialCon
                         size="sm"
                         disabled={disconnecting === c.id}
                         onClick={() => disconnect(c.id, platform)}
-                        className="text-neutral-500 gap-1.5"
+                        className="text-muted-foreground gap-1.5"
                       >
                         <Unlink className="h-3.5 w-3.5" />
                         Disconnetti
@@ -129,7 +129,7 @@ export function SocialConnections({ connections: initialConnections }: SocialCon
             </div>
 
             {connected.length === 0 && (
-              <p className="text-xs text-neutral-400 mt-3 pl-[52px]">
+              <p className="text-xs text-muted-foreground mt-3 pl-[52px]">
                 {platform === 'instagram'
                   ? 'Collega il tuo account Instagram Business per pubblicare direttamente dall\'app.'
                   : 'Collega la tua Pagina Facebook per pubblicare post con un clic.'}
@@ -139,7 +139,7 @@ export function SocialConnections({ connections: initialConnections }: SocialCon
         )
       })}
 
-      <p className="text-xs text-neutral-400 pt-1">
+      <p className="text-xs text-muted-foreground pt-1">
         Ogni agente può connettere i propri account social. I token sono cifrati e usati solo per pubblicare contenuti da questa app.
       </p>
     </div>

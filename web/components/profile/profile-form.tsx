@@ -2,7 +2,6 @@
 
 import { useState, useRef } from 'react'
 import { Camera, Save, Loader2, User } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -83,19 +82,19 @@ export function ProfileForm({ profile }: { profile: Profile }) {
       {/* Avatar */}
       <div className="flex items-center gap-5">
         <div className="relative">
-          <div className="h-20 w-20 rounded-2xl overflow-hidden bg-neutral-100 flex items-center justify-center">
+          <div className="h-20 w-20 rounded-2xl overflow-hidden bg-muted flex items-center justify-center">
             {avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={avatarUrl} alt={name} className="h-full w-full object-cover" />
             ) : (
-              <span className="text-2xl font-bold text-neutral-500">{initials || <User className="h-8 w-8 text-neutral-400" />}</span>
+              <span className="text-2xl font-bold text-muted-foreground">{initials || <User className="h-8 w-8 text-muted-foreground" />}</span>
             )}
           </div>
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploadingAvatar}
-            className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-neutral-900 text-white hover:bg-neutral-700 transition-colors disabled:opacity-50"
+            className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-[oklch(0.57_0.20_33)] text-white hover:opacity-90 transition-colors disabled:opacity-50"
           >
             {uploadingAvatar ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -105,13 +104,13 @@ export function ProfileForm({ profile }: { profile: Profile }) {
           </button>
         </div>
         <div>
-          <p className="text-sm font-medium text-neutral-900">{name || '—'}</p>
-          <p className="text-xs text-neutral-500">{profile.email}</p>
+          <p className="text-sm font-medium">{name || '—'}</p>
+          <p className="text-xs text-muted-foreground">{profile.email}</p>
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploadingAvatar}
-            className="mt-1 text-xs text-neutral-500 hover:text-neutral-800 transition-colors disabled:opacity-50"
+            className="mt-1 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
           >
             {uploadingAvatar ? 'Caricamento…' : 'Cambia foto'}
           </button>
@@ -143,7 +142,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
             id="email"
             value={profile.email}
             disabled
-            className="bg-neutral-50 text-neutral-500"
+            className="bg-muted text-muted-foreground"
           />
         </div>
 
@@ -198,10 +197,10 @@ export function ProfileForm({ profile }: { profile: Profile }) {
         <p className="text-sm text-red-600 font-medium">{errorMsg}</p>
       )}
 
-      <Button type="submit" disabled={saving} className="gap-2">
+      <button type="submit" disabled={saving} className="btn-ai gap-2 disabled:opacity-60">
         {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
         {saving ? 'Salvataggio…' : 'Salva modifiche'}
-      </Button>
+      </button>
     </form>
   )
 }

@@ -2,7 +2,6 @@
 
 import { useState, useRef } from 'react'
 import { Upload, X, Check, AlertCircle, Download } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 
 const CSV_HEADERS = [
@@ -121,15 +120,15 @@ export function ImportContacts() {
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-neutral-900">Importa contatti da CSV</h3>
-          <p className="text-xs text-neutral-500 mt-0.5">
+          <h3 className="text-sm font-semibold">Importa contatti da CSV</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
             Il file deve avere le colonne: Nome, Email, Telefono, Tipo, Città, Note, Budget Min, Budget Max, Stanze Min, MQ Min, Data Nascita
           </p>
         </div>
         <button
           type="button"
           onClick={downloadCsvTemplate}
-          className="flex shrink-0 items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50 transition-colors"
+          className="flex shrink-0 items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
         >
           <Download className="h-3.5 w-3.5" />
           Scarica template
@@ -139,55 +138,55 @@ export function ImportContacts() {
       {!parsed ? (
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-neutral-200 bg-neutral-50 px-6 py-8 text-sm text-neutral-500 hover:border-neutral-300 hover:bg-neutral-100 transition-all duration-150 cursor-pointer"
+          className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-muted/30 px-6 py-8 text-sm text-muted-foreground hover:border-muted-foreground/40 hover:bg-muted/50 transition-all duration-150 cursor-pointer"
         >
-          <Upload className="h-6 w-6 text-neutral-400" />
+          <Upload className="h-6 w-6 text-muted-foreground" />
           <span className="font-medium">Seleziona file CSV</span>
-          <span className="text-xs text-neutral-400">oppure trascina qui</span>
+          <span className="text-xs text-muted-foreground">oppure trascina qui</span>
         </button>
       ) : (
-        <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 space-y-3">
+        <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="rounded-lg bg-white border border-neutral-200 px-2.5 py-1.5">
-                <p className="text-xs font-medium text-neutral-700">{fileName}</p>
+              <div className="rounded-lg bg-card border border-border px-2.5 py-1.5">
+                <p className="text-xs font-medium">{fileName}</p>
               </div>
-              <span className="text-xs text-neutral-500">{parsed.rows.length} righe trovate</span>
+              <span className="text-xs text-muted-foreground">{parsed.rows.length} righe trovate</span>
             </div>
-            <button onClick={handleReset} className="rounded-lg p-1 hover:bg-neutral-200 transition-colors">
-              <X className="h-4 w-4 text-neutral-500" />
+            <button onClick={handleReset} className="rounded-lg p-1 hover:bg-muted transition-colors">
+              <X className="h-4 w-4 text-muted-foreground" />
             </button>
           </div>
 
           {/* Preview table */}
-          <div className="overflow-auto rounded-lg border border-neutral-200 bg-white">
+          <div className="overflow-auto rounded-lg border border-border bg-card">
             <table className="min-w-full text-xs">
               <thead>
-                <tr className="bg-neutral-50 border-b border-neutral-200">
+                <tr className="bg-muted/50 border-b border-border">
                   {parsed.headers.map(h => (
-                    <th key={h} className="px-3 py-2 text-left font-semibold text-neutral-600 whitespace-nowrap">{h}</th>
+                    <th key={h} className="px-3 py-2 text-left font-semibold text-muted-foreground whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {parsed.rows.slice(0, 5).map((row, i) => (
-                  <tr key={i} className="border-b border-neutral-100 last:border-0">
+                  <tr key={i} className="border-b border-border last:border-0">
                     {parsed.headers.map(h => (
-                      <td key={h} className="px-3 py-1.5 text-neutral-700 whitespace-nowrap max-w-[160px] truncate">{row[h] || '—'}</td>
+                      <td key={h} className="px-3 py-1.5 whitespace-nowrap max-w-[160px] truncate">{row[h] || '—'}</td>
                     ))}
                   </tr>
                 ))}
               </tbody>
             </table>
             {parsed.rows.length > 5 && (
-              <p className="px-3 py-2 text-xs text-neutral-400">… e altre {parsed.rows.length - 5} righe</p>
+              <p className="px-3 py-2 text-xs text-muted-foreground">… e altre {parsed.rows.length - 5} righe</p>
             )}
           </div>
 
-          <Button onClick={handleImport} disabled={loading} className="w-full gap-2 h-9">
+          <button onClick={handleImport} disabled={loading} className="btn-ai w-full gap-2 disabled:opacity-60">
             <Upload className="h-4 w-4" />
             {loading ? 'Importo…' : `Importa ${parsed.rows.length} contatti`}
-          </Button>
+          </button>
         </div>
       )}
 
@@ -201,14 +200,14 @@ export function ImportContacts() {
 
       {/* Result */}
       {result && (
-        <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 space-y-1">
+        <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-1">
           <div className="flex items-center gap-2 text-sm font-medium text-green-700">
             <Check className="h-4 w-4" />
             {result.imported} contatti importati
           </div>
           {result.skipped > 0 && (
-            <p className="text-xs text-neutral-500 flex items-center gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-neutral-400" />
+            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50" />
               {result.skipped} saltati (email duplicata)
             </p>
           )}
@@ -220,7 +219,7 @@ export function ImportContacts() {
               </p>
               <ul className="mt-1 space-y-0.5">
                 {result.errors.slice(0, 5).map((e, i) => (
-                  <li key={i} className="text-xs text-neutral-500">• {e}</li>
+                  <li key={i} className="text-xs text-muted-foreground">• {e}</li>
                 ))}
               </ul>
             </div>
