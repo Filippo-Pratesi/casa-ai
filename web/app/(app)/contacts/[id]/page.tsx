@@ -130,7 +130,7 @@ export default async function ContactDetailPage({
       if (contact.min_rooms !== null && l.rooms < contact.min_rooms) return false
       if (contact.min_sqm !== null && l.sqm < contact.min_sqm) return false
       return true
-    }).slice(0, 6)
+    })
   }
 
   function birthdayDaysLeft(dob: string | null): number | null {
@@ -299,7 +299,7 @@ export default async function ContactDetailPage({
             <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-500">{matchingListings.length}</span>
           </div>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {matchingListings.map((l) => (
+            {matchingListings.slice(0, 5).map((l) => (
               <a
                 key={l.id}
                 href={`/listing/${l.id}`}
@@ -315,6 +315,9 @@ export default async function ContactDetailPage({
               </a>
             ))}
           </div>
+          {matchingListings.length > 5 && (
+            <p className="text-xs text-neutral-500 text-center">+ {matchingListings.length - 5} altri</p>
+          )}
         </div>
       )}
 

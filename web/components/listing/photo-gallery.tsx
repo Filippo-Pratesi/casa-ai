@@ -6,12 +6,14 @@ import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface PhotoGalleryProps {
   urls: string[]
+  floorPlanUrl?: string | null
 }
 
-export function PhotoGallery({ urls }: PhotoGalleryProps) {
+export function PhotoGallery({ urls, floorPlanUrl }: PhotoGalleryProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  const [showFloorPlan, setShowFloorPlan] = useState(false)
 
-  if (urls.length === 0) return null
+  if (urls.length === 0 && !floorPlanUrl) return null
 
   function prev() {
     setLightboxIndex((i) => (i === null ? 0 : (i - 1 + urls.length) % urls.length))
@@ -32,7 +34,36 @@ export function PhotoGallery({ urls }: PhotoGalleryProps) {
 
   return (
     <>
-      {/* Gallery grid */}
+      {/* Tabs: Foto / Planimetria */}
+      {floorPlanUrl && (
+        <div className="flex gap-2 mb-2">
+          <button
+            onClick={() => setShowFloorPlan(false)}
+            className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${!showFloorPlan ? 'bg-neutral-900 text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'}`}
+          >
+            Foto
+          </button>
+          <button
+            onClick={() => setShowFloorPlan(true)}
+            className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${showFloorPlan ? 'bg-neutral-900 text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'}`}
+          >
+            Planimetria
+          </button>
+        </div>
+      )}
+
+      {/* Floor plan view */}
+      {showFloorPlan && floorPlanUrl ? (
+        <div className="rounded-2xl overflow-hidden bg-neutral-50 border border-neutral-100 flex items-center justify-center h-56">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={floorPlanUrl}
+            alt="Planimetria"
+            className="max-h-full max-w-full object-contain p-4"
+          />
+        </div>
+      ) : (
+      /* Gallery grid */
       <div className="grid grid-cols-4 gap-1.5 rounded-2xl overflow-hidden h-56">
         {/* Main large photo */}
         <button
@@ -73,6 +104,7 @@ export function PhotoGallery({ urls }: PhotoGalleryProps) {
           </button>
         ))}
       </div>
+      )}
 
       {/* Lightbox */}
       {lightboxIndex !== null && (

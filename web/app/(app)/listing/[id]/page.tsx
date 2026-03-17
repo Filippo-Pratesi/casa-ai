@@ -18,6 +18,7 @@ import { ExportButton } from '@/components/listing/export-button'
 import { PriceHistory } from '@/components/listing/price-history'
 import { ValuationWidget } from '@/components/listing/valuation-widget'
 import { FloorPlanUploader } from '@/components/listing/floor-plan-uploader'
+import { NotifyBuyersButton } from '@/components/listing/notify-buyers-button'
 import type { Listing, GeneratedContent } from '@/lib/supabase/types'
 
 interface MatchingContact {
@@ -180,7 +181,7 @@ export default async function ListingDetailPage({
 
       {/* Hero: photos */}
       {photos.length > 0 ? (
-        <PhotoGallery urls={photos} />
+        <PhotoGallery urls={photos} floorPlanUrl={(listing as unknown as { floor_plan_url: string | null }).floor_plan_url} />
       ) : (
         <div className="flex h-44 items-center justify-center rounded-2xl bg-neutral-100">
           <Home className="h-10 w-10 text-neutral-300" />
@@ -343,16 +344,19 @@ export default async function ListingDetailPage({
         </div>
       )}
 
-      {/* Matching contacts */}
+      {/* Matching buyers */}
       {matchingContacts.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-neutral-500" />
-            <h2 className="text-sm font-semibold text-neutral-700">Clienti compatibili</h2>
+            <h2 className="text-sm font-semibold text-neutral-700">Acquirenti compatibili</h2>
             <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-500">{matchingContacts.length}</span>
+            <div className="ml-auto">
+              <NotifyBuyersButton listingId={listing.id} count={matchingContacts.length} />
+            </div>
           </div>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {matchingContacts.map((c) => (
+            {matchingContacts.slice(0, 5).map((c) => (
               <div key={c.id} className="flex items-center justify-between rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-3">
                 <a href={`/contacts/${c.id}`} className="min-w-0 flex-1 hover:opacity-75 transition-opacity">
                   <p className="text-sm font-medium text-neutral-900 truncate">{c.name}</p>
@@ -373,6 +377,9 @@ export default async function ListingDetailPage({
               </div>
             ))}
           </div>
+          {matchingContacts.length > 5 && (
+            <p className="text-xs text-neutral-500 text-center">+ {matchingContacts.length - 5} altri</p>
+          )}
         </div>
       )}
 
