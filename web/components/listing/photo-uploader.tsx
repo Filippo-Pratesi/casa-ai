@@ -2,7 +2,6 @@
 
 import { useRef } from 'react'
 import { ImagePlus, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 
 const MAX_PHOTOS = 12
 
@@ -46,30 +45,29 @@ export function PhotoUploader({ photos, onChange }: PhotoUploaderProps) {
         className={`
           relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-8 text-center transition-colors
           ${photos.length < MAX_PHOTOS
-            ? 'cursor-pointer border-neutral-300 hover:border-neutral-400 hover:bg-neutral-50'
-            : 'cursor-not-allowed border-neutral-200 bg-neutral-50 opacity-60'}
+            ? 'cursor-pointer border-border hover:border-muted-foreground/50 hover:bg-muted/30'
+            : 'cursor-not-allowed border-border bg-muted/30 opacity-60'}
         `}
       >
-        <ImagePlus className="h-8 w-8 text-neutral-400" />
+        <ImagePlus className="h-8 w-8 text-muted-foreground" />
         <div>
-          <p className="text-sm font-medium text-neutral-700">
+          <p className="text-sm font-medium">
             {photos.length < MAX_PHOTOS
               ? 'Trascina le foto o clicca per selezionare'
               : `Limite raggiunto (${MAX_PHOTOS} foto)`}
           </p>
-          <p className="text-xs text-neutral-400 mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             JPG, PNG, WEBP · Max {MAX_PHOTOS} foto · {photos.length}/{MAX_PHOTOS} caricate
           </p>
         </div>
         {photos.length < MAX_PHOTOS && (
-          <Button
+          <button
             type="button"
-            variant="outline"
-            size="sm"
             onClick={(e) => { e.stopPropagation(); inputRef.current?.click() }}
+            className="rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted transition-colors"
           >
             Seleziona foto
-          </Button>
+          </button>
         )}
       </div>
 
@@ -86,7 +84,7 @@ export function PhotoUploader({ photos, onChange }: PhotoUploaderProps) {
       {photos.length > 0 && (
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
           {previews.map((src, i) => (
-            <div key={i} className="group relative aspect-square overflow-hidden rounded-lg bg-neutral-100">
+            <div key={i} className="group relative aspect-square overflow-hidden rounded-lg bg-muted">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={src}

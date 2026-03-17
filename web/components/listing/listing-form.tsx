@@ -4,7 +4,6 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -181,11 +180,11 @@ export function ListingForm() {
   const isApartment = form.property_type === 'apartment'
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-2xl space-y-0 divide-y divide-neutral-100">
+    <form onSubmit={handleSubmit} className="max-w-2xl space-y-0 divide-y divide-border">
 
       {/* Section 1 — Tipo immobile */}
       <section className="pt-0 pb-6 space-y-3">
-        <h2 className="text-base font-semibold text-neutral-900">Tipo di immobile</h2>
+        <h2 className="text-base font-semibold">Tipo di immobile</h2>
         <div className="flex flex-wrap gap-2">
           {PROPERTY_TYPES.map((pt) => (
             <button
@@ -195,8 +194,8 @@ export function ListingForm() {
               className={`
                 rounded-full border px-4 py-1.5 text-sm font-medium transition-all
                 ${form.property_type === pt.value
-                  ? 'border-neutral-900 bg-neutral-900 text-white'
-                  : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400 hover:bg-neutral-50'}
+                  ? 'border-[oklch(0.57_0.20_33)] bg-[oklch(0.57_0.20_33)] text-white'
+                  : 'border-border bg-card text-foreground hover:border-muted-foreground/50 hover:bg-muted'}
               `}
             >
               {pt.label}
@@ -234,7 +233,7 @@ export function ListingForm() {
 
       {/* Section 2 — Localizzazione */}
       <section className="py-6 space-y-4">
-        <h2 className="text-base font-semibold text-neutral-900">Localizzazione</h2>
+        <h2 className="text-base font-semibold">Localizzazione</h2>
         <div className="space-y-1.5">
           <Label htmlFor="address">Indirizzo *</Label>
           <Input
@@ -270,7 +269,7 @@ export function ListingForm() {
 
       {/* Section 3 — Dettagli */}
       <section className="py-6 space-y-4">
-        <h2 className="text-base font-semibold text-neutral-900">Dettagli immobile</h2>
+        <h2 className="text-base font-semibold">Dettagli immobile</h2>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label htmlFor="price">Prezzo (€) *</Label>
@@ -349,8 +348,8 @@ export function ListingForm() {
       {/* Section 3b — Dati catastali */}
       <section className="py-6 space-y-4">
         <div>
-          <h2 className="text-base font-semibold text-neutral-900">Dati catastali</h2>
-          <p className="text-xs text-neutral-400 mt-0.5">Opzionale — compilare se disponibili</p>
+          <h2 className="text-base font-semibold">Dati catastali</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">Opzionale — compilare se disponibili</p>
         </div>
         <div className="grid grid-cols-3 gap-4">
           <div className="space-y-1.5">
@@ -393,7 +392,7 @@ export function ListingForm() {
 
       {/* Section 4 — Caratteristiche */}
       <section className="py-6 space-y-4">
-        <h2 className="text-base font-semibold text-neutral-900">Caratteristiche</h2>
+        <h2 className="text-base font-semibold">Caratteristiche</h2>
         <div className="flex flex-wrap gap-2">
           {FEATURES.filter((f) => !(form.property_type === 'land' && f.id === 'elevator')).map((f) => {
             const active = form.features.includes(f.id)
@@ -405,8 +404,8 @@ export function ListingForm() {
                 className={`
                   rounded-full border px-3 py-1.5 text-sm transition-all
                   ${active
-                    ? 'border-neutral-900 bg-neutral-900 text-white'
-                    : 'border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300'}
+                    ? 'border-[oklch(0.57_0.20_33)] bg-[oklch(0.57_0.20_33)] text-white'
+                    : 'border-border bg-card text-muted-foreground hover:border-muted-foreground/50'}
                 `}
               >
                 {f.label}
@@ -418,7 +417,7 @@ export function ListingForm() {
 
       {/* Section 5 — Tono */}
       <section className="py-6 space-y-4">
-        <h2 className="text-base font-semibold text-neutral-900">Tono di comunicazione</h2>
+        <h2 className="text-base font-semibold">Tono di comunicazione</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {TONES.map((t) => (
             <button
@@ -428,12 +427,12 @@ export function ListingForm() {
               className={`
                 rounded-lg border p-3 text-left transition-all
                 ${form.tone === t.id
-                  ? 'border-neutral-900 bg-neutral-900 text-white'
-                  : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300'}
+                  ? 'border-[oklch(0.57_0.20_33)] bg-[oklch(0.57_0.20_33)] text-white'
+                  : 'border-border bg-card text-foreground hover:border-muted-foreground/50'}
               `}
             >
               <div className="text-sm font-medium">{t.label}</div>
-              <div className={`text-xs mt-0.5 ${form.tone === t.id ? 'text-neutral-300' : 'text-neutral-400'}`}>
+              <div className={`text-xs mt-0.5 ${form.tone === t.id ? 'text-white/70' : 'text-muted-foreground'}`}>
                 {t.desc}
               </div>
             </button>
@@ -443,10 +442,10 @@ export function ListingForm() {
 
       {/* Section 6 — Note */}
       <section className="py-6 space-y-4">
-        <h2 className="text-base font-semibold text-neutral-900">Note agente</h2>
+        <h2 className="text-base font-semibold">Note agente</h2>
         <div className="space-y-1.5">
           <Label htmlFor="notes">
-            Informazioni aggiuntive <span className="text-neutral-400">(opzionale, max 300 caratteri)</span>
+            Informazioni aggiuntive <span className="text-muted-foreground">(opzionale, max 300 caratteri)</span>
           </Label>
           <Textarea
             id="notes"
@@ -456,15 +455,15 @@ export function ListingForm() {
             value={form.notes}
             onChange={(e) => update('notes', e.target.value)}
           />
-          <p className="text-right text-xs text-neutral-400">{form.notes.length}/300</p>
+          <p className="text-right text-xs text-muted-foreground">{form.notes.length}/300</p>
         </div>
       </section>
 
       {/* Section 7 — Foto */}
       <section className="py-6 space-y-4">
         <div>
-          <h2 className="text-base font-semibold text-neutral-900">Foto dell&apos;immobile</h2>
-          <p className="text-sm text-neutral-500 mt-0.5">
+          <h2 className="text-base font-semibold">Foto dell&apos;immobile</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
             Le foto vengono analizzate dall&apos;AI per arricchire le descrizioni. Opzionale ma consigliato.
           </p>
         </div>
@@ -473,23 +472,16 @@ export function ListingForm() {
 
       {/* Submit */}
       <div className="pt-6">
-        <Button
+        <button
           type="submit"
           disabled={isPending}
-          size="lg"
-          className="w-full"
+          className="btn-ai w-full gap-2 disabled:opacity-60"
         >
-          {isPending ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Generazione in corso...
-            </>
-          ) : (
-            'Genera contenuti'
-          )}
-        </Button>
+          {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+          {isPending ? 'Generazione in corso...' : 'Genera contenuti'}
+        </button>
         {isPending && (
-          <p className="text-center text-xs text-neutral-400 mt-2">
+          <p className="text-center text-xs text-muted-foreground mt-2">
             L&apos;AI sta analizzando le foto e generando i contenuti. Ci vorranno circa 15-20 secondi.
           </p>
         )}
