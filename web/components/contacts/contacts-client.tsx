@@ -3,7 +3,6 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
 import { UserPlus, Users, Phone, Mail, Euro, Home, Cake, LayoutGrid, List, Search, X } from 'lucide-react'
 import { ExportContactsButton } from '@/components/contacts/export-contacts-button'
 import { useI18n } from '@/lib/i18n/context'
@@ -119,10 +118,10 @@ export function ContactsClient({ contacts, isAdmin }: ContactsClientProps) {
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between animate-in-1">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">{t('contacts.title')}</h1>
-          <p className="text-neutral-500 text-sm mt-0.5">
+          <h1 className="text-2xl font-extrabold tracking-tight">{t('contacts.title')}</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">
             {filtered.length !== contacts.length
               ? `${filtered.length} di ${contacts.length} contatti`
               : contacts.length > 0 ? `${contacts.length} contatti` : t('contacts.empty.title')}
@@ -130,34 +129,34 @@ export function ContactsClient({ contacts, isAdmin }: ContactsClientProps) {
         </div>
         <div className="flex items-center gap-2">
           {contacts.length > 0 && (
-            <div className="flex rounded-lg border border-neutral-200 bg-white overflow-hidden">
+            <div className="flex rounded-lg border border-border bg-card overflow-hidden">
               <button
                 onClick={() => setViewMode('card')}
                 title={t('common.viewCard')}
-                className={`p-2 transition-colors ${viewMode === 'card' ? 'bg-neutral-900 text-white' : 'text-neutral-500 hover:bg-neutral-50'}`}
+                className={`p-2 transition-all duration-200 ${viewMode === 'card' ? 'bg-[oklch(0.57_0.20_33)] text-white' : 'text-muted-foreground hover:bg-muted'}`}
               >
                 <LayoutGrid className="h-3.5 w-3.5" />
               </button>
               <button
                 onClick={() => setViewMode('table')}
                 title={t('common.viewTable')}
-                className={`p-2 transition-colors ${viewMode === 'table' ? 'bg-neutral-900 text-white' : 'text-neutral-500 hover:bg-neutral-50'}`}
+                className={`p-2 transition-all duration-200 ${viewMode === 'table' ? 'bg-[oklch(0.57_0.20_33)] text-white' : 'text-muted-foreground hover:bg-muted'}`}
               >
                 <List className="h-3.5 w-3.5" />
               </button>
             </div>
           )}
           {isAdmin && <ExportContactsButton />}
-          <Button nativeButton={false} render={<Link href="/contacts/new" />} className="gap-2">
+          <Link href="/contacts/new" className="btn-ai inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold">
             <UserPlus className="h-4 w-4" />
             {t('contacts.new')}
-          </Button>
+          </Link>
         </div>
       </div>
 
       {/* Filter bar */}
       {contacts.length > 0 && (
-        <div className="rounded-2xl border border-neutral-100 bg-white p-4 space-y-3 shadow-sm">
+        <div className="animate-in-2 rounded-2xl border border-border bg-card p-4 space-y-3 shadow-sm">
           <div className="flex flex-wrap gap-1.5">
             {Object.entries(TYPE_LABELS).map(([key, label]) => {
               const active = activeTypes.has(key)
@@ -174,38 +173,38 @@ export function ContactsClient({ contacts, isAdmin }: ContactsClientProps) {
           </div>
           <div className="flex flex-wrap gap-2">
             <div className="relative flex-1 min-w-[160px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400 pointer-events-none" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
               <input
                 value={citySearch}
                 onChange={e => setCitySearch(e.target.value)}
                 placeholder={t('contacts.filter.searchPlaceholder')}
-                className="w-full rounded-lg border border-neutral-200 pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-300 text-neutral-900 placeholder-neutral-400"
+                className="w-full rounded-lg border border-border bg-background pl-8 pr-3 py-2 text-sm placeholder-muted-foreground"
               />
             </div>
             <div className="relative min-w-[140px]">
-              <Euro className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400 pointer-events-none" />
+              <Euro className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
               <input
                 type="number"
                 value={budgetMax}
                 onChange={e => setBudgetMax(e.target.value)}
                 placeholder={t('contacts.filter.budgetMax')}
-                className="w-full rounded-lg border border-neutral-200 pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-300 text-neutral-900 placeholder-neutral-400"
+                className="w-full rounded-lg border border-border bg-background pl-8 pr-3 py-2 text-sm placeholder-muted-foreground"
               />
             </div>
             <div className="relative min-w-[120px]">
-              <Home className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400 pointer-events-none" />
+              <Home className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
               <input
                 type="number"
                 value={minRooms}
                 onChange={e => setMinRooms(e.target.value)}
                 placeholder={t('contacts.filter.minRooms')}
-                className="w-full rounded-lg border border-neutral-200 pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-300 text-neutral-900 placeholder-neutral-400"
+                className="w-full rounded-lg border border-border bg-background pl-8 pr-3 py-2 text-sm placeholder-muted-foreground"
               />
             </div>
             {hasFilters && (
               <button
                 onClick={clearFilters}
-                className="flex items-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-2 text-xs text-neutral-500 hover:bg-neutral-50 transition-colors"
+                className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-muted transition-colors"
               >
                 <X className="h-3.5 w-3.5" />
                 {t('contacts.filter.clear')}
@@ -217,24 +216,24 @@ export function ContactsClient({ contacts, isAdmin }: ContactsClientProps) {
 
       {/* Empty state */}
       {contacts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 py-20 text-center">
-          <div className="mb-4 rounded-full bg-neutral-100 p-4">
-            <Users className="h-8 w-8 text-neutral-400" />
+        <div className="mesh-bg flex flex-col items-center justify-center rounded-2xl border border-dashed border-border py-20 text-center">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[oklch(0.57_0.20_33)] to-[oklch(0.66_0.15_188)] shadow-lg shadow-[oklch(0.57_0.20_33/0.3)]">
+            <Users className="h-8 w-8 text-white" />
           </div>
-          <h2 className="text-base font-semibold text-neutral-800">{t('contacts.empty.title')}</h2>
-          <p className="mt-1 text-sm text-neutral-500 max-w-xs">
+          <h2 className="text-base font-semibold">{t('contacts.empty.title')}</h2>
+          <p className="mt-1 text-sm text-muted-foreground max-w-xs">
             {t('contacts.empty.body')}
           </p>
-          <Button nativeButton={false} render={<Link href="/contacts/new" />} className="mt-6 gap-2">
+          <Link href="/contacts/new" className="btn-ai mt-6 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold">
             <UserPlus className="h-4 w-4" />
             {t('contacts.empty.cta')}
-          </Button>
+          </Link>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 py-16 text-center">
-          <Search className="h-8 w-8 text-neutral-300 mb-3" />
-          <p className="text-sm text-neutral-500">{t('contacts.noResults')}</p>
-          <button onClick={clearFilters} className="mt-2 text-xs text-neutral-500 hover:text-neutral-800 underline underline-offset-2 transition-colors">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/20 py-16 text-center">
+          <Search className="h-8 w-8 text-muted-foreground/40 mb-3" />
+          <p className="text-sm text-muted-foreground">{t('contacts.noResults')}</p>
+          <button onClick={clearFilters} className="mt-2 text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors">
             {t('contacts.filter.clear')}
           </button>
         </div>
@@ -245,15 +244,15 @@ export function ContactsClient({ contacts, isAdmin }: ContactsClientProps) {
           ))}
         </div>
       ) : (
-        <div className="rounded-2xl border border-neutral-100 bg-white shadow-sm overflow-hidden">
-          <div className="grid grid-cols-[1fr_90px_130px_130px_80px] gap-2 px-4 py-2.5 border-b border-neutral-100 bg-neutral-50">
-            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">{t('contacts.col.name')}</p>
-            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">{t('contacts.col.type')}</p>
-            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">{t('contacts.col.phone')}</p>
-            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">{t('contacts.col.email')}</p>
-            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">{t('contacts.col.budget')}</p>
+        <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+          <div className="grid grid-cols-[1fr_90px_130px_130px_80px] gap-2 px-4 py-2.5 border-b border-border bg-muted/50">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('contacts.col.name')}</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('contacts.col.type')}</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('contacts.col.phone')}</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('contacts.col.email')}</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('contacts.col.budget')}</p>
           </div>
-          <div className="divide-y divide-neutral-50">
+          <div className="divide-y divide-border">
             {filtered.map((c) => (
               <ContactRow key={c.id} contact={c} typeLabels={TYPE_LABELS} />
             ))}
@@ -268,17 +267,23 @@ export function ContactsClient({ contacts, isAdmin }: ContactsClientProps) {
 
 function ContactCard({ contact: c, typeLabels }: { contact: Contact; typeLabels: Record<string, string> }) {
   const { t } = useI18n()
+  const initials = c.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 
   return (
-    <div className="group relative rounded-2xl border border-neutral-200 bg-white p-4 space-y-3 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5">
+    <div className="card-lift group relative rounded-2xl border border-border bg-card p-4 space-y-3">
       <div className="flex items-start justify-between gap-2">
-        <Link href={`/contacts/${c.id}`} className="min-w-0 flex-1">
-          <h3 className="font-semibold text-neutral-900 truncate text-sm">{c.name}</h3>
-          {(c.preferred_cities ?? []).length > 0 && (
-            <p className="text-xs text-neutral-500 mt-0.5 truncate">
-              {(c.preferred_cities ?? []).join(', ')}
-            </p>
-          )}
+        <Link href={`/contacts/${c.id}`} className="flex items-center gap-3 min-w-0 flex-1">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[oklch(0.57_0.20_33/0.15)] to-[oklch(0.66_0.15_188/0.15)] text-[oklch(0.57_0.20_33)] text-xs font-bold ring-1 ring-[oklch(0.57_0.20_33/0.2)]">
+            {initials}
+          </div>
+          <div className="min-w-0">
+            <h3 className="font-semibold truncate text-sm group-hover:text-[oklch(0.57_0.20_33)] transition-colors">{c.name}</h3>
+            {(c.preferred_cities ?? []).length > 0 && (
+              <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                {(c.preferred_cities ?? []).join(', ')}
+              </p>
+            )}
+          </div>
         </Link>
         <div className="flex items-center gap-1.5 shrink-0">
           {(() => {
@@ -299,8 +304,8 @@ function ContactCard({ contact: c, typeLabels }: { contact: Contact; typeLabels:
       <div className="space-y-1">
         {c.phone && (
           <div className="flex items-center gap-1.5">
-            <Phone className="h-3 w-3 text-neutral-400 shrink-0" />
-            <span className="text-xs text-neutral-600 flex-1">{c.phone}</span>
+            <Phone className="h-3 w-3 text-muted-foreground/60 shrink-0" />
+            <span className="text-xs text-muted-foreground flex-1">{c.phone}</span>
             <a
               href={`https://wa.me/${c.phone.replace(/\D/g, '')}`}
               target="_blank"
@@ -314,12 +319,12 @@ function ContactCard({ contact: c, typeLabels }: { contact: Contact; typeLabels:
         )}
         {c.email && (
           <div className="flex items-center gap-1.5">
-            <Mail className="h-3 w-3 text-neutral-400 shrink-0" />
-            <span className="text-xs text-neutral-600 flex-1 truncate">{c.email}</span>
+            <Mail className="h-3 w-3 text-muted-foreground/60 shrink-0" />
+            <span className="text-xs text-muted-foreground flex-1 truncate">{c.email}</span>
             <a
               href={`mailto:${c.email}`}
               title={t('common.sendEmail')}
-              className="text-blue-500 hover:text-blue-600 transition-colors"
+              className="text-[oklch(0.57_0.20_33)] hover:opacity-80 transition-opacity"
             >
               <Mail className="h-3.5 w-3.5" />
             </a>
@@ -328,10 +333,10 @@ function ContactCard({ contact: c, typeLabels }: { contact: Contact; typeLabels:
       </div>
 
       {(c.budget_min || c.budget_max || c.min_rooms) && (
-        <div className="flex items-center gap-3 border-t border-neutral-100 pt-3 text-xs text-neutral-500">
+        <div className="flex items-center gap-3 border-t border-border pt-3 text-xs text-muted-foreground">
           {(c.budget_min || c.budget_max) && (
             <span className="flex items-center gap-1">
-              <Euro className="h-3 w-3 text-neutral-400" />
+              <Euro className="h-3 w-3 text-muted-foreground/60" />
               {c.budget_min ? c.budget_min.toLocaleString('it-IT') : '0'}
               {' — '}
               {c.budget_max ? c.budget_max.toLocaleString('it-IT') : '∞'}
@@ -339,7 +344,7 @@ function ContactCard({ contact: c, typeLabels }: { contact: Contact; typeLabels:
           )}
           {c.min_rooms && (
             <span className="flex items-center gap-1">
-              <Home className="h-3 w-3 text-neutral-400" />
+              <Home className="h-3 w-3 text-muted-foreground/60" />
               {t('common.minRooms')} {c.min_rooms} {t('common.rooms')}
             </span>
           )}
@@ -361,11 +366,11 @@ function ContactRow({ contact: c, typeLabels }: { contact: Contact; typeLabels: 
   return (
     <div
       onClick={() => router.push(`/contacts/${c.id}`)}
-      className="grid grid-cols-[1fr_90px_130px_130px_80px] gap-2 items-center px-4 py-3 hover:bg-neutral-50 transition-colors cursor-pointer group"
+      className="grid grid-cols-[1fr_90px_130px_130px_80px] gap-2 items-center px-4 py-3 hover:bg-muted/40 transition-colors cursor-pointer group"
     >
       <div className="min-w-0">
         <div className="flex items-center gap-1.5">
-          <p className="text-sm font-medium text-neutral-900 truncate group-hover:text-neutral-700">{c.name}</p>
+          <p className="text-sm font-medium truncate group-hover:text-[oklch(0.57_0.20_33)] transition-colors">{c.name}</p>
           {days !== null && (
             <span className="flex items-center gap-0.5 rounded-full bg-pink-50 border border-pink-200 px-1.5 py-0.5 text-[9px] font-medium text-pink-700 shrink-0">
               <Cake className="h-2 w-2" />
@@ -374,7 +379,7 @@ function ContactRow({ contact: c, typeLabels }: { contact: Contact; typeLabels: 
           )}
         </div>
         {(c.preferred_cities ?? []).length > 0 && (
-          <p className="text-xs text-neutral-400 truncate">{(c.preferred_cities ?? []).join(', ')}</p>
+          <p className="text-xs text-muted-foreground truncate">{(c.preferred_cities ?? []).join(', ')}</p>
         )}
       </div>
       <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium w-fit ${TYPE_COLORS[c.type]}`}>
@@ -383,7 +388,7 @@ function ContactRow({ contact: c, typeLabels }: { contact: Contact; typeLabels: 
       <div className="flex items-center gap-1.5 min-w-0" onClick={e => e.stopPropagation()}>
         {c.phone ? (
           <>
-            <span className="text-xs text-neutral-600 truncate flex-1">{c.phone}</span>
+            <span className="text-xs text-muted-foreground truncate flex-1">{c.phone}</span>
             <a
               href={`https://wa.me/${c.phone.replace(/\D/g, '')}`}
               target="_blank"
@@ -395,26 +400,26 @@ function ContactRow({ contact: c, typeLabels }: { contact: Contact; typeLabels: 
             </a>
           </>
         ) : (
-          <span className="text-xs text-neutral-300">—</span>
+          <span className="text-xs text-muted-foreground/30">—</span>
         )}
       </div>
       <div className="flex items-center gap-1.5 min-w-0" onClick={e => e.stopPropagation()}>
         {c.email ? (
           <>
-            <span className="text-xs text-neutral-600 truncate flex-1">{c.email}</span>
+            <span className="text-xs text-muted-foreground truncate flex-1">{c.email}</span>
             <a
               href={`mailto:${c.email}`}
               title={t('common.sendEmail')}
-              className="text-blue-500 hover:text-blue-600 transition-colors shrink-0"
+              className="text-[oklch(0.57_0.20_33)] hover:opacity-80 transition-opacity shrink-0"
             >
               <Mail className="h-3.5 w-3.5" />
             </a>
           </>
         ) : (
-          <span className="text-xs text-neutral-300">—</span>
+          <span className="text-xs text-muted-foreground/30">—</span>
         )}
       </div>
-      <p className="text-xs text-neutral-500">
+      <p className="text-xs text-muted-foreground">
         {(c.budget_min || c.budget_max)
           ? `€${(c.budget_max ?? c.budget_min)!.toLocaleString('it-IT')}`
           : '—'}

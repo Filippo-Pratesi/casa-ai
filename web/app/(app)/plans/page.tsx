@@ -107,8 +107,8 @@ export default async function PlansPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-8 pb-12">
       <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">{t('plans.title')}</h1>
-        <p className="text-neutral-500">
+        <h1 className="text-3xl font-extrabold tracking-tight">{t('plans.title')}</h1>
+        <p className="text-muted-foreground">
           {currentPlan === 'trial'
             ? t('plans.trial').replace('{days}', String(daysLeft))
             : `${t('plans.current')}${PLAN_CONFIG[currentPlan as keyof typeof PLAN_CONFIG]?.name ?? currentPlan}`}
@@ -122,7 +122,7 @@ export default async function PlansPage() {
         prices={PLAN_PRICES}
       />
 
-      <p className="text-center text-xs text-neutral-400">{t('plans.footer')}</p>
+      <p className="text-center text-xs text-muted-foreground">{t('plans.footer')}</p>
     </div>
   )
 }

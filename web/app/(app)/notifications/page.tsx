@@ -37,8 +37,8 @@ export default async function NotificationsPage() {
     <div className="max-w-2xl mx-auto space-y-6 pb-12">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">{t('notifications.title')}</h1>
-          <p className="text-neutral-500 text-sm mt-0.5">
+          <h1 className="text-2xl font-extrabold tracking-tight">{t('notifications.title')}</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">
             {unread > 0 ? `${unread} ${t('notifications.unread')}` : t('notifications.allRead')}
           </p>
         </div>
@@ -46,12 +46,12 @@ export default async function NotificationsPage() {
       </div>
 
       {notifications.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 py-20 text-center">
-          <div className="mb-4 rounded-full bg-neutral-100 p-4">
-            <Bell className="h-8 w-8 text-neutral-400" />
+        <div className="mesh-bg flex flex-col items-center justify-center rounded-2xl border border-dashed border-border py-20 text-center">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[oklch(0.57_0.20_33)] to-[oklch(0.66_0.15_188)] shadow-lg shadow-[oklch(0.57_0.20_33/0.3)]">
+            <Bell className="h-7 w-7 text-white" />
           </div>
-          <h2 className="text-base font-semibold text-neutral-800">{t('notifications.empty.title')}</h2>
-          <p className="mt-1 text-sm text-neutral-500 max-w-xs">{t('notifications.empty.body')}</p>
+          <h2 className="text-base font-semibold">{t('notifications.empty.title')}</h2>
+          <p className="mt-1 text-sm text-muted-foreground max-w-xs">{t('notifications.empty.body')}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -59,25 +59,25 @@ export default async function NotificationsPage() {
             <div
               key={n.id}
               className={`rounded-xl border p-4 space-y-2 transition-colors ${
-                n.read ? 'border-neutral-100 bg-white' : 'border-pink-100 bg-pink-50'
+                n.read ? 'border-border bg-card' : 'border-pink-200 bg-pink-50 dark:bg-pink-950/20'
               }`}
             >
               <div className="flex items-start gap-3">
-                <div className={`mt-0.5 rounded-full p-1.5 shrink-0 ${n.read ? 'bg-neutral-100' : 'bg-pink-100'}`}>
-                  <Cake className={`h-3.5 w-3.5 ${n.read ? 'text-neutral-400' : 'text-pink-500'}`} />
+                <div className={`mt-0.5 rounded-full p-1.5 shrink-0 ${n.read ? 'bg-muted' : 'bg-pink-100'}`}>
+                  <Cake className={`h-3.5 w-3.5 ${n.read ? 'text-muted-foreground' : 'text-pink-500'}`} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-semibold text-neutral-900 truncate">{n.title}</p>
-                    <p className="text-[11px] text-neutral-400 shrink-0">
+                    <p className="text-sm font-semibold truncate">{n.title}</p>
+                    <p className="text-[11px] text-muted-foreground shrink-0">
                       {new Date(n.created_at).toLocaleDateString(locale === 'en' ? 'en-GB' : 'it-IT', { day: '2-digit', month: 'short' })}
                     </p>
                   </div>
-                  <p className="text-sm text-neutral-600 mt-1 whitespace-pre-wrap leading-relaxed">{n.body}</p>
+                  <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap leading-relaxed">{n.body}</p>
                   {n.contact_id && (
                     <Link
                       href={`/contacts/${n.contact_id}`}
-                      className="inline-block mt-2 text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
+                      className="inline-block mt-2 text-xs text-muted-foreground hover:text-[oklch(0.57_0.20_33)] transition-colors"
                     >
                       {t('notifications.goToContact')}
                     </Link>

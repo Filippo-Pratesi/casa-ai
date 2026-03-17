@@ -92,8 +92,8 @@ export default async function SettingsPage({
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">{t('settings.title')}</h1>
-        <p className="text-neutral-500 text-sm mt-1">{t('settings.subtitle')}</p>
+        <h1 className="text-2xl font-extrabold tracking-tight">{t('settings.title')}</h1>
+        <p className="text-muted-foreground text-sm mt-1">{t('settings.subtitle')}</p>
       </div>
 
       {isAdmin && profile?.workspaces && (
@@ -171,7 +171,7 @@ export default async function SettingsPage({
           </CardHeader>
           <CardContent className="space-y-3">
             <BulkExportButton />
-            <p className="text-xs text-neutral-400">{t('settings.exportNote')}</p>
+            <p className="text-xs text-muted-foreground">{t('settings.exportNote')}</p>
           </CardContent>
         </Card>
       )}

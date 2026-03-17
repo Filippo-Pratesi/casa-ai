@@ -165,19 +165,51 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
   }
 
   const statCards = [
-    { label: 'Annunci attivi', value: stats.listings, icon: Home, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { label: t('contacts.title'), value: stats.contacts, icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { label: 'App. imminenti', value: stats.appointments, icon: CalendarDays, color: 'text-violet-600', bg: 'bg-violet-50' },
-    { label: 'Contenuto AI', value: stats.aiContent, icon: TrendingUp, color: 'text-orange-600', bg: 'bg-orange-50' },
+    {
+      label: 'Annunci attivi',
+      value: stats.listings,
+      icon: Home,
+      gradient: 'from-[oklch(0.57_0.20_33)] to-[oklch(0.48_0.18_20)]',
+      glow: 'shadow-[oklch(0.57_0.20_33/0.25)]',
+      bg: 'from-[oklch(0.95_0.055_33)] to-[oklch(0.97_0.02_45)]',
+      iconColor: 'text-[oklch(0.57_0.20_33)]',
+    },
+    {
+      label: t('contacts.title'),
+      value: stats.contacts,
+      icon: Users,
+      gradient: 'from-[oklch(0.66_0.15_188)] to-[oklch(0.55_0.14_200)]',
+      glow: 'shadow-[oklch(0.66_0.15_188/0.25)]',
+      bg: 'from-[oklch(0.94_0.05_188)] to-[oklch(0.96_0.02_195)]',
+      iconColor: 'text-[oklch(0.55_0.14_188)]',
+    },
+    {
+      label: 'App. imminenti',
+      value: stats.appointments,
+      icon: CalendarDays,
+      gradient: 'from-[oklch(0.60_0.18_290)] to-[oklch(0.50_0.17_305)]',
+      glow: 'shadow-[oklch(0.60_0.18_290/0.25)]',
+      bg: 'from-[oklch(0.94_0.055_290)] to-[oklch(0.96_0.025_300)]',
+      iconColor: 'text-[oklch(0.55_0.17_290)]',
+    },
+    {
+      label: 'Contenuto AI',
+      value: stats.aiContent,
+      icon: TrendingUp,
+      gradient: 'from-[oklch(0.76_0.14_75)] to-[oklch(0.65_0.14_60)]',
+      glow: 'shadow-[oklch(0.76_0.14_75/0.25)]',
+      bg: 'from-[oklch(0.96_0.055_75)] to-[oklch(0.97_0.025_65)]',
+      iconColor: 'text-[oklch(0.60_0.14_68)]',
+    },
   ]
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between animate-in-1">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">{t('listings.title')}</h1>
-          <p className="text-neutral-500 text-sm mt-0.5">
+          <h1 className="text-2xl font-extrabold tracking-tight">{t('listings.title')}</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">
             {filtered.length !== listings.length
               ? `${filtered.length} ${t('listings.subtitleFiltered')} ${listings.length} ${t('listings.subtitle')}`
               : `${listings.length} ${t('listings.subtitle')}`}
@@ -185,18 +217,18 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
         </div>
         <div className="flex items-center gap-2">
           {/* View toggle */}
-          <div className="flex rounded-lg border border-neutral-200 bg-white overflow-hidden">
+          <div className="flex rounded-lg border border-border bg-card overflow-hidden">
             <button
               onClick={() => setViewMode('card')}
               title={t('common.viewCard')}
-              className={`p-2 transition-colors ${viewMode === 'card' ? 'bg-neutral-900 text-white' : 'text-neutral-500 hover:bg-neutral-50'}`}
+              className={`p-2 transition-all duration-200 ${viewMode === 'card' ? 'bg-[oklch(0.57_0.20_33)] text-white' : 'text-muted-foreground hover:bg-muted'}`}
             >
               <LayoutGrid className="h-3.5 w-3.5" />
             </button>
             <button
               onClick={() => setViewMode('list')}
               title={t('common.viewList')}
-              className={`p-2 transition-colors ${viewMode === 'list' ? 'bg-neutral-900 text-white' : 'text-neutral-500 hover:bg-neutral-50'}`}
+              className={`p-2 transition-all duration-200 ${viewMode === 'list' ? 'bg-[oklch(0.57_0.20_33)] text-white' : 'text-muted-foreground hover:bg-muted'}`}
             >
               <List className="h-3.5 w-3.5" />
             </button>
@@ -205,35 +237,45 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
             <button
               onClick={() => downloadCSV(filtered)}
               title={t('listings.export')}
-              className="flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-medium text-neutral-600 hover:bg-neutral-50 transition-colors"
+              className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-muted transition-all duration-200"
             >
               <Download className="h-3.5 w-3.5" />
               {t('listings.export')}
             </button>
           )}
-          <Button nativeButton={false} render={<Link href="/listing/new" />} className="gap-2 shadow-sm">
+          <Link
+            href="/listing/new"
+            className="btn-ai flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold"
+          >
             <PlusSquare className="h-4 w-4" />
             {t('listings.new')}
-          </Button>
+          </Link>
         </div>
       </div>
 
-      {/* Stats bar */}
+      {/* Stats bento */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {statCards.map((s) => (
-          <div key={s.label} className="rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm hover:shadow-md transition-shadow duration-200">
-            <div className={`mb-3 inline-flex rounded-xl p-2 ${s.bg}`}>
-              <s.icon className={`h-4 w-4 ${s.color}`} />
+        {statCards.map((s, i) => (
+          <div
+            key={s.label}
+            className={`animate-in-${i + 2} relative overflow-hidden rounded-2xl border border-border bg-card p-4 card-lift`}
+          >
+            {/* Subtle gradient background */}
+            <div className={`absolute inset-0 bg-gradient-to-br ${s.bg} opacity-60`} />
+            <div className="relative">
+              <div className={`mb-3 inline-flex rounded-xl bg-gradient-to-br ${s.gradient} p-2 shadow-md ${s.glow}`}>
+                <s.icon className="h-4 w-4 text-white" />
+              </div>
+              <p className="text-2xl font-extrabold leading-none">{s.value}</p>
+              <p className="mt-1 text-xs font-medium text-muted-foreground">{s.label}</p>
             </div>
-            <p className="text-2xl font-bold text-neutral-900 leading-none">{s.value}</p>
-            <p className="mt-1 text-xs text-neutral-500">{s.label}</p>
           </div>
         ))}
       </div>
 
       {/* Filter bar */}
       {listings.length > 0 && (
-        <div className="rounded-2xl border border-neutral-100 bg-white p-4 space-y-3 shadow-sm">
+        <div className="animate-in-3 rounded-2xl border border-border bg-card p-4 space-y-3 shadow-sm">
           {/* Type pills */}
           <div className="flex flex-wrap gap-1.5">
             {Object.entries(TYPE_LABELS).map(([key, label]) => {
@@ -298,38 +340,38 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
 
       {/* Empty state */}
       {listings.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 py-20 text-center">
-          <div className="mb-4 rounded-full bg-neutral-100 p-4">
-            <FileText className="h-8 w-8 text-neutral-400" />
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border mesh-bg py-20 text-center animate-in-4">
+          <div className="mb-4 rounded-2xl bg-gradient-to-br from-[oklch(0.57_0.20_33)] to-[oklch(0.66_0.15_188)] p-4 shadow-lg shadow-[oklch(0.57_0.20_33/0.3)]">
+            <FileText className="h-8 w-8 text-white" />
           </div>
-          <h2 className="text-base font-semibold text-neutral-800">{t('listings.empty.title')}</h2>
-          <p className="mt-1 text-sm text-neutral-500 max-w-xs">
+          <h2 className="text-base font-bold">{t('listings.empty.title')}</h2>
+          <p className="mt-1 text-sm text-muted-foreground max-w-xs">
             {t('listings.empty.body')}
           </p>
-          <Button nativeButton={false} render={<Link href="/listing/new" />} className="mt-6 gap-2">
+          <Link href="/listing/new" className="btn-ai mt-6 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold">
             <PlusSquare className="h-4 w-4" />
             {t('listings.empty.cta')}
-          </Button>
+          </Link>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 py-16 text-center">
-          <Search className="h-8 w-8 text-neutral-300 mb-3" />
-          <p className="text-sm text-neutral-500">{t('listings.noResults')}</p>
-          <button onClick={clearFilters} className="mt-2 text-xs text-neutral-500 hover:text-neutral-800 underline underline-offset-2 transition-colors">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/30 py-16 text-center">
+          <Search className="h-8 w-8 text-muted-foreground/40 mb-3" />
+          <p className="text-sm text-muted-foreground">{t('listings.noResults')}</p>
+          <button onClick={clearFilters} className="mt-2 text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors">
             {t('listings.filter.clear')}
           </button>
         </div>
       ) : viewMode === 'card' ? (
         /* Card grid */
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 animate-in-4">
           {filtered.map((l) => (
             <ListingCard key={l.id} listing={l} typeLabels={TYPE_LABELS} />
           ))}
         </div>
       ) : (
         /* List view */
-        <div className="rounded-2xl border border-neutral-100 bg-white shadow-sm overflow-hidden">
-          <div className="grid grid-cols-[1fr_100px_90px_90px_70px_90px] gap-2 px-4 py-2 border-b border-neutral-100 bg-neutral-50">
+        <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden animate-in-4">
+          <div className="grid grid-cols-[1fr_100px_90px_90px_70px_90px] gap-2 px-4 py-2 border-b border-border bg-muted/50">
             <button onClick={() => handleSort('address')} className="flex items-center gap-1 text-xs font-semibold text-neutral-400 uppercase tracking-wider hover:text-neutral-700 transition-colors">
               {t('listings.col.property')}<SortIcon col="address" />
             </button>
@@ -345,7 +387,7 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
               {t('listings.col.date')}<SortIcon col="date" />
             </button>
           </div>
-          <div className="divide-y divide-neutral-50">
+          <div className="divide-y divide-border/50">
             {filtered.map((l) => (
               <ListingRow key={l.id} listing={l} typeLabels={TYPE_LABELS} draftLabel={t('listings.badge.draft')} />
             ))}
@@ -364,55 +406,65 @@ function ListingCard({ listing: l, typeLabels }: { listing: Listing; typeLabels:
 
   return (
     <Link href={`/listing/${l.id}`} className="group block">
-      <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm transition-all duration-200 hover:shadow-xl hover:-translate-y-1 hover:border-neutral-200">
-        <div className="relative h-44 w-full bg-neutral-100">
+      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm card-lift">
+        {/* Image area */}
+        <div className="relative h-48 w-full bg-muted overflow-hidden">
           {thumb ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={thumb} alt={l.address} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+            <img src={thumb} alt={l.address} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
           ) : (
-            <div className="flex h-full items-center justify-center">
-              <Home className="h-10 w-10 text-neutral-300" />
+            <div className="flex h-full items-center justify-center mesh-bg">
+              <Home className="h-10 w-10 text-muted-foreground/30" />
             </div>
           )}
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+
+          {/* Floating price badge */}
+          <div className="absolute bottom-3 left-3">
+            <span className="inline-flex items-center gap-1 rounded-xl bg-black/50 backdrop-blur-md px-3 py-1.5 text-sm font-bold text-white border border-white/10">
+              €{l.price.toLocaleString('it-IT')}
+            </span>
+          </div>
+
+          {/* AI / Draft badge */}
           <div className="absolute top-2.5 right-2.5">
             {l.generated_content ? (
-              <span className="inline-flex items-center rounded-full bg-green-500 px-2 py-0.5 text-xs font-medium text-white shadow">AI</span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-[oklch(0.57_0.20_33)] to-[oklch(0.66_0.15_188)] px-2.5 py-0.5 text-[10px] font-bold text-white shadow-lg">
+                ✦ AI
+              </span>
             ) : (
-              <span className="inline-flex items-center rounded-full bg-neutral-800/70 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm">{t('listings.badge.draft')}</span>
+              <span className="inline-flex items-center rounded-full bg-black/40 backdrop-blur-sm px-2 py-0.5 text-[10px] font-medium text-white/80 border border-white/10">
+                {t('listings.badge.draft')}
+              </span>
             )}
           </div>
         </div>
-        <div className="p-4 space-y-3">
+
+        <div className="p-4 space-y-2.5">
           <div>
-            <h3 className="font-semibold text-neutral-900 truncate text-sm leading-snug">{l.address}</h3>
-            <p className="text-xs text-neutral-500 mt-0.5">
+            <h3 className="font-bold truncate text-sm leading-snug">{l.address}</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
               {typeLabels[l.property_type]} · {l.city}
               {l.property_type === 'apartment' && l.floor != null ? ` · Piano ${l.floor}` : ''}
             </p>
           </div>
-          <div className="flex items-center gap-3 text-xs text-neutral-600">
-            <span className="flex items-center gap-1 font-medium">
-              <Euro className="h-3 w-3 text-neutral-400" />
-              {l.price.toLocaleString('it-IT')}
-            </span>
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
-              <Maximize2 className="h-3 w-3 text-neutral-400" />
+              <Maximize2 className="h-3 w-3" />
               {l.sqm} m²
             </span>
             <span className="flex items-center gap-1">
-              <Home className="h-3 w-3 text-neutral-400" />
+              <Home className="h-3 w-3" />
               {l.rooms} {t('common.rooms')}
             </span>
           </div>
-          <div className="flex items-center justify-between border-t border-neutral-100 pt-3">
-            <span className="flex items-center gap-1.5 text-xs text-neutral-500">
+          <div className="flex items-center justify-between border-t border-border pt-2.5">
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <User className="h-3 w-3" />
               {l.agent?.name ?? '—'}
             </span>
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{TONE_LABELS[l.tone]}</Badge>
-              <span className="text-[11px] text-neutral-400">{formatDate(l.created_at)}</span>
-            </div>
+            <span className="text-[11px] text-muted-foreground">{formatDate(l.created_at)}</span>
           </div>
         </div>
       </div>
@@ -426,24 +478,24 @@ function ListingRow({ listing: l, typeLabels, draftLabel }: { listing: Listing; 
   return (
     <Link
       href={`/listing/${l.id}`}
-      className="grid grid-cols-[1fr_100px_90px_90px_70px_90px] gap-2 items-center px-4 py-3 hover:bg-neutral-50 transition-colors group"
+      className="grid grid-cols-[1fr_100px_90px_90px_70px_90px] gap-2 items-center px-4 py-3 hover:bg-muted/40 transition-all duration-150 group"
     >
       <div className="min-w-0">
-        <p className="text-sm font-medium text-neutral-900 truncate group-hover:text-neutral-700">{l.address}</p>
-        <p className="text-xs text-neutral-400 truncate">{l.city}</p>
+        <p className="text-sm font-semibold truncate group-hover:text-[oklch(0.57_0.20_33)] transition-colors">{l.address}</p>
+        <p className="text-xs text-muted-foreground truncate">{l.city}</p>
       </div>
-      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium w-fit ${TYPE_COLORS[l.property_type] ?? 'bg-neutral-50 text-neutral-600 border-neutral-200'}`}>
+      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium w-fit ${TYPE_COLORS[l.property_type] ?? 'bg-muted text-muted-foreground border-border'}`}>
         {typeLabels[l.property_type]}
       </span>
-      <p className="text-xs font-medium text-neutral-800 text-right">€{l.price.toLocaleString('it-IT')}</p>
-      <p className="text-xs text-neutral-500 text-right">{l.sqm} m² · {l.rooms}</p>
+      <p className="text-xs font-semibold text-right">€{l.price.toLocaleString('it-IT')}</p>
+      <p className="text-xs text-muted-foreground text-right">{l.sqm} m² · {l.rooms}</p>
       <span>
         {l.generated_content
-          ? <span className="rounded-full bg-green-100 text-green-700 px-2 py-0.5 text-[10px] font-medium">AI</span>
-          : <span className="rounded-full bg-neutral-100 text-neutral-400 px-2 py-0.5 text-[10px] font-medium">{draftLabel}</span>
+          ? <span className="rounded-full bg-gradient-to-r from-[oklch(0.57_0.20_33/0.15)] to-[oklch(0.66_0.15_188/0.15)] text-[oklch(0.45_0.18_33)] px-2 py-0.5 text-[10px] font-semibold border border-[oklch(0.57_0.20_33/0.2)]">✦ AI</span>
+          : <span className="rounded-full bg-muted text-muted-foreground px-2 py-0.5 text-[10px] font-medium">{draftLabel}</span>
         }
       </span>
-      <p className="text-xs text-neutral-400">{formatDate(l.created_at)}</p>
+      <p className="text-xs text-muted-foreground">{formatDate(l.created_at)}</p>
     </Link>
   )
 }

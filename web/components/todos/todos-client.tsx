@@ -102,7 +102,7 @@ function QuickDatePicker({ value, onChange }: { value: string; onChange: (v: str
 
   return (
     <div className="flex items-center gap-1.5 flex-wrap">
-      <Calendar className="h-3.5 w-3.5 text-neutral-400 shrink-0" />
+      <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
       {presets.map(p => (
         <button
           key={p.label}
@@ -110,8 +110,8 @@ function QuickDatePicker({ value, onChange }: { value: string; onChange: (v: str
           onClick={() => handlePreset(p.value)}
           className={`rounded-md px-2 py-0.5 text-xs font-medium transition-colors border ${
             value === p.value
-              ? 'bg-neutral-900 text-white border-neutral-900'
-              : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-400'
+              ? 'bg-[oklch(0.57_0.20_33)] text-white border-[oklch(0.57_0.20_33)]'
+              : 'bg-card text-muted-foreground border-border hover:border-foreground/30'
           }`}
         >
           {p.label}
@@ -124,8 +124,8 @@ function QuickDatePicker({ value, onChange }: { value: string; onChange: (v: str
           onClick={handleCustomClick}
           className={`rounded-md px-2 py-0.5 text-xs font-medium transition-colors border ${
             value && !presets.find(p => p.value === value)
-              ? 'bg-neutral-900 text-white border-neutral-900'
-              : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-400'
+              ? 'bg-[oklch(0.57_0.20_33)] text-white border-[oklch(0.57_0.20_33)]'
+              : 'bg-card text-muted-foreground border-border hover:border-foreground/30'
           }`}
         >
           {value && !presets.find(p => p.value === value) ? fmtDate(value) : 'Altra data'}
@@ -144,7 +144,7 @@ function QuickDatePicker({ value, onChange }: { value: string; onChange: (v: str
         <button
           type="button"
           onClick={() => onChange('')}
-          className="rounded-full p-0.5 text-neutral-400 hover:text-neutral-700 transition-colors"
+          className="rounded-full p-0.5 text-muted-foreground hover:text-foreground transition-colors"
           title="Rimuovi data"
         >
           <X className="h-3 w-3" />
@@ -292,10 +292,10 @@ export function TodosClient({ initialTodos, currentUserId, members, memberMap }:
   return (
     <div className="max-w-2xl mx-auto space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between animate-in-1">
         <div>
-          <h1 className="text-xl font-semibold text-neutral-900">To Do</h1>
-          <p className="text-sm text-neutral-500 mt-0.5">
+          <h1 className="text-2xl font-extrabold tracking-tight">To Do</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
             {pending.length === 0
               ? 'Tutto completato 🎉'
               : `${pending.length} ${pending.length === 1 ? 'attività' : 'attività'} in sospeso`}
@@ -303,11 +303,11 @@ export function TodosClient({ initialTodos, currentUserId, members, memberMap }:
         </div>
         <button
           onClick={openAdd}
-          className="flex items-center gap-1.5 rounded-lg bg-neutral-900 px-3 py-2 text-sm font-medium text-white hover:bg-neutral-800 transition-colors"
+          className="btn-ai flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold"
         >
           <Plus className="h-4 w-4" />
           Aggiungi
-          <span className="ml-1 rounded bg-neutral-700 px-1 py-0.5 text-[10px] font-mono leading-none">N</span>
+          <span className="ml-1 rounded bg-white/20 px-1 py-0.5 text-[10px] font-mono leading-none">N</span>
         </button>
       </div>
 
@@ -315,7 +315,7 @@ export function TodosClient({ initialTodos, currentUserId, members, memberMap }:
       {showAdd && (
         <div
           ref={formRef}
-          className="rounded-xl border border-neutral-300 bg-white shadow-md overflow-hidden"
+          className="animate-in-2 rounded-2xl border border-border bg-card shadow-sm overflow-hidden"
         >
           {/* Title row */}
           <div className="px-4 pt-4 pb-2">
@@ -329,7 +329,7 @@ export function TodosClient({ initialTodos, currentUserId, members, memberMap }:
                 if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAdd() }
                 if (e.key === 'Escape') closeAdd()
               }}
-              className="w-full text-base font-medium text-neutral-900 placeholder:text-neutral-400 outline-none"
+              className="w-full text-base font-medium placeholder:text-muted-foreground outline-none bg-transparent"
             />
           </div>
 
@@ -341,15 +341,15 @@ export function TodosClient({ initialTodos, currentUserId, members, memberMap }:
               onChange={e => setNewNotes(e.target.value)}
               onKeyDown={e => { if (e.key === 'Escape') closeAdd() }}
               rows={2}
-              className="w-full text-sm text-neutral-600 placeholder:text-neutral-400 outline-none resize-none"
+              className="w-full text-sm text-muted-foreground placeholder:text-muted-foreground/60 outline-none resize-none bg-transparent"
             />
           </div>
 
           {/* Toolbar */}
-          <div className="border-t border-neutral-100 bg-neutral-50 px-4 py-2.5 space-y-2.5">
+          <div className="border-t border-border bg-muted/30 px-4 py-2.5 space-y-2.5">
             {/* Priority row */}
             <div className="flex items-center gap-1.5">
-              <Flag className="h-3.5 w-3.5 text-neutral-400 shrink-0" />
+              <Flag className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               <div className="flex gap-1">
                 {(['high', 'medium', 'low'] as const).map(p => {
                   const cfg = PRIORITY_CONFIG[p]
@@ -361,7 +361,7 @@ export function TodosClient({ initialTodos, currentUserId, members, memberMap }:
                       className={`rounded-md px-2 py-0.5 text-xs font-medium border transition-colors ${
                         newPriority === p
                           ? `${cfg.bg} ${cfg.color}`
-                          : 'bg-white text-neutral-500 border-neutral-200 hover:border-neutral-400'
+                          : 'bg-card text-muted-foreground border-border hover:border-foreground/30'
                       }`}
                     >
                       {cfg.label}
@@ -377,11 +377,11 @@ export function TodosClient({ initialTodos, currentUserId, members, memberMap }:
             {/* Assignee row */}
             {hasMultipleMembers && (
               <div className="flex items-center gap-1.5">
-                <User2 className="h-3.5 w-3.5 text-neutral-400 shrink-0" />
+                <User2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 <select
                   value={newAssignee}
                   onChange={e => setNewAssignee(e.target.value)}
-                  className="text-xs text-neutral-700 bg-transparent outline-none cursor-pointer"
+                  className="text-xs text-foreground bg-transparent outline-none cursor-pointer"
                 >
                   {members.map(m => (
                     <option key={m.id} value={m.id}>
@@ -394,17 +394,17 @@ export function TodosClient({ initialTodos, currentUserId, members, memberMap }:
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-2 border-t border-neutral-100 px-4 py-2.5">
+          <div className="flex justify-end gap-2 border-t border-border px-4 py-2.5">
             <button
               onClick={closeAdd}
-              className="rounded-lg px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 transition-colors"
+              className="rounded-lg px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted transition-colors"
             >
               Annulla
             </button>
             <button
               onClick={handleAdd}
               disabled={!newTitle.trim() || adding}
-              className="rounded-lg bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-40 transition-colors"
+              className="btn-ai rounded-xl px-4 py-1.5 text-sm font-semibold disabled:opacity-40"
             >
               Aggiungi
             </button>
@@ -414,15 +414,17 @@ export function TodosClient({ initialTodos, currentUserId, members, memberMap }:
 
       {/* Pending todos */}
       {sortedPending.length === 0 && !showAdd ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-neutral-200 bg-white py-16 text-center">
-          <CheckCircle2 className="h-10 w-10 text-neutral-200 mb-3" />
-          <p className="text-sm font-medium text-neutral-600">Nessun to do in sospeso</p>
-          <p className="text-xs text-neutral-400 mt-1">
-            Premi <kbd className="rounded border border-neutral-200 bg-neutral-100 px-1 py-0.5 font-mono text-[10px]">N</kbd> o clicca &ldquo;Aggiungi&rdquo;
+        <div className="mesh-bg flex flex-col items-center justify-center rounded-2xl border border-dashed border-border py-16 text-center">
+          <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[oklch(0.57_0.20_33/0.15)] to-[oklch(0.66_0.15_188/0.15)] ring-1 ring-[oklch(0.57_0.20_33/0.2)]">
+            <CheckCircle2 className="h-7 w-7 text-[oklch(0.57_0.20_33)]" />
+          </div>
+          <p className="text-sm font-semibold">Nessun to do in sospeso</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Premi <kbd className="rounded border border-border bg-muted px-1 py-0.5 font-mono text-[10px]">N</kbd> o clicca &ldquo;Aggiungi&rdquo;
           </p>
         </div>
       ) : (
-        <div className="divide-y divide-neutral-100 rounded-xl border border-neutral-200 bg-white overflow-hidden">
+        <div className="animate-in-3 divide-y divide-border rounded-2xl border border-border bg-card overflow-hidden">
           {sortedPending.map(todo => (
             <TodoRow
               key={todo.id}
@@ -441,13 +443,13 @@ export function TodosClient({ initialTodos, currentUserId, members, memberMap }:
         <div className="space-y-2">
           <button
             onClick={() => setShowCompleted(prev => !prev)}
-            className="flex items-center gap-1.5 text-xs font-medium text-neutral-400 hover:text-neutral-600 transition-colors uppercase tracking-wide"
+            className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors uppercase tracking-wide"
           >
             {showCompleted ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
             Completati ({completed.length})
           </button>
           {showCompleted && (
-            <div className="divide-y divide-neutral-100 rounded-xl border border-neutral-200 bg-white overflow-hidden">
+            <div className="divide-y divide-border rounded-2xl border border-border bg-card overflow-hidden">
               {completed.map(todo => (
                 <TodoRow
                   key={todo.id}
@@ -489,7 +491,7 @@ function TodoRow({
   const dateLabel = dueDateLabel(todo.due_date)
 
   return (
-    <div className={`flex items-start gap-3 px-4 py-3 group transition-colors ${todo.completed ? 'bg-neutral-50/50' : 'hover:bg-neutral-50/60'}`}>
+    <div className={`flex items-start gap-3 px-4 py-3 group transition-colors ${todo.completed ? 'bg-muted/20' : 'hover:bg-muted/40'}`}>
       {/* Checkbox */}
       <button
         onClick={() => onToggle(todo)}
@@ -497,18 +499,18 @@ function TodoRow({
         aria-label={todo.completed ? 'Segna come da fare' : 'Segna come completato'}
       >
         {todo.completed
-          ? <CheckCircle2 className="h-5 w-5 text-neutral-300" />
+          ? <CheckCircle2 className="h-5 w-5 text-muted-foreground/30" />
           : <Circle className={`h-5 w-5 ${pCfg.color} hover:scale-110 transition-transform`} />
         }
       </button>
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-medium leading-snug ${todo.completed ? 'line-through text-neutral-400' : 'text-neutral-900'}`}>
+        <p className={`text-sm font-medium leading-snug ${todo.completed ? 'line-through text-muted-foreground/40' : ''}`}>
           {todo.title}
         </p>
         {todo.notes && !todo.completed && (
-          <p className="text-xs text-neutral-500 mt-0.5 line-clamp-2">{todo.notes}</p>
+          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{todo.notes}</p>
         )}
         {!todo.completed && (
           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
@@ -524,7 +526,7 @@ function TodoRow({
                   ? 'bg-red-50 border-red-200 text-red-600'
                   : today
                     ? 'bg-amber-50 border-amber-200 text-amber-600'
-                    : 'bg-neutral-100 border-neutral-200 text-neutral-500'
+                    : 'bg-muted border-border text-muted-foreground'
               }`}>
                 <Calendar className="h-2.5 w-2.5" />
                 {overdue ? `Scaduto · ${dateLabel}` : dateLabel}
@@ -532,10 +534,10 @@ function TodoRow({
             )}
             {/* From / To */}
             {isFromSomeoneElse && (
-              <span className="text-[11px] text-blue-500 font-medium">Da {memberMap[todo.created_by] ?? 'collega'}</span>
+              <span className="text-[11px] text-[oklch(0.57_0.20_33)] font-medium">Da {memberMap[todo.created_by] ?? 'collega'}</span>
             )}
             {isSentByMe && (
-              <span className="text-[11px] text-neutral-400">→ {memberMap[todo.assigned_to] ?? 'collega'}</span>
+              <span className="text-[11px] text-muted-foreground">→ {memberMap[todo.assigned_to] ?? 'collega'}</span>
             )}
           </div>
         )}
@@ -544,7 +546,7 @@ function TodoRow({
       {/* Delete */}
       <button
         onClick={() => onDelete(todo.id)}
-        className="shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity text-neutral-300 hover:text-red-400"
+        className="shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground/30 hover:text-red-400"
         aria-label="Elimina"
       >
         <Trash2 className="h-4 w-4" />
