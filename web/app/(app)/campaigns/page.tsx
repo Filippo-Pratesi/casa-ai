@@ -43,7 +43,7 @@ export default async function CampaignsPage() {
   const campaigns = (data ?? []) as Campaign[]
 
   const statusConfig = {
-    draft: { label: t('campaigns.status.draft'), color: 'bg-neutral-100 text-neutral-600', icon: Clock },
+    draft: { label: t('campaigns.status.draft'), color: 'bg-muted text-muted-foreground', icon: Clock },
     sending: { label: t('campaigns.status.sending'), color: 'bg-blue-100 text-blue-700', icon: Send },
     sent: { label: t('campaigns.status.sent'), color: 'bg-green-100 text-green-700', icon: Send },
     failed: { label: t('campaigns.status.failed'), color: 'bg-red-100 text-red-700', icon: AlertCircle },

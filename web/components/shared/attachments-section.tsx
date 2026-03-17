@@ -28,10 +28,10 @@ function formatBytes(bytes: number | null): string {
 }
 
 function fileIcon(mime: string | null) {
-  if (!mime) return <FileText className="h-4 w-4 text-neutral-400" />
+  if (!mime) return <FileText className="h-4 w-4 text-muted-foreground" />
   if (mime.startsWith('image/')) return <FileText className="h-4 w-4 text-blue-400" />
   if (mime === 'application/pdf') return <FileText className="h-4 w-4 text-red-400" />
-  return <FileText className="h-4 w-4 text-neutral-400" />
+  return <FileText className="h-4 w-4 text-muted-foreground" />
 }
 
 export function AttachmentsSection({ entityId, apiBase, downloadBase, label = 'Allegati' }: AttachmentsSectionProps) {
@@ -117,17 +117,17 @@ export function AttachmentsSection({ entityId, apiBase, downloadBase, label = 'A
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Paperclip className="h-4 w-4 text-neutral-400" />
-          <h3 className="text-sm font-semibold text-neutral-700">{label}</h3>
+          <Paperclip className="h-4 w-4 text-muted-foreground" />
+          <h3 className="text-sm font-semibold">{label}</h3>
           {!loading && (
-            <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-500">{attachments.length}</span>
+            <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{attachments.length}</span>
           )}
         </div>
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
-          className="flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-60 transition-colors"
+          className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-60 transition-colors"
         >
           {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
           {uploading ? 'Caricamento…' : 'Carica file'}
@@ -144,25 +144,25 @@ export function AttachmentsSection({ entityId, apiBase, downloadBase, label = 'A
 
       {loading ? (
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-5 w-5 animate-spin text-neutral-300" />
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground/50" />
         </div>
       ) : attachments.length === 0 ? (
         <div
-          className="flex flex-col items-center justify-center rounded-xl border border-dashed border-neutral-200 py-8 text-center cursor-pointer hover:bg-neutral-50 transition-colors"
+          className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-8 text-center cursor-pointer hover:bg-muted/30 transition-colors"
           onClick={() => inputRef.current?.click()}
         >
-          <Paperclip className="h-6 w-6 text-neutral-300 mb-2" />
-          <p className="text-sm text-neutral-400">Nessun allegato</p>
-          <p className="text-xs text-neutral-300 mt-0.5">Clicca per caricare documenti, planimetrie, ecc.</p>
+          <Paperclip className="h-6 w-6 text-muted-foreground/50 mb-2" />
+          <p className="text-sm text-muted-foreground">Nessun allegato</p>
+          <p className="text-xs text-muted-foreground/50 mt-0.5">Clicca per caricare documenti, planimetrie, ecc.</p>
         </div>
       ) : (
-        <div className="divide-y divide-neutral-100 rounded-xl border border-neutral-100 bg-white overflow-hidden">
+        <div className="divide-y divide-border rounded-xl border border-border bg-card overflow-hidden">
           {attachments.map((att) => (
             <div key={att.id} className="flex items-center gap-3 px-3 py-2.5">
               {fileIcon(att.mime_type)}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-neutral-800 truncate">{att.name}</p>
-                <p className="text-[11px] text-neutral-400">
+                <p className="text-sm font-medium truncate">{att.name}</p>
+                <p className="text-[11px] text-muted-foreground">
                   {att.size_bytes ? formatBytes(att.size_bytes) + ' · ' : ''}
                   {new Date(att.created_at).toLocaleDateString('it-IT')}
                 </p>
@@ -171,7 +171,7 @@ export function AttachmentsSection({ entityId, apiBase, downloadBase, label = 'A
                 <button
                   type="button"
                   onClick={() => handleDownload(att)}
-                  className="rounded-lg p-1.5 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-50 transition-colors"
+                  className="rounded-lg p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                   title="Scarica"
                 >
                   <Download className="h-3.5 w-3.5" />
@@ -180,7 +180,7 @@ export function AttachmentsSection({ entityId, apiBase, downloadBase, label = 'A
                   type="button"
                   onClick={() => handleDelete(att)}
                   disabled={deletingId === att.id}
-                  className="rounded-lg p-1.5 text-neutral-300 hover:text-red-500 hover:bg-red-50 disabled:opacity-50 transition-colors"
+                  className="rounded-lg p-1.5 text-muted-foreground/50 hover:text-red-500 hover:bg-red-50 disabled:opacity-50 transition-colors"
                   title="Elimina"
                 >
                   {deletingId === att.id

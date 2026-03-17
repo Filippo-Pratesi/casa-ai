@@ -150,7 +150,7 @@ export function TeamCalendar({ agents }: { agents: TeamAgent[] }) {
       <div className="flex items-center gap-2 flex-wrap">
         <button
           onClick={toggleAll}
-          className="rounded-full px-3 py-1 text-xs font-medium border border-neutral-200 text-neutral-600 hover:bg-neutral-50 transition-colors"
+          className="rounded-full px-3 py-1 text-xs font-medium border border-border text-muted-foreground hover:bg-muted transition-colors"
         >
           {visibleAgents.size === agents.length ? 'Nascondi tutti' : 'Mostra tutti'}
         </button>
@@ -177,31 +177,31 @@ export function TeamCalendar({ agents }: { agents: TeamAgent[] }) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Calendar grid */}
         <div className="lg:col-span-2">
-          <div className="rounded-2xl border border-neutral-100 bg-white shadow-sm overflow-hidden">
+          <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
             {/* Month nav */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
-              <button onClick={prevMonth} className="rounded-lg p-1.5 hover:bg-neutral-100 transition-colors">
-                <ChevronLeft className="h-4 w-4 text-neutral-600" />
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+              <button onClick={prevMonth} className="rounded-lg p-1.5 hover:bg-muted transition-colors">
+                <ChevronLeft className="h-4 w-4 text-muted-foreground" />
               </button>
-              <h2 className="text-sm font-semibold text-neutral-900">
+              <h2 className="text-sm font-semibold">
                 {MONTH_NAMES[month]} {year}
               </h2>
-              <button onClick={nextMonth} className="rounded-lg p-1.5 hover:bg-neutral-100 transition-colors">
-                <ChevronRight className="h-4 w-4 text-neutral-600" />
+              <button onClick={nextMonth} className="rounded-lg p-1.5 hover:bg-muted transition-colors">
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </button>
             </div>
 
             {/* Day headers */}
-            <div className="grid grid-cols-7 border-b border-neutral-100">
+            <div className="grid grid-cols-7 border-b border-border">
               {DAY_NAMES.map(d => (
-                <div key={d} className="py-2 text-center text-xs font-medium text-neutral-400">{d}</div>
+                <div key={d} className="py-2 text-center text-xs font-medium text-muted-foreground">{d}</div>
               ))}
             </div>
 
             {/* Cells */}
             <div className="grid grid-cols-7">
               {days.map((day, i) => {
-                if (!day) return <div key={`pad-${i}`} className="min-h-[72px] border-b border-r border-neutral-50" />
+                if (!day) return <div key={`pad-${i}`} className="min-h-[72px] border-b border-r border-border/40" />
                 const key = day.toDateString()
                 const dayAppts = apptsByDay.get(key) ?? []
                 const isToday = isSameDay(day, today)
@@ -214,12 +214,12 @@ export function TeamCalendar({ agents }: { agents: TeamAgent[] }) {
                   <button
                     key={key}
                     onClick={() => setSelectedDay(day)}
-                    className={`min-h-[72px] border-b border-r border-neutral-50 p-2 text-left transition-colors hover:bg-neutral-50 ${
-                      isSelected ? 'bg-neutral-900 hover:bg-neutral-800' : ''
+                    className={`min-h-[72px] border-b border-r border-border/40 p-2 text-left transition-colors hover:bg-muted/30 ${
+                      isSelected ? 'bg-[oklch(0.57_0.20_33)] hover:opacity-90' : ''
                     }`}
                   >
                     <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${
-                      isSelected ? 'text-white' : isToday ? 'bg-neutral-900 text-white' : 'text-neutral-700'
+                      isSelected ? 'text-white' : isToday ? 'bg-[oklch(0.57_0.20_33)] text-white' : 'text-foreground'
                     }`}>
                       {day.getDate()}
                     </span>
@@ -234,7 +234,7 @@ export function TeamCalendar({ agents }: { agents: TeamAgent[] }) {
                             <span
                               key={agentId}
                               className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${
-                                isSelected ? 'bg-white/25 text-white' : palette ? palette.chip : 'bg-neutral-200 text-neutral-600'
+                                isSelected ? 'bg-white/25 text-white' : palette ? palette.chip : 'bg-muted text-muted-foreground'
                               }`}
                             >
                               {isSelected ? '' : getInitials(agents.find(a => a.id === agentId)?.name ?? '')}
@@ -243,7 +243,7 @@ export function TeamCalendar({ agents }: { agents: TeamAgent[] }) {
                           )
                         })}
                         {agentDots.length > 4 && (
-                          <span className={`text-[9px] ${isSelected ? 'text-white/60' : 'text-neutral-400'}`}>
+                          <span className={`text-[9px] ${isSelected ? 'text-white/60' : 'text-muted-foreground'}`}>
                             +{agentDots.length - 4}
                           </span>
                         )}
@@ -258,17 +258,17 @@ export function TeamCalendar({ agents }: { agents: TeamAgent[] }) {
 
         {/* Day panel */}
         <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-neutral-900 capitalize">
+          <h3 className="text-sm font-semibold capitalize">
             {formatDate(selectedDay.toISOString())}
           </h3>
 
           {loading ? (
-            <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-6 text-center">
-              <p className="text-sm text-neutral-400">Carico…</p>
+            <div className="rounded-xl border border-border bg-muted/30 p-6 text-center">
+              <p className="text-sm text-muted-foreground">Carico…</p>
             </div>
           ) : selectedDayAppts.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-neutral-200 bg-neutral-50 p-6 text-center">
-              <p className="text-sm text-neutral-400">Nessun appuntamento</p>
+            <div className="rounded-xl border border-dashed border-border bg-muted/30 p-6 text-center">
+              <p className="text-sm text-muted-foreground">Nessun appuntamento</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -278,10 +278,10 @@ export function TeamCalendar({ agents }: { agents: TeamAgent[] }) {
                 return (
                   <div
                     key={appt.id}
-                    className={`rounded-xl border px-3 py-2.5 ${palette?.light ?? 'bg-neutral-50 border-neutral-200 text-neutral-900'}`}
+                    className={`rounded-xl border px-3 py-2.5 ${palette?.light ?? 'bg-muted/50 border-border'}`}
                   >
                     <div className="flex items-start gap-2">
-                      <span className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white ${palette?.bg ?? 'bg-neutral-400'}`}>
+                      <span className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white ${palette?.bg ?? 'bg-muted-foreground'}`}>
                         {getInitials(agent?.name ?? '?')}
                       </span>
                       <div className="flex-1 min-w-0">

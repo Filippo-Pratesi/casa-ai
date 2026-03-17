@@ -20,8 +20,8 @@ const TYPE_COLORS: Record<string, string> = {
   villa: 'bg-purple-50 text-purple-700 border-purple-100',
   commercial: 'bg-orange-50 text-orange-700 border-orange-100',
   land: 'bg-amber-50 text-amber-700 border-amber-100',
-  garage: 'bg-neutral-50 text-neutral-600 border-neutral-200',
-  other: 'bg-neutral-50 text-neutral-600 border-neutral-200',
+  garage: 'bg-muted text-muted-foreground border-border',
+  other: 'bg-muted text-muted-foreground border-border',
 }
 
 const TYPE_ACTIVE: Record<string, string> = {
@@ -30,8 +30,8 @@ const TYPE_ACTIVE: Record<string, string> = {
   villa: 'bg-purple-600 text-white border-purple-600',
   commercial: 'bg-orange-600 text-white border-orange-600',
   land: 'bg-amber-500 text-white border-amber-500',
-  garage: 'bg-neutral-700 text-white border-neutral-700',
-  other: 'bg-neutral-700 text-white border-neutral-700',
+  garage: 'bg-[oklch(0.57_0.20_33)] text-white border-[oklch(0.57_0.20_33)]',
+  other: 'bg-[oklch(0.57_0.20_33)] text-white border-[oklch(0.57_0.20_33)]',
 }
 
 interface Listing {
@@ -284,19 +284,19 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
                 <button
                   key={key}
                   onClick={() => toggleType(key)}
-                  className={`rounded-full border px-3 py-1 text-xs font-medium transition-all duration-150 ${active ? TYPE_ACTIVE[key] : (TYPE_COLORS[key] ?? 'bg-neutral-50 text-neutral-600 border-neutral-200') + ' hover:opacity-80'}`}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium transition-all duration-150 ${active ? TYPE_ACTIVE[key] : (TYPE_COLORS[key] ?? 'bg-muted text-muted-foreground border-border') + ' hover:opacity-80'}`}
                 >
                   {label}
                 </button>
               )
             })}
             {/* Content status filter */}
-            <div className="ml-auto flex rounded-lg border border-neutral-200 bg-neutral-50 overflow-hidden text-xs">
+            <div className="ml-auto flex rounded-lg border border-border bg-card overflow-hidden text-xs">
               {([['all', t('listings.filter.all')], ['generated', t('listings.filter.withAI')], ['draft', t('listings.filter.drafts')]] as [typeof contentFilter, string][]).map(([val, label]) => (
                 <button
                   key={val}
                   onClick={() => setContentFilter(val)}
-                  className={`px-2.5 py-1 font-medium transition-colors ${contentFilter === val ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-100'}`}
+                  className={`px-2.5 py-1 font-medium transition-colors ${contentFilter === val ? 'bg-[oklch(0.57_0.20_33)] text-white' : 'text-muted-foreground hover:bg-muted'}`}
                 >
                   {label}
                 </button>
@@ -307,28 +307,28 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
           {/* Search + price */}
           <div className="flex flex-wrap gap-2">
             <div className="relative flex-1 min-w-[180px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400 pointer-events-none" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
               <input
                 value={citySearch}
                 onChange={e => setCitySearch(e.target.value)}
                 placeholder={t('listings.filter.searchPlaceholder')}
-                className="w-full rounded-lg border border-neutral-200 pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-300 text-neutral-900 placeholder-neutral-400"
+                className="w-full rounded-lg border border-border bg-background pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.3)] text-foreground placeholder:text-muted-foreground"
               />
             </div>
             <div className="relative min-w-[160px]">
-              <Euro className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400 pointer-events-none" />
+              <Euro className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
               <input
                 type="number"
                 value={priceMax}
                 onChange={e => setPriceMax(e.target.value)}
                 placeholder={t('listings.filter.priceMax')}
-                className="w-full rounded-lg border border-neutral-200 pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-300 text-neutral-900 placeholder-neutral-400"
+                className="w-full rounded-lg border border-border bg-background pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.3)] text-foreground placeholder:text-muted-foreground"
               />
             </div>
             {hasFilters && (
               <button
                 onClick={clearFilters}
-                className="flex items-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-2 text-xs text-neutral-500 hover:bg-neutral-50 transition-colors"
+                className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-xs text-muted-foreground hover:bg-muted transition-colors"
               >
                 <X className="h-3.5 w-3.5" />
                 {t('listings.filter.clear')}
@@ -372,18 +372,18 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
         /* List view */
         <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden animate-in-4">
           <div className="grid grid-cols-[1fr_100px_90px_90px_70px_90px] gap-2 px-4 py-2 border-b border-border bg-muted/50">
-            <button onClick={() => handleSort('address')} className="flex items-center gap-1 text-xs font-semibold text-neutral-400 uppercase tracking-wider hover:text-neutral-700 transition-colors">
+            <button onClick={() => handleSort('address')} className="flex items-center gap-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors">
               {t('listings.col.property')}<SortIcon col="address" />
             </button>
-            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">{t('listings.col.type')}</p>
-            <button onClick={() => handleSort('price')} className="flex items-center justify-end gap-1 text-xs font-semibold text-neutral-400 uppercase tracking-wider hover:text-neutral-700 transition-colors w-full">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('listings.col.type')}</p>
+            <button onClick={() => handleSort('price')} className="flex items-center justify-end gap-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors w-full">
               {t('listings.col.price')}<SortIcon col="price" />
             </button>
-            <button onClick={() => handleSort('sqm')} className="flex items-center justify-end gap-1 text-xs font-semibold text-neutral-400 uppercase tracking-wider hover:text-neutral-700 transition-colors w-full">
+            <button onClick={() => handleSort('sqm')} className="flex items-center justify-end gap-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors w-full">
               {t('listings.col.sqmRooms')}<SortIcon col="sqm" />
             </button>
-            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">{t('listings.col.ai')}</p>
-            <button onClick={() => handleSort('date')} className="flex items-center gap-1 text-xs font-semibold text-neutral-400 uppercase tracking-wider hover:text-neutral-700 transition-colors">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('listings.col.ai')}</p>
+            <button onClick={() => handleSort('date')} className="flex items-center gap-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors">
               {t('listings.col.date')}<SortIcon col="date" />
             </button>
           </div>

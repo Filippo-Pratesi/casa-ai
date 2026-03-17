@@ -67,7 +67,7 @@ export default async function ListingHistoryPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Storico annunci</h1>
-          <p className="text-neutral-500 text-sm mt-0.5">
+          <p className="text-muted-foreground text-sm mt-0.5">
             {isAdmin ? 'Tutti gli annunci del workspace' : `${items.length} annunci`}
           </p>
         </div>
@@ -78,12 +78,12 @@ export default async function ListingHistoryPage() {
       </div>
 
       {items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 py-20 text-center">
-          <div className="mb-4 rounded-full bg-neutral-100 p-4">
-            <FileText className="h-8 w-8 text-neutral-400" />
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/30 py-20 text-center">
+          <div className="mb-4 rounded-full bg-muted p-4">
+            <FileText className="h-8 w-8 text-muted-foreground" />
           </div>
-          <h2 className="text-base font-semibold text-neutral-800">Nessun annuncio ancora</h2>
-          <p className="mt-1 text-sm text-neutral-500 max-w-xs">
+          <h2 className="text-base font-semibold text-foreground">Nessun annuncio ancora</h2>
+          <p className="mt-1 text-sm text-muted-foreground max-w-xs">
             Crea il primo annuncio e genera descrizioni, post social e molto altro in pochi secondi.
           </p>
           <Button nativeButton={false} render={<Link href="/listing/new" />} className="mt-6 gap-2">
@@ -100,9 +100,9 @@ export default async function ListingHistoryPage() {
 
             return (
               <Link key={listing.id} href={`/listing/${listing.id}`} className="group block">
-                <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5">
+                <div className="overflow-hidden rounded-2xl border border-border bg-card transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5">
                   {/* Photo / placeholder */}
-                  <div className="relative h-44 w-full bg-neutral-100">
+                  <div className="relative h-44 w-full bg-muted">
                     {thumb ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -112,7 +112,7 @@ export default async function ListingHistoryPage() {
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center">
-                        <Home className="h-10 w-10 text-neutral-300" />
+                        <Home className="h-10 w-10 text-muted-foreground/50" />
                       </div>
                     )}
                     <div className="absolute top-2.5 right-2.5">
@@ -121,7 +121,7 @@ export default async function ListingHistoryPage() {
                           Generato
                         </span>
                       ) : (
-                        <span className="inline-flex items-center rounded-full bg-neutral-800/70 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
+                        <span className="inline-flex items-center rounded-full bg-foreground/60 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
                           Bozza
                         </span>
                       )}
@@ -131,10 +131,10 @@ export default async function ListingHistoryPage() {
                   {/* Content */}
                   <div className="p-4 space-y-3">
                     <div>
-                      <h3 className="font-semibold text-neutral-900 truncate text-sm leading-snug">
+                      <h3 className="font-semibold text-foreground truncate text-sm leading-snug">
                         {listing.address}
                       </h3>
-                      <p className="text-xs text-neutral-500 mt-0.5">
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         {TYPE_LABELS[listing.property_type]} · {listing.city}
                         {listing.property_type === 'apartment' && listing.floor != null
                           ? ` · Piano ${listing.floor}`
@@ -142,23 +142,23 @@ export default async function ListingHistoryPage() {
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-3 text-xs text-neutral-600">
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1 font-medium">
-                        <Euro className="h-3 w-3 text-neutral-400" />
+                        <Euro className="h-3 w-3 text-muted-foreground" />
                         {listing.price.toLocaleString('it-IT')}
                       </span>
                       <span className="flex items-center gap-1">
-                        <Maximize2 className="h-3 w-3 text-neutral-400" />
+                        <Maximize2 className="h-3 w-3 text-muted-foreground" />
                         {listing.sqm} m²
                       </span>
                       <span className="flex items-center gap-1">
-                        <Home className="h-3 w-3 text-neutral-400" />
+                        <Home className="h-3 w-3 text-muted-foreground" />
                         {listing.rooms} loc.
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between border-t border-neutral-100 pt-3">
-                      <span className="flex items-center gap-1.5 text-xs text-neutral-500">
+                    <div className="flex items-center justify-between border-t border-border pt-3">
+                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <User className="h-3 w-3" />
                         {listing.agent?.name ?? '—'}
                       </span>
@@ -166,7 +166,7 @@ export default async function ListingHistoryPage() {
                         <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                           {TONE_LABELS[listing.tone]}
                         </Badge>
-                        <span className="text-[11px] text-neutral-400">
+                        <span className="text-[11px] text-muted-foreground">
                           {formatDate(listing.created_at)}
                         </span>
                       </div>

@@ -63,21 +63,21 @@ export function PrivacyConsentSection({
   }
 
   return (
-    <div className={`rounded-xl border px-4 py-4 space-y-3 ${consent ? 'border-green-100 bg-green-50' : 'border-neutral-100 bg-neutral-50'}`}>
+    <div className={`rounded-xl border px-4 py-4 space-y-3 ${consent ? 'border-green-100 bg-green-50' : 'border-border bg-muted/30'}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2.5">
           {consent
             ? <ShieldCheck className="h-5 w-5 text-green-600 shrink-0" />
-            : <ShieldX className="h-5 w-5 text-neutral-400 shrink-0" />
+            : <ShieldX className="h-5 w-5 text-muted-foreground shrink-0" />
           }
           <div>
-            <p className="text-sm font-semibold text-neutral-800">Consenso al trattamento dati</p>
+            <p className="text-sm font-semibold">Consenso al trattamento dati</p>
             {consent && consentDate ? (
               <p className="text-xs text-green-600 mt-0.5">
                 Registrato il {new Date(consentDate).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' })}
               </p>
             ) : (
-              <p className="text-xs text-neutral-400 mt-0.5">Nessun consenso registrato</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Nessun consenso registrato</p>
             )}
           </div>
         </div>
@@ -87,7 +87,7 @@ export function PrivacyConsentSection({
             type="button"
             onClick={downloadForm}
             disabled={downloading}
-            className="flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50 disabled:opacity-60 transition-colors"
+            className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted disabled:opacity-60 transition-colors"
             title="Stampa modulo privacy"
           >
             {downloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5" />}
@@ -99,7 +99,7 @@ export function PrivacyConsentSection({
             disabled={updating}
             className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors disabled:opacity-60 ${
               consent
-                ? 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                ? 'bg-muted text-muted-foreground hover:bg-muted/80'
                 : 'bg-green-600 text-white hover:bg-green-700'
             }`}
           >
@@ -109,7 +109,7 @@ export function PrivacyConsentSection({
         </div>
       </div>
 
-      <p className="text-[11px] text-neutral-400 leading-relaxed">
+      <p className="text-[11px] text-muted-foreground leading-relaxed">
         Ai sensi del GDPR (Reg. UE 2016/679) — Il consenso viene registrato con data e ora.
         Stampa il modulo per la firma fisica del cliente.
       </p>

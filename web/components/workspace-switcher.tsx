@@ -38,29 +38,29 @@ export function WorkspaceSwitcher({ workspaces, activeWorkspaceId, groupName }: 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="flex w-full items-center gap-2.5 rounded-md px-2 py-2 hover:bg-neutral-100 transition-colors text-left"
+        className="flex w-full items-center gap-2.5 rounded-md px-2 py-2 hover:bg-muted transition-colors text-left"
         disabled={loading}
         render={<button />}
       >
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-neutral-900 text-white text-xs font-bold">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[oklch(0.57_0.20_33)] text-white text-xs font-bold">
             {active?.name.slice(0, 2).toUpperCase() ?? 'CA'}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-neutral-900 leading-tight truncate">{active?.name}</p>
-            <p className="text-[11px] text-neutral-400 truncate leading-tight">{groupName}</p>
+            <p className="text-sm font-semibold text-foreground leading-tight truncate">{active?.name}</p>
+            <p className="text-[11px] text-muted-foreground truncate leading-tight">{groupName}</p>
           </div>
-          <ChevronsUpDown className="h-3.5 w-3.5 text-neutral-400 shrink-0" />
+          <ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56">
         <div className="px-2 py-1.5">
-          <p className="text-[10px] text-neutral-400 uppercase tracking-wider font-medium">{groupName}</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">{groupName}</p>
         </div>
         <DropdownMenuSeparator />
         {workspaces.map((ws) => (
           <DropdownMenuItem key={ws.id} onClick={() => switchTo(ws.id)} className="gap-2">
-            <Building2 className="h-3.5 w-3.5 text-neutral-400 shrink-0" />
+            <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
             <span className="flex-1 truncate">{ws.name}</span>
-            {ws.id === activeWorkspaceId && <Check className="h-3.5 w-3.5 text-neutral-700 shrink-0" />}
+            {ws.id === activeWorkspaceId && <Check className="h-3.5 w-3.5 text-foreground shrink-0" />}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
 
 interface DeleteListingButtonProps {
   listingId: string
@@ -42,15 +41,13 @@ export function DeleteListingButton({ listingId, address }: DeleteListingButtonP
 
   if (!confirming) {
     return (
-      <Button
-        variant="ghost"
-        size="sm"
+      <button
         onClick={() => setConfirming(true)}
-        className="h-8 gap-1.5 text-xs text-neutral-400 hover:text-red-600 hover:bg-red-50"
+        className="flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors"
       >
         <Trash2 className="h-3.5 w-3.5" />
         Elimina
-      </Button>
+      </button>
     )
   }
 
@@ -67,7 +64,7 @@ export function DeleteListingButton({ listingId, address }: DeleteListingButtonP
       <button
         onClick={() => setConfirming(false)}
         disabled={loading}
-        className="rounded-md px-2.5 py-1 text-xs font-medium text-neutral-600 hover:bg-neutral-100 transition-colors"
+        className="rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
       >
         Annulla
       </button>

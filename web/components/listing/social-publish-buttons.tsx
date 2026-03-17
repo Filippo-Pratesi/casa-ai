@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Instagram, Facebook, CheckCircle2, Loader2, AlertCircle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 
 interface SocialPublishButtonsProps {
   listingId: string
@@ -70,28 +69,28 @@ export function SocialPublishButtons({
 
         if (!connected) {
           return (
-            <Button
+            <button
               key={key}
-              variant="outline"
-              size="sm"
               onClick={() => (window.location.href = '/settings')}
-              className="gap-1.5 text-neutral-500"
+              className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-4 py-2 text-sm text-muted-foreground hover:bg-muted/50 transition-colors"
             >
               <Icon className="h-3.5 w-3.5" />
               Connetti {label}
-            </Button>
+            </button>
           )
         }
 
         return (
-          <Button
+          <button
             key={key}
-            variant={status === 'published' ? 'secondary' : 'outline'}
-            size="sm"
             disabled={disabled || noPhotosWarning}
             onClick={() => publish(key)}
             title={noPhotosWarning ? 'Instagram richiede almeno una foto' : undefined}
-            className="gap-1.5"
+            className={`flex items-center gap-1.5 rounded-xl border px-4 py-2 text-sm transition-colors disabled:opacity-60 ${
+              status === 'published'
+                ? 'border-border bg-muted text-muted-foreground'
+                : 'border-border bg-card text-foreground hover:bg-muted/50'
+            }`}
           >
             {status === 'loading' ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -109,7 +108,7 @@ export function SocialPublishButtons({
               : status === 'failed'
               ? 'Riprova'
               : `Pubblica su ${label}`}
-          </Button>
+          </button>
         )
       })}
     </div>

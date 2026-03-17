@@ -45,7 +45,7 @@ export default async function ProfilePage() {
     <div className="max-w-2xl mx-auto space-y-6 pb-12">
       <div>
         <h1 className="text-2xl font-bold">Il mio profilo</h1>
-        <p className="text-neutral-500 text-sm mt-1">
+        <p className="text-muted-foreground text-sm mt-1">
           {ROLE_LABELS[profile.role] ?? profile.role} · Nel team dal {joinedDate}
         </p>
       </div>

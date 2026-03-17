@@ -35,17 +35,17 @@ export function AppHeader() {
   const crumbs = getBreadcrumbs(pathname)
 
   return (
-    <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b border-neutral-100 bg-white/90 backdrop-blur-md px-5 shadow-[0_1px_0_0_rgba(0,0,0,0.04)]">
-      <SidebarTrigger className="h-8 w-8 shrink-0 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-all duration-150" />
-      <div className="h-5 w-px bg-neutral-200" />
+    <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b border-border bg-card/90 backdrop-blur-md px-5 shadow-[0_1px_0_0_rgba(0,0,0,0.04)]">
+      <SidebarTrigger className="h-8 w-8 shrink-0 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-150" />
+      <div className="h-5 w-px bg-border" />
       <nav className="flex items-center gap-1 text-sm">
         {crumbs.map((crumb, i) => (
           <span key={crumb.href} className="flex items-center gap-1">
-            {i > 0 && <ChevronRight className="h-3.5 w-3.5 text-neutral-300" />}
+            {i > 0 && <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40" />}
             {i === crumbs.length - 1 ? (
-              <span className="font-medium text-neutral-800">{crumb.label}</span>
+              <span className="font-medium">{crumb.label}</span>
             ) : (
-              <Link href={crumb.href} className="text-neutral-400 hover:text-neutral-700 transition-colors">
+              <Link href={crumb.href} className="text-muted-foreground hover:text-foreground transition-colors">
                 {crumb.label}
               </Link>
             )}

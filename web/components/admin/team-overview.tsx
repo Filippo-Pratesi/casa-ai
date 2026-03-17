@@ -63,9 +63,9 @@ function getPresetRange(preset: Preset): { from: string; to: string } {
 
 function medalColor(rank: number) {
   if (rank === 1) return 'text-amber-500'
-  if (rank === 2) return 'text-neutral-400'
+  if (rank === 2) return 'text-muted-foreground'
   if (rank === 3) return 'text-amber-700'
-  return 'text-neutral-300'
+  return 'text-muted-foreground/50'
 }
 
 function medalBg(rank: number) {

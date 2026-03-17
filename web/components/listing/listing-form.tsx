@@ -334,8 +334,8 @@ export function ListingForm() {
                 className={`
                   rounded-full border px-4 py-1.5 text-sm font-medium transition-all
                   ${form.condition === c.value
-                    ? 'border-neutral-900 bg-neutral-900 text-white'
-                    : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400 hover:bg-neutral-50'}
+                    ? 'border-[oklch(0.57_0.20_33)] bg-[oklch(0.57_0.20_33)] text-white'
+                    : 'border-border bg-card text-foreground hover:border-muted-foreground/50 hover:bg-muted'}
                 `}
               >
                 {c.label}

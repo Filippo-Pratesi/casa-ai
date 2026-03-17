@@ -59,7 +59,7 @@ export default async function MlsDetailPage({ params }: { params: Promise<{ id: 
         <Button nativeButton={false} render={<Link href="/mls" />} variant="ghost" size="icon" className="h-8 w-8 shrink-0">
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <span className="text-sm text-neutral-500">MLS — Rete annunci</span>
+        <span className="text-sm text-muted-foreground">MLS — Rete annunci</span>
       </div>
 
       {/* Agency banner */}
@@ -79,67 +79,67 @@ export default async function MlsDetailPage({ params }: { params: Promise<{ id: 
           ))}
         </div>
       ) : (
-        <div className="flex h-44 items-center justify-center rounded-2xl bg-neutral-100">
-          <Home className="h-10 w-10 text-neutral-300" />
+        <div className="flex h-44 items-center justify-center rounded-2xl bg-muted">
+          <Home className="h-10 w-10 text-muted-foreground/50" />
         </div>
       )}
 
       {/* Title */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{l.address}</h1>
-        <p className="mt-1 text-neutral-500">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">{l.address}</h1>
+        <p className="mt-1 text-muted-foreground">
           {PROPERTY_TYPE_LABELS[l.property_type]} · {l.city}
           {l.neighborhood ? `, ${l.neighborhood}` : ''}
         </p>
       </div>
 
       {/* Price */}
-      <div className="rounded-2xl bg-neutral-900 px-6 py-4 text-white">
-        <p className="text-xs text-neutral-400 uppercase tracking-wider mb-1">Prezzo</p>
+      <div className="rounded-2xl bg-[oklch(0.57_0.20_33)] px-6 py-4 text-white">
+        <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Prezzo</p>
         <p className="text-3xl font-bold">€{l.price.toLocaleString('it-IT')}</p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-4 text-center">
-          <Maximize2 className="h-4 w-4 text-neutral-400 mx-auto mb-1.5" />
-          <p className="text-xl font-semibold text-neutral-900">{l.sqm}</p>
-          <p className="text-xs text-neutral-500 mt-0.5">m²</p>
+        <div className="rounded-xl border border-border bg-muted/30 p-4 text-center">
+          <Maximize2 className="h-4 w-4 text-muted-foreground mx-auto mb-1.5" />
+          <p className="text-xl font-semibold text-foreground">{l.sqm}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">m²</p>
         </div>
-        <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-4 text-center">
-          <Home className="h-4 w-4 text-neutral-400 mx-auto mb-1.5" />
-          <p className="text-xl font-semibold text-neutral-900">{l.rooms}</p>
-          <p className="text-xs text-neutral-500 mt-0.5">Locali</p>
+        <div className="rounded-xl border border-border bg-muted/30 p-4 text-center">
+          <Home className="h-4 w-4 text-muted-foreground mx-auto mb-1.5" />
+          <p className="text-xl font-semibold text-foreground">{l.rooms}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Locali</p>
         </div>
-        <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-4 text-center">
-          <Bath className="h-4 w-4 text-neutral-400 mx-auto mb-1.5" />
-          <p className="text-xl font-semibold text-neutral-900">{l.bathrooms}</p>
-          <p className="text-xs text-neutral-500 mt-0.5">Bagni</p>
+        <div className="rounded-xl border border-border bg-muted/30 p-4 text-center">
+          <Bath className="h-4 w-4 text-muted-foreground mx-auto mb-1.5" />
+          <p className="text-xl font-semibold text-foreground">{l.bathrooms}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Bagni</p>
         </div>
         {l.floor != null && (
-          <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-4 text-center">
-            <Layers className="h-4 w-4 text-neutral-400 mx-auto mb-1.5" />
-            <p className="text-xl font-semibold text-neutral-900">{l.floor}</p>
-            <p className="text-xs text-neutral-500 mt-0.5">Piano{l.total_floors ? ` / ${l.total_floors}` : ''}</p>
+          <div className="rounded-xl border border-border bg-muted/30 p-4 text-center">
+            <Layers className="h-4 w-4 text-muted-foreground mx-auto mb-1.5" />
+            <p className="text-xl font-semibold text-foreground">{l.floor}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Piano{l.total_floors ? ` / ${l.total_floors}` : ''}</p>
           </div>
         )}
       </div>
 
       {/* Notes */}
       {l.notes && (
-        <div className="rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-3">
-          <p className="text-xs text-neutral-500 uppercase tracking-wider mb-1">Note</p>
-          <p className="text-sm text-neutral-700">{l.notes}</p>
+        <div className="rounded-xl border border-border bg-muted/30 px-4 py-3">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Note</p>
+          <p className="text-sm text-foreground">{l.notes}</p>
         </div>
       )}
 
       {/* Contact agency CTA */}
-      <div className="rounded-2xl border border-neutral-100 bg-neutral-50 px-5 py-4 space-y-3">
-        <p className="text-sm font-semibold text-neutral-900">Contatta l&apos;agenzia</p>
-        <p className="text-sm text-neutral-500">Per maggiori informazioni su questo immobile, contatta {l.workspaces.name}.</p>
+      <div className="rounded-2xl border border-border bg-muted/30 px-5 py-4 space-y-3">
+        <p className="text-sm font-semibold text-foreground">Contatta l&apos;agenzia</p>
+        <p className="text-sm text-muted-foreground">Per maggiori informazioni su questo immobile, contatta {l.workspaces.name}.</p>
         <a
           href={`mailto:info@casaai.it?subject=Richiesta info MLS: ${l.address}, ${l.city}`}
-          className="inline-flex items-center gap-2 rounded-lg bg-neutral-900 text-white px-4 py-2 text-sm font-medium hover:bg-neutral-700 transition-colors"
+          className="inline-flex items-center gap-2 rounded-lg bg-[oklch(0.57_0.20_33)] text-white px-4 py-2 text-sm font-medium hover:opacity-90 transition-colors"
         >
           <Phone className="h-4 w-4" />
           Contatta agenzia

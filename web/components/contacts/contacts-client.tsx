@@ -21,7 +21,7 @@ const TYPE_COLORS: Record<string, string> = {
   seller: 'bg-green-50 text-green-700 border-green-100',
   renter: 'bg-purple-50 text-purple-700 border-purple-100',
   landlord: 'bg-amber-50 text-amber-700 border-amber-100',
-  other: 'bg-neutral-50 text-neutral-700 border-neutral-200',
+  other: 'bg-muted text-muted-foreground border-border',
 }
 
 const TYPE_ACTIVE_COLORS: Record<string, string> = {
@@ -29,7 +29,7 @@ const TYPE_ACTIVE_COLORS: Record<string, string> = {
   seller: 'bg-green-600 text-white border-green-600',
   renter: 'bg-purple-600 text-white border-purple-600',
   landlord: 'bg-amber-500 text-white border-amber-500',
-  other: 'bg-neutral-700 text-white border-neutral-700',
+  other: 'bg-[oklch(0.57_0.20_33)] text-white border-[oklch(0.57_0.20_33)]',
 }
 
 interface Contact {

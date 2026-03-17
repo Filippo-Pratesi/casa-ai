@@ -33,7 +33,7 @@ const TYPE_COLORS: Record<string, string> = {
   seller: 'bg-green-50 text-green-700 border-green-100',
   renter: 'bg-purple-50 text-purple-700 border-purple-100',
   landlord: 'bg-amber-50 text-amber-700 border-amber-100',
-  other: 'bg-neutral-50 text-neutral-700 border-neutral-200',
+  other: 'bg-muted/30 text-foreground border-border',
 }
 
 const PROPERTY_TYPE_LABELS: Record<string, string> = {
@@ -160,7 +160,7 @@ export default async function ContactDetailPage({
           <Button nativeButton={false} render={<Link href="/contacts" />} variant="ghost" size="icon" className="h-8 w-8 shrink-0">
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <span className="text-sm text-neutral-500">Clienti</span>
+          <span className="text-sm text-muted-foreground">Clienti</span>
         </div>
         <div className="flex items-center gap-2">
           <Button nativeButton={false} render={<Link href={`/contacts/${id}/edit`} />} variant="outline" size="sm" className="h-8 text-xs">
@@ -173,8 +173,8 @@ export default async function ContactDetailPage({
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{contact.name}</h1>
-          <p className="mt-1 text-neutral-500 text-sm">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">{contact.name}</h1>
+          <p className="mt-1 text-muted-foreground text-sm">
             Aggiunto il {new Date(contact.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' })}
             {agentName ? ` · da ${agentName}` : ''}
           </p>
@@ -185,41 +185,41 @@ export default async function ContactDetailPage({
       </div>
 
       {/* Contact info */}
-      <div className="rounded-2xl border border-neutral-100 bg-neutral-50 px-5 py-4 space-y-2.5">
+      <div className="rounded-2xl border border-border bg-muted/30 px-5 py-4 space-y-2.5">
         {contact.phone && (
           <div className="flex items-center gap-3">
-            <Phone className="h-4 w-4 text-neutral-400 shrink-0" />
-            <a href={`tel:${contact.phone}`} className="text-sm text-neutral-700 hover:text-neutral-900 transition-colors">
+            <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
+            <a href={`tel:${contact.phone}`} className="text-sm text-foreground hover:text-foreground transition-colors">
               {contact.phone}
             </a>
           </div>
         )}
         {contact.email && (
           <div className="flex items-center gap-3">
-            <Mail className="h-4 w-4 text-neutral-400 shrink-0" />
-            <a href={`mailto:${contact.email}`} className="text-sm text-neutral-700 hover:text-neutral-900 transition-colors">
+            <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+            <a href={`mailto:${contact.email}`} className="text-sm text-foreground hover:text-foreground transition-colors">
               {contact.email}
             </a>
           </div>
         )}
         {(contact.city_of_residence || contact.address_of_residence) && (
           <div className="flex items-center gap-3">
-            <Building2 className="h-4 w-4 text-neutral-400 shrink-0" />
-            <span className="text-sm text-neutral-700">
+            <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="text-sm text-foreground">
               {[contact.address_of_residence, contact.city_of_residence].filter(Boolean).join(', ')}
             </span>
           </div>
         )}
         {!contact.phone && !contact.email && !contact.city_of_residence && (
-          <p className="text-sm text-neutral-400">Nessun recapito inserito</p>
+          <p className="text-sm text-muted-foreground">Nessun recapito inserito</p>
         )}
       </div>
 
       {/* Notes */}
       {contact.notes && (
-        <div className="rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-3">
-          <p className="text-xs text-neutral-500 uppercase tracking-wider mb-1">Note</p>
-          <p className="text-sm text-neutral-700">{contact.notes}</p>
+        <div className="rounded-xl border border-border bg-muted/30 px-4 py-3">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Note</p>
+          <p className="text-sm text-foreground">{contact.notes}</p>
         </div>
       )}
 
@@ -235,39 +235,39 @@ export default async function ContactDetailPage({
       {/* Buyer preferences */}
       {hasPreferences && (
         <div className="space-y-4">
-          <h2 className="text-base font-semibold text-neutral-900">Preferenze ricerca</h2>
+          <h2 className="text-base font-semibold text-foreground">Preferenze ricerca</h2>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {(contact.budget_min || contact.budget_max) && (
-              <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-4 text-center">
-                <Euro className="h-4 w-4 text-neutral-400 mx-auto mb-1.5" />
-                <p className="text-sm font-semibold text-neutral-900">
+              <div className="rounded-xl border border-border bg-muted/30 p-4 text-center">
+                <Euro className="h-4 w-4 text-muted-foreground mx-auto mb-1.5" />
+                <p className="text-sm font-semibold text-foreground">
                   {contact.budget_min ? `€${contact.budget_min.toLocaleString('it-IT')}` : '—'}
                   {' — '}
                   {contact.budget_max ? `€${contact.budget_max.toLocaleString('it-IT')}` : '∞'}
                 </p>
-                <p className="text-xs text-neutral-500 mt-0.5">Budget</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Budget</p>
               </div>
             )}
             {contact.min_rooms && (
-              <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-4 text-center">
-                <Home className="h-4 w-4 text-neutral-400 mx-auto mb-1.5" />
-                <p className="text-xl font-semibold text-neutral-900">{contact.min_rooms}+</p>
-                <p className="text-xs text-neutral-500 mt-0.5">Locali minimi</p>
+              <div className="rounded-xl border border-border bg-muted/30 p-4 text-center">
+                <Home className="h-4 w-4 text-muted-foreground mx-auto mb-1.5" />
+                <p className="text-xl font-semibold text-foreground">{contact.min_rooms}+</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Locali minimi</p>
               </div>
             )}
             {contact.min_sqm && (
-              <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-4 text-center">
-                <Maximize2 className="h-4 w-4 text-neutral-400 mx-auto mb-1.5" />
-                <p className="text-xl font-semibold text-neutral-900">{contact.min_sqm}+</p>
-                <p className="text-xs text-neutral-500 mt-0.5">m² minimi</p>
+              <div className="rounded-xl border border-border bg-muted/30 p-4 text-center">
+                <Maximize2 className="h-4 w-4 text-muted-foreground mx-auto mb-1.5" />
+                <p className="text-xl font-semibold text-foreground">{contact.min_sqm}+</p>
+                <p className="text-xs text-muted-foreground mt-0.5">m² minimi</p>
               </div>
             )}
           </div>
 
           {(contact.preferred_cities ?? []).length > 0 && (
-            <div className="rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-3">
-              <p className="text-xs text-neutral-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <div className="rounded-xl border border-border bg-muted/30 px-4 py-3">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
                 <MapPin className="h-3 w-3" /> Zone preferite
               </p>
               <div className="flex flex-wrap gap-2">
@@ -294,21 +294,21 @@ export default async function ContactDetailPage({
       {matchingListings.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <Home className="h-4 w-4 text-neutral-500" />
-            <h2 className="text-sm font-semibold text-neutral-700">Immobili compatibili</h2>
-            <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-500">{matchingListings.length}</span>
+            <Home className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold text-foreground">Immobili compatibili</h2>
+            <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{matchingListings.length}</span>
           </div>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {matchingListings.slice(0, 5).map((l) => (
               <a
                 key={l.id}
                 href={`/listing/${l.id}`}
-                className="rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-3 hover:bg-neutral-100 transition-colors block"
+                className="rounded-xl border border-border bg-muted/30 px-4 py-3 hover:bg-muted transition-colors block"
               >
-                <p className="text-sm font-medium text-neutral-900 truncate">{l.address}</p>
-                <p className="text-xs text-neutral-500 mt-0.5">{l.city}</p>
-                <div className="flex items-center gap-3 mt-2 text-xs text-neutral-500">
-                  <span className="font-semibold text-neutral-800">€{l.price.toLocaleString('it-IT')}</span>
+                <p className="text-sm font-medium text-foreground truncate">{l.address}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{l.city}</p>
+                <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                  <span className="font-semibold text-foreground">€{l.price.toLocaleString('it-IT')}</span>
                   <span>{l.sqm} m²</span>
                   <span>{l.rooms} loc.</span>
                 </div>
@@ -316,7 +316,7 @@ export default async function ContactDetailPage({
             ))}
           </div>
           {matchingListings.length > 5 && (
-            <p className="text-xs text-neutral-500 text-center">+ {matchingListings.length - 5} altri</p>
+            <p className="text-xs text-muted-foreground text-center">+ {matchingListings.length - 5} altri</p>
           )}
         </div>
       )}

@@ -39,13 +39,13 @@ export function PhotoGallery({ urls, floorPlanUrl }: PhotoGalleryProps) {
         <div className="flex gap-2 mb-2">
           <button
             onClick={() => setShowFloorPlan(false)}
-            className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${!showFloorPlan ? 'bg-neutral-900 text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'}`}
+            className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${!showFloorPlan ? 'bg-[oklch(0.57_0.20_33)] text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
           >
             Foto
           </button>
           <button
             onClick={() => setShowFloorPlan(true)}
-            className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${showFloorPlan ? 'bg-neutral-900 text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'}`}
+            className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${showFloorPlan ? 'bg-[oklch(0.57_0.20_33)] text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
           >
             Planimetria
           </button>
@@ -54,7 +54,7 @@ export function PhotoGallery({ urls, floorPlanUrl }: PhotoGalleryProps) {
 
       {/* Floor plan view */}
       {showFloorPlan && floorPlanUrl ? (
-        <div className="rounded-2xl overflow-hidden bg-neutral-50 border border-neutral-100 flex items-center justify-center h-56">
+        <div className="rounded-2xl overflow-hidden bg-muted/30 border border-border flex items-center justify-center h-56">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={floorPlanUrl}

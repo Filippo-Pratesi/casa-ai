@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { CheckCircle2, ChevronDown } from 'lucide-react'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
 
 interface Contact {
   id: string
@@ -111,15 +110,13 @@ export function MarkAsSoldButton({ listingId, address, workspaceMembers }: MarkA
   // --- STEP: idle ---
   if (step === 'idle') {
     return (
-      <Button
-        variant="ghost"
-        size="sm"
+      <button
         onClick={() => setStep('buyer')}
-        className="h-8 gap-1.5 text-xs text-green-700 hover:text-green-800 hover:bg-green-50"
+        className="flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs text-green-700 hover:text-green-800 hover:bg-green-50 transition-colors"
       >
         <CheckCircle2 className="h-3.5 w-3.5" />
         Venduto
-      </Button>
+      </button>
     )
   }
 
@@ -130,7 +127,7 @@ export function MarkAsSoldButton({ listingId, address, workspaceMembers }: MarkA
         <p className="text-xs text-green-800 font-medium">«{address}» — A chi è stato venduto?</p>
 
         <div className="flex items-center gap-3">
-          <label className="flex items-center gap-1.5 text-xs text-neutral-600">
+          <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <input
               type="radio"
               checked={!isExternal}
@@ -139,7 +136,7 @@ export function MarkAsSoldButton({ listingId, address, workspaceMembers }: MarkA
             />
             Cliente nel DB
           </label>
-          <label className="flex items-center gap-1.5 text-xs text-neutral-600">
+          <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <input
               type="radio"
               checked={isExternal}
@@ -152,7 +149,7 @@ export function MarkAsSoldButton({ listingId, address, workspaceMembers }: MarkA
 
         {!isExternal ? (
           loadingContacts ? (
-            <p className="text-xs text-neutral-500">Carico clienti…</p>
+            <p className="text-xs text-muted-foreground">Carico clienti…</p>
           ) : (
             <div className="relative">
               <select
@@ -161,14 +158,14 @@ export function MarkAsSoldButton({ listingId, address, workspaceMembers }: MarkA
                   const c = contacts.find((x) => x.id === e.target.value) ?? null
                   setSelectedContact(c)
                 }}
-                className="w-full appearance-none rounded-lg border border-neutral-200 bg-white py-1.5 pl-3 pr-8 text-xs text-neutral-800 focus:outline-none focus:ring-1 focus:ring-neutral-400"
+                className="w-full appearance-none rounded-lg border border-border bg-background py-1.5 pl-3 pr-8 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[oklch(0.57_0.20_33/0.3)]"
               >
                 <option value="">— Nessun cliente —</option>
                 {contacts.map((c) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
-              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-neutral-400" />
+              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
             </div>
           )
         ) : (
@@ -177,7 +174,7 @@ export function MarkAsSoldButton({ listingId, address, workspaceMembers }: MarkA
             value={externalBuyerName}
             onChange={(e) => setExternalBuyerName(e.target.value)}
             placeholder="Nome acquirente esterno"
-            className="rounded-lg border border-neutral-200 bg-white py-1.5 px-3 text-xs text-neutral-800 focus:outline-none focus:ring-1 focus:ring-neutral-400"
+            className="rounded-lg border border-border bg-background py-1.5 px-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[oklch(0.57_0.20_33/0.3)]"
           />
         )}
 
@@ -190,7 +187,7 @@ export function MarkAsSoldButton({ listingId, address, workspaceMembers }: MarkA
           </button>
           <button
             onClick={reset}
-            className="rounded-md px-2.5 py-1 text-xs font-medium text-neutral-600 hover:bg-neutral-100 transition-colors"
+            className="rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
           >
             Annulla
           </button>
@@ -208,13 +205,13 @@ export function MarkAsSoldButton({ listingId, address, workspaceMembers }: MarkA
           <select
             value={selectedAgentId}
             onChange={(e) => setSelectedAgentId(e.target.value)}
-            className="w-full appearance-none rounded-lg border border-neutral-200 bg-white py-1.5 pl-3 pr-8 text-xs text-neutral-800 focus:outline-none focus:ring-1 focus:ring-neutral-400"
+            className="w-full appearance-none rounded-lg border border-border bg-background py-1.5 pl-3 pr-8 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[oklch(0.57_0.20_33/0.3)]"
           >
             {workspaceMembers.map((m) => (
               <option key={m.id} value={m.id}>{m.name}</option>
             ))}
           </select>
-          <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-neutral-400" />
+          <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
         </div>
         <div className="flex items-center gap-2 mt-1">
           {selectedContact ? (
@@ -235,13 +232,13 @@ export function MarkAsSoldButton({ listingId, address, workspaceMembers }: MarkA
           )}
           <button
             onClick={() => setStep('buyer')}
-            className="rounded-md px-2.5 py-1 text-xs font-medium text-neutral-600 hover:bg-neutral-100 transition-colors"
+            className="rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
           >
             Indietro
           </button>
           <button
             onClick={reset}
-            className="rounded-md px-2.5 py-1 text-xs font-medium text-neutral-400 hover:bg-neutral-100 transition-colors"
+            className="rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
           >
             Annulla
           </button>
@@ -261,7 +258,7 @@ export function MarkAsSoldButton({ listingId, address, workspaceMembers }: MarkA
           <button
             onClick={() => handleSubmit(true)}
             disabled={loading}
-            className="rounded-md bg-neutral-800 px-2.5 py-1 text-xs font-medium text-white hover:bg-neutral-900 disabled:opacity-60 transition-colors"
+            className="rounded-md bg-[oklch(0.57_0.20_33)] px-2.5 py-1 text-xs font-medium text-white hover:opacity-90 disabled:opacity-60 transition-colors"
           >
             {loading ? 'Salvo…' : 'Sì, archivia cliente'}
           </button>
@@ -274,7 +271,7 @@ export function MarkAsSoldButton({ listingId, address, workspaceMembers }: MarkA
           </button>
           <button
             onClick={reset}
-            className="rounded-md px-2.5 py-1 text-xs font-medium text-neutral-400 hover:bg-neutral-100 transition-colors"
+            className="rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
           >
             Annulla
           </button>

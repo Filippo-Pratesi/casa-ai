@@ -49,7 +49,7 @@ export function MlsToggle({ listingId, initialShared }: MlsToggleProps) {
           }`}
         />
       </button>
-      <span className="text-sm text-neutral-700">Condividi con la rete</span>
+      <span className="text-sm text-foreground">Condividi con la rete</span>
       {shared && (
         <span className="flex items-center gap-1 rounded-full bg-blue-50 border border-blue-100 px-2 py-0.5 text-xs text-blue-600 font-medium">
           <Check className="h-3 w-3" />

@@ -120,7 +120,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       />
       <SidebarInset>
         <AppHeader />
-        <main className="flex-1 p-6 lg:p-8 bg-neutral-50/50 min-h-[calc(100vh-3.5rem)]">
+        <main className="flex-1 p-6 lg:p-8 bg-muted/20 min-h-[calc(100vh-3.5rem)]">
           {children}
         </main>
       </SidebarInset>
