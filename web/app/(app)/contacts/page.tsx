@@ -137,7 +137,6 @@ export default async function ContactsPage() {
                         href={`https://wa.me/${c.phone.replace(/\D/g, '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        onClick={e => e.stopPropagation()}
                         className="text-green-600 hover:text-green-700 text-[10px] font-medium leading-none"
                       >
                         WA
