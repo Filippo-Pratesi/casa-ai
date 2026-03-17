@@ -120,12 +120,12 @@ export default async function ArchivePage({
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-10">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-neutral-900 text-white">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[oklch(0.57_0.20_33)] to-[oklch(0.48_0.18_20)] text-white shadow-md shadow-[oklch(0.57_0.20_33/0.3)]">
           <Archive className="h-4 w-4" />
         </div>
         <div>
-          <h1 className="text-xl font-semibold text-neutral-900">{t('archive.title')}</h1>
-          <p className="text-sm text-neutral-500">{t('archive.subtitle')}</p>
+          <h1 className="text-xl font-extrabold tracking-tight">{t('archive.title')}</h1>
+          <p className="text-sm text-muted-foreground">{t('archive.subtitle')}</p>
         </div>
       </div>
 
@@ -133,20 +133,20 @@ export default async function ArchivePage({
       <section className="space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-2">
-            <Home className="h-4 w-4 text-neutral-400" />
-            <h2 className="text-sm font-semibold text-neutral-700 uppercase tracking-wide">
+            <Home className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
               {t('archive.listings.title')}
             </h2>
           </div>
-          <div className="flex rounded-lg border border-neutral-200 bg-white overflow-hidden">
+          <div className="flex rounded-lg border border-border bg-card overflow-hidden">
             {TABS.map(tab => (
               <Link
                 key={tab.id}
                 href={`/archive?filter=${tab.id}`}
                 className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                   filter === tab.id
-                    ? 'bg-neutral-900 text-white'
-                    : 'text-neutral-600 hover:bg-neutral-50'
+                    ? 'bg-[oklch(0.57_0.20_33)] text-white'
+                    : 'text-muted-foreground hover:bg-muted'
                 }`}
               >
                 {tab.label}
@@ -156,9 +156,9 @@ export default async function ArchivePage({
         </div>
 
         {displayListings.length === 0 ? (
-          <p className="text-sm text-neutral-400 italic">{t('archive.empty')}</p>
+          <p className="text-sm text-muted-foreground italic">{t('archive.empty')}</p>
         ) : (
-          <div className="divide-y divide-neutral-100 rounded-xl border border-neutral-200 bg-white overflow-hidden">
+          <div className="divide-y divide-border rounded-xl border border-border bg-card overflow-hidden">
             {displayListings.map((l) => {
               const sellerAgent = agentMap.get(l.agent_id)
               const soldByAgent = l.sold_by_agent_id ? agentMap.get(l.sold_by_agent_id) : null
@@ -167,20 +167,20 @@ export default async function ArchivePage({
                 <Link
                   key={l.id}
                   href={`/archive/${l.id}`}
-                  className="flex items-start gap-4 px-4 py-3.5 hover:bg-neutral-50 transition-colors group"
+                  className="flex items-start gap-4 px-4 py-3.5 hover:bg-muted/40 transition-colors group"
                 >
                   <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
-                    l.sold ? 'bg-green-100' : 'bg-neutral-100'
+                    l.sold ? 'bg-green-100' : 'bg-muted'
                   }`}>
                     {l.sold
                       ? <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
-                      : <Trash2 className="h-3.5 w-3.5 text-neutral-400" />
+                      : <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
                     }
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium text-neutral-900 truncate">
+                      <span className="text-sm font-medium truncate group-hover:text-[oklch(0.57_0.20_33)] transition-colors">
                         {l.address}, {l.city}
                       </span>
                       {l.sold ? (
@@ -189,18 +189,18 @@ export default async function ArchivePage({
                           {t('archive.badge.sold')}
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 border border-neutral-200 px-2 py-0.5 text-[11px] font-medium text-neutral-500">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-muted border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
                           <Trash2 className="h-3 w-3" />
                           {t('archive.badge.removed')}
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 mt-0.5 text-xs text-neutral-500 flex-wrap">
+                    <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground flex-wrap">
                       <span>{propLabels[l.property_type] ?? l.property_type}</span>
                       <span>€{l.price.toLocaleString(dateLocale)}</span>
                       <span>{l.sqm} m²</span>
                       <span>{l.rooms} {locale === 'en' ? 'rooms' : 'loc.'}</span>
-                      {sellerAgent && <span className="text-neutral-400">{t('archive.agent')}: {sellerAgent}</span>}
+                      {sellerAgent && <span>{t('archive.agent')}: {sellerAgent}</span>}
                       {l.sold && l.sold_to_name && (
                         <span className="text-green-600 font-medium">→ {l.sold_to_name}</span>
                       )}
@@ -211,8 +211,8 @@ export default async function ArchivePage({
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-xs text-neutral-400 whitespace-nowrap">{fmt(l.archived_at)}</span>
-                    <ChevronRight className="h-4 w-4 text-neutral-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">{fmt(l.archived_at)}</span>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </Link>
               )
@@ -224,21 +224,21 @@ export default async function ArchivePage({
       {/* Archived Contacts */}
       <section className="space-y-4">
         <div className="flex items-center gap-2">
-          <UserRound className="h-4 w-4 text-neutral-400" />
-          <h2 className="text-sm font-semibold text-neutral-700 uppercase tracking-wide">
+          <UserRound className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
             {t('archive.contacts.title')} ({contacts.length})
           </h2>
         </div>
 
         {contacts.length === 0 ? (
-          <p className="text-sm text-neutral-400 italic">{t('archive.emptyContacts')}</p>
+          <p className="text-sm text-muted-foreground italic">{t('archive.emptyContacts')}</p>
         ) : (
-          <div className="divide-y divide-neutral-100 rounded-xl border border-neutral-200 bg-white overflow-hidden">
+          <div className="divide-y divide-border rounded-xl border border-border bg-card overflow-hidden">
             {contacts.map((c) => (
               <div key={c.id} className="flex items-start gap-4 px-4 py-3.5">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-medium text-neutral-900">{c.name}</span>
+                    <span className="text-sm font-medium">{c.name}</span>
                     {c.bought_listing && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2 py-0.5 text-[11px] font-medium text-blue-700">
                         <CheckCircle2 className="h-3 w-3" />
@@ -246,7 +246,7 @@ export default async function ArchivePage({
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-3 mt-0.5 text-xs text-neutral-500 flex-wrap">
+                  <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground flex-wrap">
                     <span>{typeLabels[c.type] ?? c.type}</span>
                     {c.phone && <span>{c.phone}</span>}
                     {c.email && <span>{c.email}</span>}
@@ -255,7 +255,7 @@ export default async function ArchivePage({
                     )}
                   </div>
                 </div>
-                <span className="text-xs text-neutral-400 whitespace-nowrap shrink-0">{fmt(c.archived_at)}</span>
+                <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">{fmt(c.archived_at)}</span>
               </div>
             ))}
           </div>

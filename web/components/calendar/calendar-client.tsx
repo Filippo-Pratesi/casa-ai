@@ -213,28 +213,28 @@ function AppointmentModal({ listings, contacts, agents, currentUserId, initial, 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
-          <h2 className="text-sm font-semibold text-neutral-900">
+      <div className="w-full max-w-md rounded-2xl border border-border bg-card shadow-xl">
+        <div className="flex items-center justify-between border-b border-border px-5 py-4">
+          <h2 className="text-sm font-semibold">
             {editing ? t('calendar.modal.editAppt') : t('calendar.modal.newAppt')}
           </h2>
-          <button onClick={onClose} className="rounded-lg p-1 hover:bg-neutral-100 transition-colors">
-            <X className="h-4 w-4 text-neutral-500" />
+          <button onClick={onClose} className="rounded-lg p-1 hover:bg-muted transition-colors">
+            <X className="h-4 w-4 text-muted-foreground" />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1">{t('calendar.modal.title')}</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">{t('calendar.modal.title')}</label>
             <input
               value={title}
               onChange={e => setTitle(e.target.value)}
               required
               placeholder={t('calendar.modal.titlePlaceholder')}
-              className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder-muted-foreground"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1.5">{t('calendar.modal.type')}</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">{t('calendar.modal.type')}</label>
             <div className="flex flex-wrap gap-2">
               {(Object.keys(typeLabels) as Array<Appointment['type']>).map(apptType => (
                 <button
@@ -242,7 +242,7 @@ function AppointmentModal({ listings, contacts, agents, currentUserId, initial, 
                   type="button"
                   onClick={() => setType(apptType)}
                   className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${
-                    type === apptType ? TYPE_COLORS[apptType] : 'border-neutral-200 text-neutral-500 hover:border-neutral-300'
+                    type === apptType ? TYPE_COLORS[apptType] : 'border-border text-muted-foreground hover:border-foreground/30'
                   }`}
                 >
                   {typeLabels[apptType]}
@@ -252,22 +252,22 @@ function AppointmentModal({ listings, contacts, agents, currentUserId, initial, 
           </div>
           <div className="grid grid-cols-3 gap-2">
             <div className="col-span-1">
-              <label className="block text-xs font-medium text-neutral-600 mb-1">{t('calendar.modal.date')}</label>
-              <input type="date" value={date} onChange={e => setDate(e.target.value)} required className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300" />
+              <label className="block text-xs font-medium text-muted-foreground mb-1">{t('calendar.modal.date')}</label>
+              <input type="date" value={date} onChange={e => setDate(e.target.value)} required className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-neutral-600 mb-1">{t('calendar.modal.start')}</label>
-              <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} required className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300" />
+              <label className="block text-xs font-medium text-muted-foreground mb-1">{t('calendar.modal.start')}</label>
+              <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} required className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-neutral-600 mb-1">{t('calendar.modal.end')}</label>
-              <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300" />
+              <label className="block text-xs font-medium text-muted-foreground mb-1">{t('calendar.modal.end')}</label>
+              <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm" />
             </div>
           </div>
           {contacts.length > 0 && (
             <div>
-              <label className="block text-xs font-medium text-neutral-600 mb-1">{t('calendar.modal.client')}</label>
-              <select value={contactId} onChange={e => setContactId(e.target.value)} className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300">
+              <label className="block text-xs font-medium text-muted-foreground mb-1">{t('calendar.modal.client')}</label>
+              <select value={contactId} onChange={e => setContactId(e.target.value)} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm">
                 <option value="">{t('calendar.modal.none')}</option>
                 {contacts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
@@ -275,8 +275,8 @@ function AppointmentModal({ listings, contacts, agents, currentUserId, initial, 
           )}
           {listings.length > 0 && (
             <div>
-              <label className="block text-xs font-medium text-neutral-600 mb-1">{t('calendar.modal.listing')}</label>
-              <select value={listingId} onChange={e => setListingId(e.target.value)} className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300">
+              <label className="block text-xs font-medium text-muted-foreground mb-1">{t('calendar.modal.listing')}</label>
+              <select value={listingId} onChange={e => setListingId(e.target.value)} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm">
                 <option value="">{t('calendar.modal.none')}</option>
                 {listings.map(l => <option key={l.id} value={l.id}>{l.address}, {l.city}</option>)}
               </select>
@@ -284,15 +284,15 @@ function AppointmentModal({ listings, contacts, agents, currentUserId, initial, 
           )}
           {agents && agents.length > 1 && !editing && (
             <div>
-              <label className="block text-xs font-medium text-neutral-600 mb-1">{t('calendar.modal.assignTo')}</label>
-              <select value={assignedAgentId} onChange={e => setAssignedAgentId(e.target.value)} className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300">
+              <label className="block text-xs font-medium text-muted-foreground mb-1">{t('calendar.modal.assignTo')}</label>
+              <select value={assignedAgentId} onChange={e => setAssignedAgentId(e.target.value)} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm">
                 {agents.map(a => <option key={a.id} value={a.id}>{a.name}{a.id === currentUserId ? t('calendar.modal.you') : ''}</option>)}
               </select>
             </div>
           )}
           <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1">{t('calendar.modal.notes')}</label>
-            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder={t('calendar.modal.notesPlaceholder')} className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-300 resize-none" />
+            <label className="block text-xs font-medium text-muted-foreground mb-1">{t('calendar.modal.notes')}</label>
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder={t('calendar.modal.notesPlaceholder')} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder-muted-foreground resize-none" />
           </div>
           <div className="flex gap-2 pt-1">
             <Button type="submit" disabled={loading} className="flex-1 h-9 text-sm">
@@ -551,40 +551,40 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
       {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-xl font-bold text-neutral-900">
+          <h1 className="text-xl font-extrabold tracking-tight">
             Calendario
-            {filterAgentName && <span className="ml-2 text-neutral-400 font-normal">— {filterAgentName}</span>}
+            {filterAgentName && <span className="ml-2 text-muted-foreground font-normal">— {filterAgentName}</span>}
           </h1>
-          <p className="text-sm text-neutral-500 mt-0.5">
+          <p className="text-sm text-muted-foreground mt-0.5">
             {showAgentBar ? 'Tutti gli agenti del workspace' : 'I tuoi appuntamenti'}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {/* View switcher */}
-          <div className="flex rounded-xl border border-neutral-200 bg-neutral-50 p-0.5 text-xs">
+          <div className="flex rounded-xl border border-border bg-muted/50 p-0.5 text-xs">
             {(['month', 'week'] as ViewMode[]).map(v => (
               <button
                 key={v}
                 onClick={() => setViewAndSave(v)}
                 className={`rounded-lg px-3 py-1.5 font-medium transition-all duration-150 capitalize ${
-                  view === v ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-500 hover:text-neutral-700'
+                  view === v ? 'bg-card shadow-sm' : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 {v === 'month' ? 'Mese' : 'Settimana'}
               </button>
             ))}
           </div>
-          <Button onClick={() => openNewModal(selectedDay)} size="sm" className="h-9 gap-1.5 shadow-sm">
+          <button onClick={() => openNewModal(selectedDay)} className="btn-ai inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold">
             <Plus className="h-4 w-4" />
             Nuovo
-          </Button>
+          </button>
         </div>
       </div>
 
       {/* Agent filter bar (admin only) */}
       {showAgentBar && agents && (
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs text-neutral-400 font-medium">Agenti:</span>
+          <span className="text-xs text-muted-foreground font-medium">Agenti:</span>
           {agents.map(agent => {
             const idx = agentColorIndex(agent.id)
             const colors = AGENT_COLORS[idx]
@@ -595,11 +595,11 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
                 onClick={() => toggleAgent(agent.id)}
                 className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-all duration-150 ${
                   hidden
-                    ? 'border-neutral-200 bg-white text-neutral-400 line-through'
+                    ? 'border-border bg-muted text-muted-foreground line-through'
                     : colors.pill
                 }`}
               >
-                <span className={`h-2 w-2 rounded-full ${hidden ? 'bg-neutral-300' : colors.dot}`} />
+                <span className={`h-2 w-2 rounded-full ${hidden ? 'bg-muted-foreground/30' : colors.dot}`} />
                 {agent.name}
               </button>
             )
@@ -610,31 +610,31 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Calendar grid */}
         <div className="lg:col-span-2">
-          <div className="rounded-2xl border border-neutral-100 bg-white shadow-sm overflow-hidden">
+          <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
             {/* Period nav */}
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-neutral-100">
-              <button onClick={prevPeriod} className="rounded-lg p-1.5 hover:bg-neutral-100 transition-colors">
-                <ChevronLeft className="h-4 w-4 text-neutral-600" />
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
+              <button onClick={prevPeriod} className="rounded-lg p-1.5 hover:bg-muted transition-colors">
+                <ChevronLeft className="h-4 w-4 text-muted-foreground" />
               </button>
-              <h2 className="text-sm font-semibold text-neutral-900">
+              <h2 className="text-sm font-semibold">
                 {view === 'week' ? weekLabel : `${MONTH_NAMES[month]} ${year}`}
               </h2>
-              <button onClick={nextPeriod} className="rounded-lg p-1.5 hover:bg-neutral-100 transition-colors">
-                <ChevronRight className="h-4 w-4 text-neutral-600" />
+              <button onClick={nextPeriod} className="rounded-lg p-1.5 hover:bg-muted transition-colors">
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </button>
             </div>
 
             {/* Month view */}
             {view === 'month' && (
               <>
-                <div className="grid grid-cols-7 border-b border-neutral-100">
+                <div className="grid grid-cols-7 border-b border-border">
                   {DAY_NAMES.map(d => (
-                    <div key={d} className="py-2 text-center text-xs font-semibold text-neutral-400 uppercase tracking-wide">{d}</div>
+                    <div key={d} className="py-2 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wide">{d}</div>
                   ))}
                 </div>
                 <div className="grid grid-cols-7">
                   {getMonthDays(year, month).map((day, i) => {
-                    if (!day) return <div key={`pad-${i}`} className="min-h-[72px] border-b border-r border-neutral-50 bg-neutral-50/50" />
+                    if (!day) return <div key={`pad-${i}`} className="min-h-[72px] border-b border-r border-border/40 bg-muted/20" />
                     const key = day.toDateString()
                     const dayAppts = apptsByDay.get(key) ?? []
                     const isToday = isSameDay(day, today)
@@ -647,38 +647,38 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
                         key={key}
                         onClick={() => setSelectedDay(day)}
                         title={tooltipText || undefined}
-                        className={`group/day min-h-[72px] border-b border-r border-neutral-50 p-2 text-left transition-all duration-150 cursor-pointer ${
+                        className={`group/day min-h-[72px] border-b border-r border-border/40 p-2 text-left transition-all duration-150 cursor-pointer ${
                           isSelected
-                            ? 'bg-neutral-900 hover:bg-neutral-800'
-                            : 'hover:bg-blue-50/60 hover:border-blue-100'
+                            ? 'bg-[oklch(0.57_0.20_33)] hover:bg-[oklch(0.52_0.20_33)]'
+                            : 'hover:bg-muted/50'
                         }`}
                       >
                         <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold transition-all duration-150 ${
                           isSelected
                             ? 'text-white'
                             : isToday
-                              ? 'bg-neutral-900 text-white'
-                              : 'text-neutral-700 group-hover/day:bg-blue-100 group-hover/day:text-blue-800'
+                              ? 'bg-[oklch(0.57_0.20_33)] text-white'
+                              : 'text-foreground group-hover/day:bg-muted'
                         }`}>
                           {day.getDate()}
                         </span>
                         <div className="mt-1 space-y-0.5">
                           {dayAppts.slice(0, 2).map(a => {
-                            const typeDot = TYPE_DOT[a.type] ?? 'bg-neutral-400'
+                            const typeDot = TYPE_DOT[a.type] ?? 'bg-muted-foreground/40'
                             return (
                               <div
                                 key={a.id}
                                 className={`flex items-center gap-1 rounded px-1 py-0.5 ${isSelected ? 'bg-white/20' : 'bg-black/[0.03]'}`}
                               >
                                 <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${isSelected ? 'bg-white' : typeDot}`} />
-                                <span className={`text-[10px] truncate leading-tight ${isSelected ? 'text-white' : 'text-neutral-600'}`}>
+                                <span className={`text-[10px] truncate leading-tight ${isSelected ? 'text-white' : 'text-muted-foreground'}`}>
                                   {formatTime(a.starts_at)} {a.title}
                                 </span>
                               </div>
                             )
                           })}
                           {dayAppts.length > 2 && (
-                            <span className={`text-[10px] pl-1 ${isSelected ? 'text-white/60' : 'text-neutral-400'}`}>
+                            <span className={`text-[10px] pl-1 ${isSelected ? 'text-white/60' : 'text-muted-foreground'}`}>
                               +{dayAppts.length - 2} altri
                             </span>
                           )}
@@ -696,7 +696,7 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
             {/* Week view */}
             {view === 'week' && (
               <>
-                <div className="grid grid-cols-7 border-b border-neutral-100">
+                <div className="grid grid-cols-7 border-b border-border">
                   {weekDays.map(day => {
                     const isToday = isSameDay(day, today)
                     const isSel = isSameDay(day, selectedDay)
@@ -704,12 +704,12 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
                       <button
                         key={day.toDateString()}
                         onClick={() => setSelectedDay(day)}
-                        className={`py-3 text-center transition-all duration-150 ${isSel ? 'bg-neutral-900' : 'hover:bg-neutral-50'}`}
+                        className={`py-3 text-center transition-all duration-150 ${isSel ? 'bg-[oklch(0.57_0.20_33)]' : 'hover:bg-muted/50'}`}
                       >
-                        <p className={`text-[10px] font-semibold uppercase tracking-wide ${isSel ? 'text-white/60' : 'text-neutral-400'}`}>
+                        <p className={`text-[10px] font-semibold uppercase tracking-wide ${isSel ? 'text-white/60' : 'text-muted-foreground'}`}>
                           {DAY_NAMES[(day.getDay() + 6) % 7]}
                         </p>
-                        <p className={`mt-0.5 text-base font-bold ${isSel ? 'text-white' : isToday ? 'text-blue-600' : 'text-neutral-800'}`}>
+                        <p className={`mt-0.5 text-base font-bold ${isSel ? 'text-white' : isToday ? 'text-[oklch(0.57_0.20_33)]' : ''}`}>
                           {day.getDate()}
                         </p>
                       </button>
@@ -724,13 +724,13 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
                       <div
                         key={day.toDateString()}
                         onClick={() => setSelectedDay(day)}
-                        className={`border-r border-neutral-50 p-1.5 space-y-1 cursor-pointer transition-colors ${isSel ? 'bg-neutral-50' : 'hover:bg-blue-50/40'}`}
+                        className={`border-r border-border/40 p-1.5 space-y-1 cursor-pointer transition-colors ${isSel ? 'bg-muted/30' : 'hover:bg-muted/20'}`}
                       >
                         {dayAppts.map(a => {
                           const cardBg = (showAgentBar && a.agent_id)
                             ? AGENT_COLORS[agentColorIndex(a.agent_id)].pill
-                            : (TYPE_COLORS[a.type] ?? 'bg-neutral-100 text-neutral-700 border-neutral-200')
-                          const typeDot = TYPE_DOT[a.type] ?? 'bg-neutral-400'
+                            : (TYPE_COLORS[a.type] ?? 'bg-muted text-muted-foreground border-border')
+                          const typeDot = TYPE_DOT[a.type] ?? 'bg-muted-foreground/40'
                           return (
                             <div
                               key={a.id}
@@ -749,7 +749,7 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
                         {dayAppts.length === 0 && (
                           <button
                             onClick={e => { e.stopPropagation(); openNewModal(day) }}
-                            className="w-full h-8 flex items-center justify-center text-neutral-300 hover:text-neutral-400 transition-colors"
+                            className="w-full h-8 flex items-center justify-center text-muted-foreground/30 hover:text-muted-foreground transition-colors"
                             title="Aggiungi appuntamento"
                           >
                             <Plus className="h-3 w-3" />
@@ -767,28 +767,28 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
         {/* Day detail panel */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-neutral-900 capitalize">
+            <h3 className="text-sm font-semibold capitalize">
               {formatDate(selectedDay.toISOString())}
             </h3>
             <button
               onClick={() => openNewModal(selectedDay)}
-              className="rounded-lg p-1.5 hover:bg-neutral-100 transition-colors"
+              className="rounded-lg p-1.5 hover:bg-muted transition-colors"
               title="Aggiungi appuntamento"
             >
-              <Plus className="h-4 w-4 text-neutral-500" />
+              <Plus className="h-4 w-4 text-muted-foreground" />
             </button>
           </div>
 
           {loading ? (
-            <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-6 text-center">
-              <p className="text-sm text-neutral-400">Carico…</p>
+            <div className="rounded-xl border border-border bg-muted/30 p-6 text-center">
+              <p className="text-sm text-muted-foreground">Carico…</p>
             </div>
           ) : selectedDayAppts.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-neutral-200 bg-neutral-50 p-6 text-center">
-              <p className="text-sm text-neutral-400">Nessun appuntamento</p>
+            <div className="rounded-xl border border-dashed border-border bg-muted/20 p-6 text-center">
+              <p className="text-sm text-muted-foreground">Nessun appuntamento</p>
               <button
                 onClick={() => openNewModal(selectedDay)}
-                className="mt-2 text-xs text-neutral-500 hover:text-neutral-800 underline underline-offset-2 transition-colors"
+                className="mt-2 text-xs text-muted-foreground hover:text-[oklch(0.57_0.20_33)] underline underline-offset-2 transition-colors"
               >
                 Aggiungi uno
               </button>
@@ -812,14 +812,14 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
           {/* Google Calendar events */}
           {selectedDayGoogleEvents.length > 0 && (
             <div className="mt-4 space-y-2">
-              <p className="text-xs font-medium text-neutral-400 uppercase tracking-wider flex items-center gap-1.5">
-                <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-neutral-200 text-[9px] font-bold text-neutral-500">G</span>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-muted text-[9px] font-bold text-muted-foreground">G</span>
                 Da Google Calendar
               </p>
               {selectedDayGoogleEvents.map(e => (
-                <div key={e.id} className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 hover:shadow-sm transition-shadow">
-                  <p className="text-sm font-medium text-neutral-700 truncate">{e.summary}</p>
-                  <p className="text-xs text-neutral-400 mt-0.5">
+                <div key={e.id} className="rounded-xl border border-border bg-muted/30 px-4 py-3 hover:shadow-sm transition-shadow">
+                  <p className="text-sm font-medium truncate">{e.summary}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {formatTime(e.start)}{e.end && ` – ${formatTime(e.end)}`}
                   </p>
                 </div>
