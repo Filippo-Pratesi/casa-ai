@@ -3,7 +3,6 @@
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useI18n } from '@/lib/i18n/context'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { FileText, UserRound, TrendingUp, Trophy, BarChart2, ChevronRight, BadgeCheck, CalendarDays, ChevronDown } from 'lucide-react'
@@ -71,9 +70,9 @@ function medalColor(rank: number) {
 
 function medalBg(rank: number) {
   if (rank === 1) return 'bg-amber-50 border-amber-200'
-  if (rank === 2) return 'bg-neutral-50 border-neutral-200'
+  if (rank === 2) return 'bg-muted/50 border-border'
   if (rank === 3) return 'bg-orange-50 border-orange-200'
-  return 'bg-white border-neutral-100'
+  return 'bg-card border-border'
 }
 
 type Metric = 'sold' | 'listings' | 'contacts'
@@ -211,15 +210,15 @@ export function TeamOverview({
         {/* Left: title + view switcher */}
         <div className="flex flex-col gap-2">
           <div>
-            <h1 className="text-2xl font-bold">Team</h1>
-            <p className="text-neutral-500 text-sm mt-0.5">Performance e competizione del workspace</p>
+            <h1 className="text-2xl font-extrabold tracking-tight">Team</h1>
+            <p className="text-muted-foreground text-sm mt-0.5">Performance e competizione del workspace</p>
           </div>
           {/* View switcher — always left */}
-          <div className="flex rounded-lg border border-neutral-200 bg-white overflow-hidden w-fit">
+          <div className="flex rounded-lg border border-border bg-card overflow-hidden w-fit">
             <button
               type="button"
               onClick={() => setView('classifica')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${view === 'classifica' ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-50'}`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${view === 'classifica' ? 'bg-[oklch(0.57_0.20_33)] text-white' : 'text-muted-foreground hover:bg-muted'}`}
             >
               <Trophy className="h-3.5 w-3.5" />
               Classifica
@@ -227,7 +226,7 @@ export function TeamOverview({
             <button
               type="button"
               onClick={() => setView('calendario')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${view === 'calendario' ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-50'}`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${view === 'calendario' ? 'bg-[oklch(0.57_0.20_33)] text-white' : 'text-muted-foreground hover:bg-muted'}`}
             >
               <CalendarDays className="h-3.5 w-3.5" />
               Calendario
@@ -239,7 +238,7 @@ export function TeamOverview({
         {view === 'classifica' && (
           <div className="flex flex-col gap-2 items-end">
             {/* Metric selector */}
-            <div className="flex rounded-lg border border-neutral-200 bg-white overflow-hidden">
+            <div className="flex rounded-lg border border-border bg-card overflow-hidden">
               {METRICS.map((m) => (
                 <button
                   key={m.id}
@@ -247,8 +246,8 @@ export function TeamOverview({
                   onClick={() => setMetric(m.id)}
                   className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                     metric === m.id
-                      ? 'bg-neutral-900 text-white'
-                      : 'text-neutral-600 hover:bg-neutral-50'
+                      ? 'bg-[oklch(0.57_0.20_33)] text-white'
+                      : 'text-muted-foreground hover:bg-muted'
                   }`}
                 >
                   {m.label}
@@ -259,14 +258,14 @@ export function TeamOverview({
             {/* Dynamic filter row */}
             <div className="flex items-center gap-2 flex-wrap justify-end">
               {/* Quick presets */}
-              <div className="flex rounded-lg border border-neutral-200 bg-white overflow-hidden text-xs">
+              <div className="flex rounded-lg border border-border bg-card overflow-hidden text-xs">
                 {([['month', 'Mese'], ['quarter', 'Trim.'], ['year', 'Anno'], ['all', 'Sempre']] as [Preset, string][]).map(([p, label]) => (
                   <button
                     key={p}
                     type="button"
                     onClick={() => applyPreset(p)}
                     className={`px-2.5 py-1.5 font-medium transition-colors ${
-                      preset === p ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-50'
+                      preset === p ? 'bg-[oklch(0.57_0.20_33)] text-white' : 'text-muted-foreground hover:bg-muted'
                     }`}
                   >
                     {label}
@@ -280,14 +279,14 @@ export function TeamOverview({
                   type="month"
                   value={filterFrom}
                   onChange={e => handleCustomFrom(e.target.value)}
-                  className="rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs text-neutral-700 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+                  className="rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.3)]"
                 />
-                <span className="text-xs text-neutral-400">–</span>
+                <span className="text-xs text-muted-foreground">–</span>
                 <input
                   type="month"
                   value={filterTo}
                   onChange={e => handleCustomTo(e.target.value)}
-                  className="rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs text-neutral-700 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+                  className="rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.3)]"
                 />
               </div>
 
@@ -296,14 +295,14 @@ export function TeamOverview({
                 <select
                   value={filterAgentId}
                   onChange={e => setFilterAgentId(e.target.value)}
-                  className="appearance-none rounded-lg border border-neutral-200 bg-white px-3 py-1.5 pr-7 text-xs text-neutral-700 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+                  className="appearance-none rounded-lg border border-border bg-background px-3 py-1.5 pr-7 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.3)]"
                 >
                   <option value="">Tutti gli agenti</option>
                   {agents.map(a => (
                     <option key={a.id} value={a.id}>{a.name}</option>
                   ))}
                 </select>
-                <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-neutral-400" />
+                <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
               </div>
 
               {isAdmin && <ExportCsvButton rows={csvRows} month={rangeLabel} />}
@@ -320,69 +319,59 @@ export function TeamOverview({
       {/* ── Classifica ── */}
       {view === 'classifica' && <>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Card>
-          <CardContent className="pt-5">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50">
-                <UserRound className="h-4 w-4 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{agents.length}</p>
-                <p className="text-xs text-neutral-500">Agenti</p>
-              </div>
+        <div className="rounded-xl border border-border bg-card p-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50">
+              <UserRound className="h-4 w-4 text-blue-600" />
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-5">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-green-50">
-                <FileText className="h-4 w-4 text-green-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{monthTotals.listings}</p>
-                <p className="text-xs text-neutral-500">Imm. nel periodo</p>
-              </div>
+            <div>
+              <p className="text-2xl font-bold">{agents.length}</p>
+              <p className="text-xs text-muted-foreground">Agenti</p>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-5">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-50">
-                <TrendingUp className="h-4 w-4 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{monthTotals.content}</p>
-                <p className="text-xs text-neutral-500">Contenuti AI</p>
-              </div>
+          </div>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-green-50">
+              <FileText className="h-4 w-4 text-green-600" />
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-5">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-green-50">
-                <BadgeCheck className="h-4 w-4 text-green-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{monthTotals.sold}</p>
-                <p className="text-xs text-neutral-500">Venduti nel periodo</p>
-              </div>
+            <div>
+              <p className="text-2xl font-bold">{monthTotals.listings}</p>
+              <p className="text-xs text-muted-foreground">Imm. nel periodo</p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-50">
+              <TrendingUp className="h-4 w-4 text-purple-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{monthTotals.content}</p>
+              <p className="text-xs text-muted-foreground">Contenuti AI</p>
+            </div>
+          </div>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-green-50">
+              <BadgeCheck className="h-4 w-4 text-green-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{monthTotals.sold}</p>
+              <p className="text-xs text-muted-foreground">Venduti nel periodo</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Trophy className="h-4 w-4 text-amber-500" />
-              Classifica — {rangeLabel}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
+        <div className="rounded-xl border border-border bg-card">
+          <div className="flex items-center gap-2 px-5 pt-4 pb-3 text-base font-semibold">
+            <Trophy className="h-4 w-4 text-amber-500" />
+            Classifica — {rangeLabel}
+          </div>
+          <div className="px-4 pb-4 space-y-2">
             {monthStats.map((row, i) => {
               const isMe = row.agent.id === currentUserId
               return (
@@ -390,35 +379,33 @@ export function TeamOverview({
                   key={row.agent.id}
                   type="button"
                   onClick={() => openAgentProfile(row.agent.id)}
-                  className={`w-full flex items-center gap-3 rounded-xl border px-3 py-2.5 cursor-pointer transition-all duration-150 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 ${medalBg(i + 1)} ${isMe ? 'ring-2 ring-neutral-900' : ''}`}
+                  className={`w-full flex items-center gap-3 rounded-xl border px-3 py-2.5 cursor-pointer transition-all duration-150 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 ${medalBg(i + 1)} ${isMe ? 'ring-2 ring-[oklch(0.57_0.20_33)]' : ''}`}
                 >
                   <span className={`text-lg font-bold w-6 text-center shrink-0 ${medalColor(i + 1)}`}>
                     {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}`}
                   </span>
                   <Avatar className="h-7 w-7 shrink-0">
-                    <AvatarFallback className="text-[10px] bg-neutral-200">{getInitials(row.agent.name)}</AvatarFallback>
+                    <AvatarFallback className="text-[10px] bg-muted">{getInitials(row.agent.name)}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0 text-left">
                     <p className="text-sm font-medium truncate">{row.agent.name}{isMe ? ' (tu)' : ''}</p>
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-sm font-bold">{metricValue(row, metric)}</p>
-                    <p className="text-[10px] text-neutral-400">{metricSubLabel(row, metric)}</p>
+                    <p className="text-[10px] text-muted-foreground">{metricSubLabel(row, metric)}</p>
                   </div>
                 </button>
               )
             })}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Trophy className="h-4 w-4 text-blue-500" />
-              Classifica — {currentYear}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
+        <div className="rounded-xl border border-border bg-card">
+          <div className="flex items-center gap-2 px-5 pt-4 pb-3 text-base font-semibold">
+            <Trophy className="h-4 w-4 text-blue-500" />
+            Classifica — {currentYear}
+          </div>
+          <div className="px-4 pb-4 space-y-2">
             {yearStats.map((row, i) => {
               const isMe = row.agent.id === currentUserId
               return (
@@ -426,43 +413,43 @@ export function TeamOverview({
                   key={row.agent.id}
                   type="button"
                   onClick={() => openAgentProfile(row.agent.id)}
-                  className={`w-full flex items-center gap-3 rounded-xl border px-3 py-2.5 cursor-pointer transition-all duration-150 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 ${medalBg(i + 1)} ${isMe ? 'ring-2 ring-neutral-900' : ''}`}
+                  className={`w-full flex items-center gap-3 rounded-xl border px-3 py-2.5 cursor-pointer transition-all duration-150 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 ${medalBg(i + 1)} ${isMe ? 'ring-2 ring-[oklch(0.57_0.20_33)]' : ''}`}
                 >
                   <span className={`text-lg font-bold w-6 text-center shrink-0 ${medalColor(i + 1)}`}>
                     {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}`}
                   </span>
                   <Avatar className="h-7 w-7 shrink-0">
-                    <AvatarFallback className="text-[10px] bg-neutral-200">{getInitials(row.agent.name)}</AvatarFallback>
+                    <AvatarFallback className="text-[10px] bg-muted">{getInitials(row.agent.name)}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0 text-left">
                     <p className="text-sm font-medium truncate">{row.agent.name}{isMe ? ' (tu)' : ''}</p>
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-sm font-bold">{metricValue(row, metric)}</p>
-                    <p className="text-[10px] text-neutral-400">{metricSubLabel(row, metric)}</p>
+                    <p className="text-[10px] text-muted-foreground">{metricSubLabel(row, metric)}</p>
                   </div>
                 </button>
               )
             })}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <BarChart2 className="h-4 w-4 text-neutral-500" />
+      <div className="rounded-xl border border-border bg-card">
+        <div className="px-5 pt-4 pb-3">
+          <div className="flex items-center gap-2 text-base font-semibold">
+            <BarChart2 className="h-4 w-4 text-muted-foreground" />
             Dettaglio agenti — {rangeLabel}
-            <span className="text-xs text-neutral-400 font-normal ml-1">Clicca per il profilo</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+            <span className="text-xs text-muted-foreground font-normal ml-1">Clicca per il profilo</span>
+          </div>
+        </div>
+        <div className="px-4 pb-4">
           <div className="space-y-1">
-            <div className="grid grid-cols-[1fr_72px_72px_72px] gap-2 px-3 pb-2 border-b border-neutral-100">
-              <p className="text-xs text-neutral-400 uppercase tracking-wider">Agente</p>
-              <p className="text-xs text-neutral-400 uppercase tracking-wider text-right">Imm.</p>
-              <p className="text-xs text-neutral-400 uppercase tracking-wider text-right">Clienti</p>
-              <p className="text-xs text-neutral-400 uppercase tracking-wider text-right">Venduti</p>
+            <div className="grid grid-cols-[1fr_72px_72px_72px] gap-2 px-3 pb-2 border-b border-border">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Agente</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider text-right">Imm.</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider text-right">Clienti</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider text-right">Venduti</p>
             </div>
             {monthStats.map(({ agent, listings, contacts, sold }) => {
               const isMe = agent.id === currentUserId
@@ -471,16 +458,16 @@ export function TeamOverview({
                   key={agent.id}
                   type="button"
                   onClick={() => openAgentProfile(agent.id)}
-                  className={`w-full grid grid-cols-[1fr_72px_72px_72px] gap-2 items-center rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-neutral-50 group ${isMe ? 'ring-1 ring-inset ring-neutral-300' : ''}`}
+                  className={`w-full grid grid-cols-[1fr_72px_72px_72px] gap-2 items-center rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-muted/50 group ${isMe ? 'ring-1 ring-inset ring-border' : ''}`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <Avatar className="h-7 w-7 shrink-0">
-                      <AvatarFallback className="text-[10px] bg-neutral-200">{getInitials(agent.name)}</AvatarFallback>
+                      <AvatarFallback className="text-[10px] bg-muted">{getInitials(agent.name)}</AvatarFallback>
                     </Avatar>
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate flex items-center gap-1.5">
                         {agent.name}{isMe ? ' (tu)' : ''}
-                        <ChevronRight className="h-3 w-3 text-neutral-300 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                        <ChevronRight className="h-3 w-3 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                       </p>
                       <Badge variant={agent.role === 'admin' ? 'default' : 'secondary'} className="text-[9px] h-4 px-1.5 mt-0.5">
                         {agent.role === 'admin' ? 'Admin' : 'Agente'}
@@ -489,13 +476,13 @@ export function TeamOverview({
                   </div>
                   <p className="text-sm font-semibold text-right">{listings}</p>
                   <p className="text-sm font-semibold text-right">{contacts}</p>
-                  <p className={`text-sm font-semibold text-right ${sold > 0 ? 'text-green-600' : 'text-neutral-400'}`}>{sold}</p>
+                  <p className={`text-sm font-semibold text-right ${sold > 0 ? 'text-green-600' : 'text-muted-foreground'}`}>{sold}</p>
                 </button>
               )
             })}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
       </>}
     </div>
   )

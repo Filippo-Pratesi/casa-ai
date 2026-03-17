@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Send, FileText, Paperclip, X } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
 
 const TEMPLATES = [
   {
@@ -134,18 +133,18 @@ export function CampaignComposer({ cities, totalContacts }: CampaignComposerProp
     <div className="space-y-6 pt-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Link href="/campaigns" className="rounded-lg p-1.5 hover:bg-neutral-100 transition-colors">
-          <ArrowLeft className="h-4 w-4 text-neutral-500" />
+        <Link href="/campaigns" className="rounded-lg p-1.5 hover:bg-muted transition-colors">
+          <ArrowLeft className="h-4 w-4 text-muted-foreground" />
         </Link>
         <div>
-          <h1 className="text-xl font-bold">Nuova campagna</h1>
-          <p className="text-sm text-neutral-500">{totalContacts} contatti con email disponibili</p>
+          <h1 className="text-xl font-extrabold tracking-tight">Nuova campagna</h1>
+          <p className="text-sm text-muted-foreground">{totalContacts} contatti con email disponibili</p>
         </div>
       </div>
 
       {/* Template picker */}
       <div>
-        <label className="block text-xs font-medium text-neutral-600 mb-2">Template</label>
+        <label className="block text-xs font-medium text-muted-foreground mb-2">Template</label>
         <div className="flex flex-wrap gap-2">
           {TEMPLATES.map(t => (
             <button
@@ -153,8 +152,8 @@ export function CampaignComposer({ cities, totalContacts }: CampaignComposerProp
               onClick={() => applyTemplate(t.id)}
               className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${
                 template === t.id
-                  ? 'bg-neutral-900 text-white border-neutral-900'
-                  : 'border-neutral-200 text-neutral-600 hover:border-neutral-400'
+                  ? 'bg-[oklch(0.57_0.20_33)] text-white border-[oklch(0.57_0.20_33)]'
+                  : 'border-border text-muted-foreground hover:border-muted-foreground/50'
               }`}
             >
               {t.label}
@@ -165,42 +164,42 @@ export function CampaignComposer({ cities, totalContacts }: CampaignComposerProp
 
       {/* Subject */}
       <div>
-        <label className="block text-xs font-medium text-neutral-600 mb-1">Oggetto *</label>
+        <label className="block text-xs font-medium text-muted-foreground mb-1">Oggetto *</label>
         <input
           value={subject}
           onChange={e => setSubject(e.target.value)}
           placeholder="Oggetto della email…"
-          className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.3)]"
         />
       </div>
 
       {/* Body */}
       <div>
-        <label className="block text-xs font-medium text-neutral-600 mb-1">Testo *</label>
+        <label className="block text-xs font-medium text-muted-foreground mb-1">Testo *</label>
         <textarea
           value={body}
           onChange={e => setBody(e.target.value)}
           rows={10}
           placeholder="Scrivi qui il corpo della mail…"
-          className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-300 resize-none font-mono"
+          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.3)] resize-none font-mono"
         />
       </div>
 
       {/* Attachment */}
       <div>
-        <label className="block text-xs font-medium text-neutral-600 mb-1">Allegato (opzionale)</label>
+        <label className="block text-xs font-medium text-muted-foreground mb-1">Allegato (opzionale)</label>
         {attachmentFile ? (
-          <div className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2">
-            <Paperclip className="h-4 w-4 text-neutral-400 shrink-0" />
-            <span className="text-sm text-neutral-700 truncate flex-1">{attachmentFile.name}</span>
-            <button onClick={removeAttachment} className="rounded p-0.5 hover:bg-neutral-200 transition-colors">
-              <X className="h-3.5 w-3.5 text-neutral-500" />
+          <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2">
+            <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="text-sm text-foreground truncate flex-1">{attachmentFile.name}</span>
+            <button onClick={removeAttachment} className="rounded p-0.5 hover:bg-muted transition-colors">
+              <X className="h-3.5 w-3.5 text-muted-foreground" />
             </button>
           </div>
         ) : (
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-2 rounded-lg border border-dashed border-neutral-300 px-3 py-2 text-sm text-neutral-500 hover:border-neutral-400 hover:text-neutral-700 transition-colors"
+            className="flex items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2 text-sm text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground transition-colors"
           >
             <Paperclip className="h-4 w-4" />
             Aggiungi allegato
@@ -216,15 +215,15 @@ export function CampaignComposer({ cities, totalContacts }: CampaignComposerProp
       </div>
 
       {/* Recipients */}
-      <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 space-y-3">
-        <p className="text-xs font-medium text-neutral-600 uppercase tracking-wide">Destinatari</p>
+      <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-3">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Destinatari</p>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs text-neutral-500 mb-1">Tipo cliente</label>
+            <label className="block text-xs text-muted-foreground mb-1">Tipo cliente</label>
             <select
               value={recipientType}
               onChange={e => setRecipientType(e.target.value)}
-              className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.3)]"
             >
               {CONTACT_TYPES.map(t => (
                 <option key={t.value} value={t.value}>{t.label}</option>
@@ -233,11 +232,11 @@ export function CampaignComposer({ cities, totalContacts }: CampaignComposerProp
           </div>
           {cities.length > 0 && (
             <div>
-              <label className="block text-xs text-neutral-500 mb-1">Filtro città</label>
+              <label className="block text-xs text-muted-foreground mb-1">Filtro città</label>
               <select
                 value={cityFilter}
                 onChange={e => setCityFilter(e.target.value)}
-                className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.3)]"
               >
                 <option value="">Tutte le città</option>
                 {cities.map(c => (
@@ -251,23 +250,22 @@ export function CampaignComposer({ cities, totalContacts }: CampaignComposerProp
 
       {/* Actions */}
       <div className="flex gap-3">
-        <Button
+        <button
           onClick={() => handleSend(true)}
           disabled={loading}
-          className="flex-1 gap-2"
+          className="btn-ai flex-1 gap-2 disabled:opacity-60"
         >
           <Send className="h-4 w-4" />
           {loading ? 'Invio in corso…' : 'Invia ora'}
-        </Button>
-        <Button
-          variant="outline"
+        </button>
+        <button
           onClick={() => handleSend(false)}
           disabled={loading}
-          className="gap-2"
+          className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-60"
         >
           <FileText className="h-4 w-4" />
           Salva bozza
-        </Button>
+        </button>
       </div>
     </div>
   )

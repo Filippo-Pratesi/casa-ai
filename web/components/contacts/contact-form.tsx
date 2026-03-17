@@ -4,7 +4,6 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Loader2, ChevronDown, ChevronUp } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -138,11 +137,11 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-xl space-y-0 divide-y divide-neutral-100">
+    <form onSubmit={handleSubmit} className="max-w-xl space-y-0 divide-y divide-border">
 
       {/* Tipo cliente */}
       <section className="pt-0 pb-6 space-y-3">
-        <h2 className="text-base font-semibold text-neutral-900">Tipo cliente</h2>
+        <h2 className="text-base font-semibold">Tipo cliente</h2>
         <div className="flex flex-wrap gap-2">
           {CONTACT_TYPES.map((ct) => (
             <button
@@ -151,8 +150,8 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
               onClick={() => update('type', ct.value)}
               className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-all
                 ${form.type === ct.value
-                  ? 'border-neutral-900 bg-neutral-900 text-white'
-                  : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400 hover:bg-neutral-50'
+                  ? 'border-[oklch(0.57_0.20_33)] bg-[oklch(0.57_0.20_33)] text-white'
+                  : 'border-border bg-card text-foreground hover:border-muted-foreground/50 hover:bg-muted'
                 }`}
             >
               {ct.label}
@@ -163,7 +162,7 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
 
       {/* Dati anagrafici */}
       <section className="py-6 space-y-4">
-        <h2 className="text-base font-semibold text-neutral-900">Dati anagrafici</h2>
+        <h2 className="text-base font-semibold">Dati anagrafici</h2>
 
         <div className="space-y-1.5">
           <Label htmlFor="name">Nome e cognome *</Label>
@@ -178,7 +177,7 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label htmlFor="phone">Telefono <span className="text-neutral-400 font-normal">(opzionale)</span></Label>
+            <Label htmlFor="phone">Telefono <span className="text-muted-foreground font-normal">(opzionale)</span></Label>
             <Input
               id="phone"
               type="tel"
@@ -188,7 +187,7 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="email">Email <span className="text-neutral-400 font-normal">(opzionale)</span></Label>
+            <Label htmlFor="email">Email <span className="text-muted-foreground font-normal">(opzionale)</span></Label>
             <Input
               id="email"
               type="email"
@@ -201,7 +200,7 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label htmlFor="city_of_residence">Città di residenza <span className="text-neutral-400 font-normal">(opzionale)</span></Label>
+            <Label htmlFor="city_of_residence">Città di residenza <span className="text-muted-foreground font-normal">(opzionale)</span></Label>
             <Input
               id="city_of_residence"
               placeholder="Viareggio"
@@ -210,7 +209,7 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="address_of_residence">Indirizzo <span className="text-neutral-400 font-normal">(opzionale)</span></Label>
+            <Label htmlFor="address_of_residence">Indirizzo <span className="text-muted-foreground font-normal">(opzionale)</span></Label>
             <Input
               id="address_of_residence"
               placeholder="Via Roma 10"
@@ -221,7 +220,7 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="notes">Note <span className="text-neutral-400 font-normal">(opzionale)</span></Label>
+          <Label htmlFor="notes">Note <span className="text-muted-foreground font-normal">(opzionale)</span></Label>
           <Textarea
             id="notes"
             placeholder="Es. cliente referenziato da Bianchi, preferisce pianterreno..."
@@ -241,17 +240,17 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
             className="flex w-full items-center justify-between text-left"
           >
             <div>
-              <h2 className="text-base font-semibold text-neutral-900">
+              <h2 className="text-base font-semibold">
                 Preferenze ricerca
-                <span className="ml-2 text-xs font-normal text-neutral-400">(opzionale)</span>
+                <span className="ml-2 text-xs font-normal text-muted-foreground">(opzionale)</span>
               </h2>
-              <p className="text-xs text-neutral-500 mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 Budget, zone e caratteristiche desiderate
               </p>
             </div>
             {showPrefs
-              ? <ChevronUp className="h-4 w-4 text-neutral-400 shrink-0" />
-              : <ChevronDown className="h-4 w-4 text-neutral-400 shrink-0" />
+              ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
+              : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
             }
           </button>
 
@@ -290,7 +289,7 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
                   value={form.preferred_cities}
                   onChange={(e) => update('preferred_cities', e.target.value)}
                 />
-                <p className="text-xs text-neutral-400">Separa più città con una virgola</p>
+                <p className="text-xs text-muted-foreground">Separa più città con una virgola</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -328,8 +327,8 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
                       onClick={() => togglePrefType(pt.value)}
                       className={`rounded-full border px-3 py-1 text-xs font-medium transition-all
                         ${form.preferred_types.includes(pt.value)
-                          ? 'border-neutral-900 bg-neutral-900 text-white'
-                          : 'border-neutral-200 bg-white text-neutral-600 hover:border-neutral-400'
+                          ? 'border-[oklch(0.57_0.20_33)] bg-[oklch(0.57_0.20_33)] text-white'
+                          : 'border-border bg-card text-muted-foreground hover:border-muted-foreground/50'
                         }`}
                     >
                       {pt.label}
@@ -344,12 +343,10 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
 
       {/* Submit */}
       <div className="pt-6">
-        <Button type="submit" disabled={isPending} size="lg" className="w-full">
-          {isPending
-            ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvataggio...</>
-            : mode === 'create' ? 'Aggiungi cliente' : 'Salva modifiche'
-          }
-        </Button>
+        <button type="submit" disabled={isPending} className="btn-ai w-full gap-2 disabled:opacity-60">
+          {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+          {isPending ? 'Salvataggio...' : mode === 'create' ? 'Aggiungi cliente' : 'Salva modifiche'}
+        </button>
       </div>
     </form>
   )
