@@ -133,7 +133,7 @@ export function AppSidebar({
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-0.5">
-              <NavItem href="/dashboard" icon={LayoutDashboard} label="Dashboard" />
+              <NavItem href="/dashboard" icon={LayoutDashboard} label="Annunci" />
               <NavItem href="/listing/new" icon={PlusSquare} label="Nuovo annuncio" />
               <NavItem href="/contacts" icon={UserRound} label="Clienti" badge={birthdayCount} />
               <NavItem href="/notifications" icon={Bell} label="Notifiche" badge={unreadNotifications} />

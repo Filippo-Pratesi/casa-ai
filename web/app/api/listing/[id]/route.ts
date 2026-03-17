@@ -13,7 +13,8 @@ export async function PATCH(
   if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
   const admin = createAdminClient()
-  const { data: profileData } = await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: profileData } = await (admin as any)
     .from('users')
     .select('workspace_id')
     .eq('id', user.id)
@@ -46,7 +47,8 @@ export async function PATCH(
   if (!newPrice || newPrice <= 0) return NextResponse.json({ error: 'Prezzo non valido' }, { status: 400 })
 
   // Fetch current price
-  const { data: current } = await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: current } = await (admin as any)
     .from('listings')
     .select('price')
     .eq('id', id)
@@ -66,7 +68,8 @@ export async function PATCH(
   }
 
   // Update listing
-  const { error } = await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (admin as any)
     .from('listings')
     .update({ price: newPrice })
     .eq('id', id)
@@ -87,7 +90,8 @@ export async function DELETE(
   if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
   const admin = createAdminClient()
-  const { data: profileData } = await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: profileData } = await (admin as any)
     .from('users')
     .select('workspace_id')
     .eq('id', user.id)
@@ -106,7 +110,8 @@ export async function DELETE(
   }
 
   // Fetch listing before deleting (for archive snapshot)
-  const { data: listingData, error: fetchError } = await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: listingData, error: fetchError } = await (admin as any)
     .from('listings')
     .select('*')
     .eq('id', id)
@@ -153,7 +158,8 @@ export async function DELETE(
   }
 
   // Delete the listing
-  const { error } = await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (admin as any)
     .from('listings')
     .delete()
     .eq('id', id)

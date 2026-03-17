@@ -31,7 +31,8 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
   const admin = createAdminClient()
-  const { data: profileData } = await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: profileData } = await (admin as any)
     .from('users')
     .select('role, workspace_id, workspaces(stripe_customer_id, name)')
     .eq('id', user.id)
@@ -63,7 +64,8 @@ export async function POST(req: NextRequest) {
   // Get or create Stripe customer
   let customerId = profile.workspaces.stripe_customer_id
   if (!customerId) {
-    const { data: userRow } = await admin
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: userRow } = await (admin as any)
       .from('users')
       .select('email, name')
       .eq('id', user.id)
@@ -76,7 +78,8 @@ export async function POST(req: NextRequest) {
     })
     customerId = customer.id
 
-    await admin
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (admin as any)
       .from('workspaces')
       .update({ stripe_customer_id: customerId })
       .eq('id', profile.workspace_id)

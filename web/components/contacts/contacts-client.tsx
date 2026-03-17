@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { UserPlus, Users, Phone, Mail, Euro, Home, Cake, LayoutGrid, List, Search, X } from 'lucide-react'
 import { ExportContactsButton } from '@/components/contacts/export-contacts-button'
@@ -126,7 +127,6 @@ export function ContactsClient({ contacts, isAdmin }: ContactsClientProps) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {/* View toggle */}
           {contacts.length > 0 && (
             <div className="flex rounded-lg border border-neutral-200 bg-white overflow-hidden">
               <button
@@ -156,7 +156,6 @@ export function ContactsClient({ contacts, isAdmin }: ContactsClientProps) {
       {/* Filter bar */}
       {contacts.length > 0 && (
         <div className="rounded-2xl border border-neutral-100 bg-white p-4 space-y-3 shadow-sm">
-          {/* Type filter pills */}
           <div className="flex flex-wrap gap-1.5">
             {Object.entries(TYPE_LABELS).map(([key, label]) => {
               const active = activeTypes.has(key)
@@ -171,8 +170,6 @@ export function ContactsClient({ contacts, isAdmin }: ContactsClientProps) {
               )
             })}
           </div>
-
-          {/* Text + numeric filters */}
           <div className="flex flex-wrap gap-2">
             <div className="relative flex-1 min-w-[160px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400 pointer-events-none" />
@@ -240,16 +237,14 @@ export function ContactsClient({ contacts, isAdmin }: ContactsClientProps) {
           </button>
         </div>
       ) : viewMode === 'card' ? (
-        /* Card view */
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((c) => (
             <ContactCard key={c.id} contact={c} />
           ))}
         </div>
       ) : (
-        /* Table view */
         <div className="rounded-2xl border border-neutral-100 bg-white shadow-sm overflow-hidden">
-          <div className="grid grid-cols-[1fr_90px_110px_110px_80px] gap-2 px-4 py-2.5 border-b border-neutral-100 bg-neutral-50">
+          <div className="grid grid-cols-[1fr_90px_130px_130px_80px] gap-2 px-4 py-2.5 border-b border-neutral-100 bg-neutral-50">
             <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Nome</p>
             <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Tipo</p>
             <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Telefono</p>
@@ -272,7 +267,6 @@ export function ContactsClient({ contacts, isAdmin }: ContactsClientProps) {
 function ContactCard({ contact: c }: { contact: Contact }) {
   return (
     <div className="group relative rounded-2xl border border-neutral-200 bg-white p-4 space-y-3 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5">
-      {/* Header */}
       <div className="flex items-start justify-between gap-2">
         <Link href={`/contacts/${c.id}`} className="min-w-0 flex-1">
           <h3 className="font-semibold text-neutral-900 truncate text-sm">{c.name}</h3>
@@ -298,7 +292,6 @@ function ContactCard({ contact: c }: { contact: Contact }) {
         </div>
       </div>
 
-      {/* Contact info */}
       <div className="space-y-1">
         {c.phone && (
           <div className="flex items-center gap-1.5">
@@ -316,14 +309,20 @@ function ContactCard({ contact: c }: { contact: Contact }) {
           </div>
         )}
         {c.email && (
-          <p className="flex items-center gap-1.5 text-xs text-neutral-600 truncate">
+          <div className="flex items-center gap-1.5">
             <Mail className="h-3 w-3 text-neutral-400 shrink-0" />
-            {c.email}
-          </p>
+            <span className="text-xs text-neutral-600 flex-1 truncate">{c.email}</span>
+            <a
+              href={`mailto:${c.email}`}
+              title="Invia email"
+              className="text-blue-500 hover:text-blue-600 transition-colors"
+            >
+              <Mail className="h-3.5 w-3.5" />
+            </a>
+          </div>
         )}
       </div>
 
-      {/* Preferences */}
       {(c.budget_min || c.budget_max || c.min_rooms) && (
         <div className="flex items-center gap-3 border-t border-neutral-100 pt-3 text-xs text-neutral-500">
           {(c.budget_min || c.budget_max) && (
@@ -347,13 +346,17 @@ function ContactCard({ contact: c }: { contact: Contact }) {
 }
 
 // ── Row component (table view) ─────────────────────────────────────────────────
+// Note: uses div+onClick instead of Link to avoid nested <a> hydration error
+// (WhatsApp and mailto links are <a> tags inside, so outer must NOT be <a>)
 
 function ContactRow({ contact: c }: { contact: Contact }) {
+  const router = useRouter()
   const days = birthdayDaysLeft(c.date_of_birth)
+
   return (
-    <Link
-      href={`/contacts/${c.id}`}
-      className="grid grid-cols-[1fr_90px_110px_110px_80px] gap-2 items-center px-4 py-3 hover:bg-neutral-50 transition-colors group"
+    <div
+      onClick={() => router.push(`/contacts/${c.id}`)}
+      className="grid grid-cols-[1fr_90px_130px_130px_80px] gap-2 items-center px-4 py-3 hover:bg-neutral-50 transition-colors cursor-pointer group"
     >
       <div className="min-w-0">
         <div className="flex items-center gap-1.5">
@@ -372,7 +375,7 @@ function ContactRow({ contact: c }: { contact: Contact }) {
       <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium w-fit ${TYPE_COLORS[c.type]}`}>
         {TYPE_LABELS[c.type]}
       </span>
-      <div className="flex items-center gap-1.5 min-w-0">
+      <div className="flex items-center gap-1.5 min-w-0" onClick={e => e.stopPropagation()}>
         {c.phone ? (
           <>
             <span className="text-xs text-neutral-600 truncate flex-1">{c.phone}</span>
@@ -380,7 +383,6 @@ function ContactRow({ contact: c }: { contact: Contact }) {
               href={`https://wa.me/${c.phone.replace(/\D/g, '')}`}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={e => e.stopPropagation()}
               title="Apri in WhatsApp"
               className="text-green-600 hover:text-green-700 transition-colors shrink-0"
             >
@@ -391,12 +393,27 @@ function ContactRow({ contact: c }: { contact: Contact }) {
           <span className="text-xs text-neutral-300">—</span>
         )}
       </div>
-      <p className="text-xs text-neutral-600 truncate">{c.email ?? '—'}</p>
+      <div className="flex items-center gap-1.5 min-w-0" onClick={e => e.stopPropagation()}>
+        {c.email ? (
+          <>
+            <span className="text-xs text-neutral-600 truncate flex-1">{c.email}</span>
+            <a
+              href={`mailto:${c.email}`}
+              title="Invia email"
+              className="text-blue-500 hover:text-blue-600 transition-colors shrink-0"
+            >
+              <Mail className="h-3.5 w-3.5" />
+            </a>
+          </>
+        ) : (
+          <span className="text-xs text-neutral-300">—</span>
+        )}
+      </div>
       <p className="text-xs text-neutral-500">
         {(c.budget_min || c.budget_max)
           ? `€${(c.budget_max ?? c.budget_min)!.toLocaleString('it-IT')}`
           : '—'}
       </p>
-    </Link>
+    </div>
   )
 }
