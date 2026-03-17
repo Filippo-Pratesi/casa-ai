@@ -38,7 +38,7 @@ interface Agent {
 interface Appointment {
   id: string
   title: string
-  type: 'viewing' | 'meeting' | 'signing' | 'call' | 'other'
+  type: 'acquisizione' | 'riunione' | 'atto' | 'visita'
   status: 'scheduled' | 'completed' | 'cancelled'
   starts_at: string
   ends_at: string | null
@@ -66,19 +66,17 @@ type ViewMode = 'month' | 'week'
 // TYPE_LABELS computed from i18n in each component
 
 const TYPE_COLORS: Record<string, string> = {
-  viewing: 'bg-blue-100 text-blue-800 border-blue-200',
-  meeting: 'bg-purple-100 text-purple-800 border-purple-200',
-  signing: 'bg-green-100 text-green-800 border-green-200',
-  call: 'bg-amber-100 text-amber-800 border-amber-200',
-  other: 'bg-neutral-100 text-neutral-700 border-neutral-200',
+  visita: 'bg-blue-100 text-blue-800 border-blue-200',
+  riunione: 'bg-purple-100 text-purple-800 border-purple-200',
+  atto: 'bg-green-100 text-green-800 border-green-200',
+  acquisizione: 'bg-amber-100 text-amber-800 border-amber-200',
 }
 
 const TYPE_DOT: Record<string, string> = {
-  viewing: 'bg-blue-500',
-  meeting: 'bg-purple-500',
-  signing: 'bg-green-500',
-  call: 'bg-amber-500',
-  other: 'bg-neutral-400',
+  visita: 'bg-blue-500',
+  riunione: 'bg-purple-500',
+  atto: 'bg-green-500',
+  acquisizione: 'bg-amber-500',
 }
 
 const AGENT_COLORS = [
@@ -156,11 +154,10 @@ interface ModalProps {
 function AppointmentModal({ listings, contacts, agents, currentUserId, initial, editing, onClose, onSaved }: ModalProps) {
   const { t } = useI18n()
   const typeLabels: Record<string, string> = {
-    viewing: t('calendar.type.viewing'),
-    meeting: t('calendar.type.meeting'),
-    signing: t('calendar.type.signing'),
-    call: t('calendar.type.call'),
-    other: t('calendar.type.other'),
+    acquisizione: t('calendar.type.acquisizione'),
+    riunione: t('calendar.type.riunione'),
+    atto: t('calendar.type.atto'),
+    visita: t('calendar.type.visita'),
   }
   const defaultDate = initial?.date ?? new Date()
   const pad = (n: number) => String(n).padStart(2, '0')
@@ -168,7 +165,7 @@ function AppointmentModal({ listings, contacts, agents, currentUserId, initial, 
   const toTimeInput = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}`
 
   const [title, setTitle] = useState(editing?.title ?? '')
-  const [type, setType] = useState<Appointment['type']>(editing?.type ?? 'viewing')
+  const [type, setType] = useState<Appointment['type']>(editing?.type ?? 'visita')
   const [date, setDate] = useState(editing ? toDateInput(new Date(editing.starts_at)) : toDateInput(defaultDate))
   const [startTime, setStartTime] = useState(editing ? toTimeInput(new Date(editing.starts_at)) : '09:00')
   const [endTime, setEndTime] = useState(editing?.ends_at ? toTimeInput(new Date(editing.ends_at)) : '')
@@ -239,7 +236,7 @@ function AppointmentModal({ listings, contacts, agents, currentUserId, initial, 
           <div>
             <label className="block text-xs font-medium text-neutral-600 mb-1.5">{t('calendar.modal.type')}</label>
             <div className="flex flex-wrap gap-2">
-              {(Object.keys(typeLabels) as Appointment['type'][]).map(apptType => (
+              {(Object.keys(typeLabels) as Array<Appointment['type']>).map(apptType => (
                 <button
                   key={apptType}
                   type="button"
@@ -667,15 +664,13 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
                         </span>
                         <div className="mt-1 space-y-0.5">
                           {dayAppts.slice(0, 2).map(a => {
-                            const dotColor = (showAgentBar && a.agent_id)
-                              ? AGENT_COLORS[agentColorIndex(a.agent_id)].dot
-                              : TYPE_DOT[a.type]
+                            const typeDot = TYPE_DOT[a.type] ?? 'bg-neutral-400'
                             return (
                               <div
                                 key={a.id}
                                 className={`flex items-center gap-1 rounded px-1 py-0.5 ${isSelected ? 'bg-white/20' : 'bg-black/[0.03]'}`}
                               >
-                                <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${isSelected ? 'bg-white' : dotColor}`} />
+                                <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${isSelected ? 'bg-white' : typeDot}`} />
                                 <span className={`text-[10px] truncate leading-tight ${isSelected ? 'text-white' : 'text-neutral-600'}`}>
                                   {formatTime(a.starts_at)} {a.title}
                                 </span>
@@ -732,18 +727,19 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
                         className={`border-r border-neutral-50 p-1.5 space-y-1 cursor-pointer transition-colors ${isSel ? 'bg-neutral-50' : 'hover:bg-blue-50/40'}`}
                       >
                         {dayAppts.map(a => {
-                          const dotColor = (showAgentBar && a.agent_id)
-                            ? AGENT_COLORS[agentColorIndex(a.agent_id)].dot
-                            : TYPE_DOT[a.type]
+                          const cardBg = (showAgentBar && a.agent_id)
+                            ? AGENT_COLORS[agentColorIndex(a.agent_id)].pill
+                            : (TYPE_COLORS[a.type] ?? 'bg-neutral-100 text-neutral-700 border-neutral-200')
+                          const typeDot = TYPE_DOT[a.type] ?? 'bg-neutral-400'
                           return (
                             <div
                               key={a.id}
                               onClick={e => { e.stopPropagation(); openEditModal(a) }}
                               title={`${formatTime(a.starts_at)} ${a.title}`}
-                              className={`rounded-md border px-1.5 py-1 cursor-pointer hover:opacity-80 transition-opacity ${TYPE_COLORS[a.type]}`}
+                              className={`rounded-md border px-1.5 py-1 cursor-pointer hover:opacity-80 transition-opacity ${cardBg}`}
                             >
                               <div className="flex items-center gap-1">
-                                <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${dotColor}`} />
+                                <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${typeDot}`} />
                                 <span className="text-[10px] font-medium truncate">{formatTime(a.starts_at)}</span>
                               </div>
                               <p className="text-[10px] truncate leading-tight mt-0.5">{a.title}</p>

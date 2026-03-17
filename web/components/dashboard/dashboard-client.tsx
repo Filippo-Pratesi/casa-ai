@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { PlusSquare, FileText, Euro, Maximize2, Home, User, Users, CalendarDays, TrendingUp, LayoutGrid, List, Search, X, Download } from 'lucide-react'
+import { PlusSquare, FileText, Euro, Maximize2, Home, User, Users, CalendarDays, TrendingUp, LayoutGrid, List, Search, X, Download, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
 import { useI18n } from '@/lib/i18n/context'
 
 const TONE_LABELS: Record<string, string> = {
@@ -74,6 +74,8 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
   const [citySearch, setCitySearch] = useState('')
   const [priceMax, setPriceMax] = useState('')
   const [contentFilter, setContentFilter] = useState<'all' | 'generated' | 'draft'>('all')
+  const [sortKey, setSortKey] = useState<'address' | 'price' | 'sqm' | 'date' | null>(null)
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
 
   const TYPE_LABELS: Record<string, string> = useMemo(() => ({
     apartment: t('property.apartment'),
@@ -127,7 +129,7 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
   }
 
   const filtered = useMemo(() => {
-    return listings.filter(l => {
+    const base = listings.filter(l => {
       if (activeTypes.size > 0 && !activeTypes.has(l.property_type)) return false
       if (citySearch.trim()) {
         const q = citySearch.trim().toLowerCase()
@@ -141,7 +143,26 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
       if (contentFilter === 'draft' && l.generated_content) return false
       return true
     })
-  }, [listings, activeTypes, citySearch, priceMax, contentFilter])
+    if (!sortKey) return base
+    return [...base].sort((a, b) => {
+      let cmp = 0
+      if (sortKey === 'address') cmp = a.address.localeCompare(b.address)
+      else if (sortKey === 'price') cmp = a.price - b.price
+      else if (sortKey === 'sqm') cmp = a.sqm - b.sqm
+      else if (sortKey === 'date') cmp = a.created_at.localeCompare(b.created_at)
+      return sortDir === 'asc' ? cmp : -cmp
+    })
+  }, [listings, activeTypes, citySearch, priceMax, contentFilter, sortKey, sortDir])
+
+  function handleSort(key: typeof sortKey) {
+    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortKey(key); setSortDir('asc') }
+  }
+
+  function SortIcon({ col }: { col: typeof sortKey }) {
+    if (sortKey !== col) return <ChevronsUpDown className="h-3 w-3 opacity-40" />
+    return sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />
+  }
 
   const statCards = [
     { label: 'Annunci attivi', value: stats.listings, icon: Home, color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -308,13 +329,21 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
       ) : (
         /* List view */
         <div className="rounded-2xl border border-neutral-100 bg-white shadow-sm overflow-hidden">
-          <div className="grid grid-cols-[1fr_100px_90px_90px_70px_90px] gap-2 px-4 py-2.5 border-b border-neutral-100 bg-neutral-50">
-            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">{t('listings.col.property')}</p>
+          <div className="grid grid-cols-[1fr_100px_90px_90px_70px_90px] gap-2 px-4 py-2 border-b border-neutral-100 bg-neutral-50">
+            <button onClick={() => handleSort('address')} className="flex items-center gap-1 text-xs font-semibold text-neutral-400 uppercase tracking-wider hover:text-neutral-700 transition-colors">
+              {t('listings.col.property')}<SortIcon col="address" />
+            </button>
             <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">{t('listings.col.type')}</p>
-            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider text-right">{t('listings.col.price')}</p>
-            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider text-right">{t('listings.col.sqmRooms')}</p>
+            <button onClick={() => handleSort('price')} className="flex items-center justify-end gap-1 text-xs font-semibold text-neutral-400 uppercase tracking-wider hover:text-neutral-700 transition-colors w-full">
+              {t('listings.col.price')}<SortIcon col="price" />
+            </button>
+            <button onClick={() => handleSort('sqm')} className="flex items-center justify-end gap-1 text-xs font-semibold text-neutral-400 uppercase tracking-wider hover:text-neutral-700 transition-colors w-full">
+              {t('listings.col.sqmRooms')}<SortIcon col="sqm" />
+            </button>
             <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">{t('listings.col.ai')}</p>
-            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">{t('listings.col.date')}</p>
+            <button onClick={() => handleSort('date')} className="flex items-center gap-1 text-xs font-semibold text-neutral-400 uppercase tracking-wider hover:text-neutral-700 transition-colors">
+              {t('listings.col.date')}<SortIcon col="date" />
+            </button>
           </div>
           <div className="divide-y divide-neutral-50">
             {filtered.map((l) => (
