@@ -46,8 +46,8 @@ export async function POST(
 
   const matching = ((contacts ?? []) as BuyerContact[]).filter(c => {
     if (c.budget_max !== null && c.budget_max < l.price) return false
-    if (c.preferred_cities.length > 0 && !c.preferred_cities.map(s => s.toLowerCase()).includes(l.city.toLowerCase())) return false
-    if (c.preferred_types.length > 0 && !c.preferred_types.includes(l.property_type)) return false
+    if ((c.preferred_cities ?? []).length > 0 && !(c.preferred_cities ?? []).map(s => s.toLowerCase()).includes(l.city.toLowerCase())) return false
+    if ((c.preferred_types ?? []).length > 0 && !(c.preferred_types ?? []).includes(l.property_type)) return false
     if (c.min_rooms !== null && c.min_rooms > l.rooms) return false
     if (c.min_sqm !== null && c.min_sqm > l.sqm) return false
     return true
@@ -57,6 +57,7 @@ export async function POST(
   const notifications = matching
     .filter(c => c.agent_id)
     .map(c => ({
+      workspace_id: l.workspace_id,
       agent_id: c.agent_id,
       type: 'buyer_match',
       title: 'Nuovo immobile compatibile',
