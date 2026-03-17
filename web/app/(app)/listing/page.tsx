@@ -1,7 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { PlusSquare, FileText, Euro, Maximize2, Home, User } from 'lucide-react'
 import type { Listing } from '@/lib/supabase/types'
@@ -64,35 +63,35 @@ export default async function ListingHistoryPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between animate-in-1">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Storico annunci</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight">Storico annunci</h1>
           <p className="text-muted-foreground text-sm mt-0.5">
             {isAdmin ? 'Tutti gli annunci del workspace' : `${items.length} annunci`}
           </p>
         </div>
-        <Button nativeButton={false} render={<Link href="/listing/new" />} className="gap-2">
+        <Link href="/listing/new" className="btn-ai gap-2">
           <PlusSquare className="h-4 w-4" />
           Nuovo annuncio
-        </Button>
+        </Link>
       </div>
 
       {items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/30 py-20 text-center">
-          <div className="mb-4 rounded-full bg-muted p-4">
-            <FileText className="h-8 w-8 text-muted-foreground" />
+        <div className="animate-in-2 flex flex-col items-center justify-center rounded-2xl border border-dashed border-border mesh-bg py-20 text-center">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[oklch(0.57_0.20_33)] to-[oklch(0.66_0.15_188)] shadow-lg shadow-[oklch(0.57_0.20_33/0.3)]">
+            <FileText className="h-7 w-7 text-white" />
           </div>
           <h2 className="text-base font-semibold text-foreground">Nessun annuncio ancora</h2>
           <p className="mt-1 text-sm text-muted-foreground max-w-xs">
             Crea il primo annuncio e genera descrizioni, post social e molto altro in pochi secondi.
           </p>
-          <Button nativeButton={false} render={<Link href="/listing/new" />} className="mt-6 gap-2">
+          <Link href="/listing/new" className="btn-ai mt-6 gap-2">
             <PlusSquare className="h-4 w-4" />
             Crea il primo annuncio
-          </Button>
+          </Link>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="animate-in-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((listing) => {
             const thumb = Array.isArray(listing.photos_urls) && listing.photos_urls.length > 0
               ? (listing.photos_urls as string[])[0]
@@ -100,7 +99,7 @@ export default async function ListingHistoryPage() {
 
             return (
               <Link key={listing.id} href={`/listing/${listing.id}`} className="group block">
-                <div className="overflow-hidden rounded-2xl border border-border bg-card transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5">
+                <div className="card-lift overflow-hidden rounded-2xl border border-border bg-card">
                   {/* Photo / placeholder */}
                   <div className="relative h-44 w-full bg-muted">
                     {thumb ? (

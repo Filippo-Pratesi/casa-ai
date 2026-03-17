@@ -91,13 +91,13 @@ export default async function SettingsPage({
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <div>
+      <div className="animate-in-1">
         <h1 className="text-2xl font-extrabold tracking-tight">{t('settings.title')}</h1>
         <p className="text-muted-foreground text-sm mt-1">{t('settings.subtitle')}</p>
       </div>
 
       {isAdmin && profile?.workspaces && (
-        <Card>
+        <Card className="animate-in-2">
           <CardHeader>
             <CardTitle>{t('settings.agency')}</CardTitle>
             <CardDescription>{t('settings.agencyDesc')}</CardDescription>

@@ -73,28 +73,30 @@ export default async function MlsPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-12">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">MLS — Rete annunci</h1>
+      <div className="animate-in-1">
+        <h1 className="text-2xl font-extrabold tracking-tight text-foreground">MLS — Rete annunci</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Annunci condivisi dalle altre agenzie del gruppo ({listings.length} immobili)
         </p>
       </div>
 
       {listings.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/30 p-16">
-          <Building2 className="h-10 w-10 text-muted-foreground/50 mb-3" />
-          <p className="text-muted-foreground font-medium">Nessun immobile condiviso</p>
+        <div className="animate-in-2 flex flex-col items-center justify-center rounded-2xl border border-dashed border-border mesh-bg p-16">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[oklch(0.57_0.20_33)] to-[oklch(0.66_0.15_188)] shadow-lg shadow-[oklch(0.57_0.20_33/0.3)]">
+            <Building2 className="h-7 w-7 text-white" />
+          </div>
+          <p className="text-foreground font-semibold">Nessun immobile condiviso</p>
           <p className="text-sm text-muted-foreground mt-1">Le altre agenzie non hanno ancora condiviso annunci con la rete.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="animate-in-2 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {listings.map(l => {
             const thumb = (l.photos_urls ?? [])[0] ?? null
             return (
               <Link
                 key={l.id}
                 href={`/mls/${l.id}`}
-                className="group rounded-2xl border border-border bg-card overflow-hidden hover:shadow-md transition-shadow"
+                className="card-lift group rounded-2xl border border-border bg-card overflow-hidden"
               >
                 {thumb ? (
                   <div className="aspect-video overflow-hidden">

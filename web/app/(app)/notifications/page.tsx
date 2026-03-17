@@ -35,7 +35,7 @@ export default async function NotificationsPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 pb-12">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between animate-in-1">
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight">{t('notifications.title')}</h1>
           <p className="text-muted-foreground text-sm mt-0.5">
@@ -54,11 +54,11 @@ export default async function NotificationsPage() {
           <p className="mt-1 text-sm text-muted-foreground max-w-xs">{t('notifications.empty.body')}</p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="animate-in-2 space-y-2">
           {notifications.map((n) => (
             <div
               key={n.id}
-              className={`rounded-xl border p-4 space-y-2 transition-colors ${
+              className={`card-lift rounded-xl border p-4 space-y-2 transition-colors ${
                 n.read ? 'border-border bg-card' : 'border-pink-200 bg-pink-50 dark:bg-pink-950/20'
               }`}
             >

@@ -119,7 +119,7 @@ export default async function ArchivePage({
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-10">
       {/* Header */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 animate-in-1">
         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[oklch(0.57_0.20_33)] to-[oklch(0.48_0.18_20)] text-white shadow-md shadow-[oklch(0.57_0.20_33/0.3)]">
           <Archive className="h-4 w-4" />
         </div>
@@ -130,7 +130,7 @@ export default async function ArchivePage({
       </div>
 
       {/* Archived Listings */}
-      <section className="space-y-4">
+      <section className="animate-in-2 space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-2">
             <Home className="h-4 w-4 text-muted-foreground" />
@@ -222,7 +222,7 @@ export default async function ArchivePage({
       </section>
 
       {/* Archived Contacts */}
-      <section className="space-y-4">
+      <section className="animate-in-3 space-y-4">
         <div className="flex items-center gap-2">
           <UserRound className="h-4 w-4 text-muted-foreground" />
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">

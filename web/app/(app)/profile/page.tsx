@@ -43,14 +43,14 @@ export default async function ProfilePage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 pb-12">
-      <div>
-        <h1 className="text-2xl font-bold">Il mio profilo</h1>
+      <div className="animate-in-1">
+        <h1 className="text-2xl font-extrabold tracking-tight">Il mio profilo</h1>
         <p className="text-muted-foreground text-sm mt-1">
           {ROLE_LABELS[profile.role] ?? profile.role} · Nel team dal {joinedDate}
         </p>
       </div>
 
-      <Card>
+      <Card className="animate-in-2">
         <CardHeader>
           <CardTitle>Dati personali</CardTitle>
           <CardDescription>Modifica le tue informazioni personali e professionali</CardDescription>

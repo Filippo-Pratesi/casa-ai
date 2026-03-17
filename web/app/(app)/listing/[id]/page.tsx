@@ -165,7 +165,7 @@ export default async function ListingDetailPage({
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-12">
       {/* Back nav + delete */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between animate-in-1">
         <div className="flex items-center gap-2">
           <Button nativeButton={false} render={<Link href="/dashboard" />} variant="ghost" size="icon" className="h-8 w-8 shrink-0">
             <ArrowLeft className="h-4 w-4" />
@@ -191,7 +191,7 @@ export default async function ListingDetailPage({
       )}
 
       {/* Title + tone */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-4 animate-in-2">
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight">{listing.address}</h1>
           <p className="mt-1 text-muted-foreground">

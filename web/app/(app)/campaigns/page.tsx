@@ -53,7 +53,7 @@ export default async function CampaignsPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-12">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between animate-in-1">
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight">{t('campaigns.title')}</h1>
           <p className="text-sm text-muted-foreground mt-1">{t('campaigns.subtitle')}</p>
@@ -77,7 +77,7 @@ export default async function CampaignsPage() {
           </Link>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="animate-in-2 space-y-3">
           {campaigns.map((c) => {
             const cfg = statusConfig[c.status] ?? statusConfig.draft
             const StatusIcon = cfg.icon
