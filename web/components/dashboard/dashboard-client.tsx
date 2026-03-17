@@ -5,22 +5,13 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { PlusSquare, FileText, Euro, Maximize2, Home, User, Users, CalendarDays, TrendingUp, LayoutGrid, List, Search, X, Download } from 'lucide-react'
+import { useI18n } from '@/lib/i18n/context'
 
 const TONE_LABELS: Record<string, string> = {
   standard: 'Standard',
   luxury: 'Luxury',
   approachable: 'Accessibile',
   investment: 'Investimento',
-}
-
-const TYPE_LABELS: Record<string, string> = {
-  apartment: 'Appartamento',
-  house: 'Casa',
-  villa: 'Villa',
-  commercial: 'Commerciale',
-  land: 'Terreno',
-  garage: 'Garage',
-  other: 'Altro',
 }
 
 const TYPE_COLORS: Record<string, string> = {
@@ -76,41 +67,52 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-function downloadCSV(listings: Listing[]) {
-  const headers = ['Indirizzo', 'Città', 'Tipo', 'Prezzo (€)', 'mq', 'Locali', 'Agente', 'Contenuto AI', 'Data']
-  const rows = listings.map(l => [
-    l.address,
-    l.city,
-    TYPE_LABELS[l.property_type] ?? l.property_type,
-    l.price,
-    l.sqm,
-    l.rooms,
-    l.agent?.name ?? '',
-    l.generated_content ? 'Sì' : 'No',
-    formatDate(l.created_at),
-  ])
-  const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `annunci_${new Date().toISOString().slice(0, 10)}.csv`
-  a.click()
-  URL.revokeObjectURL(url)
-}
-
 export function DashboardClient({ listings, stats, isAdmin }: DashboardClientProps) {
+  const { t } = useI18n()
   const [viewMode, setViewMode] = useState<'card' | 'list'>('card')
   const [activeTypes, setActiveTypes] = useState<Set<string>>(new Set())
   const [citySearch, setCitySearch] = useState('')
   const [priceMax, setPriceMax] = useState('')
   const [contentFilter, setContentFilter] = useState<'all' | 'generated' | 'draft'>('all')
 
-  function toggleType(t: string) {
+  const TYPE_LABELS: Record<string, string> = useMemo(() => ({
+    apartment: t('property.apartment'),
+    house: t('property.house'),
+    villa: t('property.villa'),
+    commercial: t('property.commercial'),
+    land: t('property.land'),
+    garage: t('property.garage'),
+    other: t('property.other'),
+  }), [t])
+
+  function downloadCSV(data: Listing[]) {
+    const headers = [t('listings.col.property'), t('listings.col.type'), `${t('listings.col.price')} (€)`, 'mq', t('common.rooms'), 'Agente', 'AI', t('listings.col.date')]
+    const rows = data.map(l => [
+      l.address,
+      l.city,
+      TYPE_LABELS[l.property_type] ?? l.property_type,
+      l.price,
+      l.sqm,
+      l.rooms,
+      l.agent?.name ?? '',
+      l.generated_content ? 'Sì' : 'No',
+      formatDate(l.created_at),
+    ])
+    const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `annunci_${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  function toggleType(type: string) {
     setActiveTypes(prev => {
       const next = new Set(prev)
-      if (next.has(t)) next.delete(t)
-      else next.add(t)
+      if (next.has(type)) next.delete(type)
+      else next.add(type)
       return next
     })
   }
@@ -143,7 +145,7 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
 
   const statCards = [
     { label: 'Annunci attivi', value: stats.listings, icon: Home, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { label: 'Clienti', value: stats.contacts, icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { label: t('contacts.title'), value: stats.contacts, icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
     { label: 'App. imminenti', value: stats.appointments, icon: CalendarDays, color: 'text-violet-600', bg: 'bg-violet-50' },
     { label: 'Contenuto AI', value: stats.aiContent, icon: TrendingUp, color: 'text-orange-600', bg: 'bg-orange-50' },
   ]
@@ -153,11 +155,11 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Annunci</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{t('listings.title')}</h1>
           <p className="text-neutral-500 text-sm mt-0.5">
             {filtered.length !== listings.length
-              ? `${filtered.length} di ${listings.length} annunci`
-              : `${listings.length} annunci nel workspace`}
+              ? `${filtered.length} ${t('listings.subtitleFiltered')} ${listings.length} ${t('listings.subtitle')}`
+              : `${listings.length} ${t('listings.subtitle')}`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -165,14 +167,14 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
           <div className="flex rounded-lg border border-neutral-200 bg-white overflow-hidden">
             <button
               onClick={() => setViewMode('card')}
-              title="Vista card"
+              title={t('common.viewCard')}
               className={`p-2 transition-colors ${viewMode === 'card' ? 'bg-neutral-900 text-white' : 'text-neutral-500 hover:bg-neutral-50'}`}
             >
               <LayoutGrid className="h-3.5 w-3.5" />
             </button>
             <button
               onClick={() => setViewMode('list')}
-              title="Vista lista"
+              title={t('common.viewList')}
               className={`p-2 transition-colors ${viewMode === 'list' ? 'bg-neutral-900 text-white' : 'text-neutral-500 hover:bg-neutral-50'}`}
             >
               <List className="h-3.5 w-3.5" />
@@ -181,16 +183,16 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
           {isAdmin && (
             <button
               onClick={() => downloadCSV(filtered)}
-              title="Esporta CSV"
+              title={t('listings.export')}
               className="flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-medium text-neutral-600 hover:bg-neutral-50 transition-colors"
             >
               <Download className="h-3.5 w-3.5" />
-              Esporta
+              {t('listings.export')}
             </button>
           )}
           <Button nativeButton={false} render={<Link href="/listing/new" />} className="gap-2 shadow-sm">
             <PlusSquare className="h-4 w-4" />
-            Nuovo annuncio
+            {t('listings.new')}
           </Button>
         </div>
       </div>
@@ -227,7 +229,7 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
             })}
             {/* Content status filter */}
             <div className="ml-auto flex rounded-lg border border-neutral-200 bg-neutral-50 overflow-hidden text-xs">
-              {([['all', 'Tutti'], ['generated', 'Con AI'], ['draft', 'Bozze']] as [typeof contentFilter, string][]).map(([val, label]) => (
+              {([['all', t('listings.filter.all')], ['generated', t('listings.filter.withAI')], ['draft', t('listings.filter.drafts')]] as [typeof contentFilter, string][]).map(([val, label]) => (
                 <button
                   key={val}
                   onClick={() => setContentFilter(val)}
@@ -246,7 +248,7 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
               <input
                 value={citySearch}
                 onChange={e => setCitySearch(e.target.value)}
-                placeholder="Cerca indirizzo o città…"
+                placeholder={t('listings.filter.searchPlaceholder')}
                 className="w-full rounded-lg border border-neutral-200 pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-300 text-neutral-900 placeholder-neutral-400"
               />
             </div>
@@ -256,7 +258,7 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
                 type="number"
                 value={priceMax}
                 onChange={e => setPriceMax(e.target.value)}
-                placeholder="Prezzo max (€)"
+                placeholder={t('listings.filter.priceMax')}
                 className="w-full rounded-lg border border-neutral-200 pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-300 text-neutral-900 placeholder-neutral-400"
               />
             </div>
@@ -266,7 +268,7 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
                 className="flex items-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-2 text-xs text-neutral-500 hover:bg-neutral-50 transition-colors"
               >
                 <X className="h-3.5 w-3.5" />
-                Rimuovi filtri
+                {t('listings.filter.clear')}
               </button>
             )}
           </div>
@@ -279,44 +281,44 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
           <div className="mb-4 rounded-full bg-neutral-100 p-4">
             <FileText className="h-8 w-8 text-neutral-400" />
           </div>
-          <h2 className="text-base font-semibold text-neutral-800">Nessun annuncio ancora</h2>
+          <h2 className="text-base font-semibold text-neutral-800">{t('listings.empty.title')}</h2>
           <p className="mt-1 text-sm text-neutral-500 max-w-xs">
-            Crea il primo annuncio e genera descrizioni, post social e molto altro in pochi secondi.
+            {t('listings.empty.body')}
           </p>
           <Button nativeButton={false} render={<Link href="/listing/new" />} className="mt-6 gap-2">
             <PlusSquare className="h-4 w-4" />
-            Crea il primo annuncio
+            {t('listings.empty.cta')}
           </Button>
         </div>
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 py-16 text-center">
           <Search className="h-8 w-8 text-neutral-300 mb-3" />
-          <p className="text-sm text-neutral-500">Nessun annuncio corrisponde ai filtri</p>
+          <p className="text-sm text-neutral-500">{t('listings.noResults')}</p>
           <button onClick={clearFilters} className="mt-2 text-xs text-neutral-500 hover:text-neutral-800 underline underline-offset-2 transition-colors">
-            Rimuovi filtri
+            {t('listings.filter.clear')}
           </button>
         </div>
       ) : viewMode === 'card' ? (
         /* Card grid */
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((l) => (
-            <ListingCard key={l.id} listing={l} />
+            <ListingCard key={l.id} listing={l} typeLabels={TYPE_LABELS} />
           ))}
         </div>
       ) : (
         /* List view */
         <div className="rounded-2xl border border-neutral-100 bg-white shadow-sm overflow-hidden">
           <div className="grid grid-cols-[1fr_100px_90px_90px_70px_90px] gap-2 px-4 py-2.5 border-b border-neutral-100 bg-neutral-50">
-            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Immobile</p>
-            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Tipo</p>
-            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider text-right">Prezzo</p>
-            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider text-right">mq / loc.</p>
-            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">AI</p>
-            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Data</p>
+            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">{t('listings.col.property')}</p>
+            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">{t('listings.col.type')}</p>
+            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider text-right">{t('listings.col.price')}</p>
+            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider text-right">{t('listings.col.sqmRooms')}</p>
+            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">{t('listings.col.ai')}</p>
+            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">{t('listings.col.date')}</p>
           </div>
           <div className="divide-y divide-neutral-50">
             {filtered.map((l) => (
-              <ListingRow key={l.id} listing={l} />
+              <ListingRow key={l.id} listing={l} typeLabels={TYPE_LABELS} draftLabel={t('listings.badge.draft')} />
             ))}
           </div>
         </div>
@@ -327,7 +329,8 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
 
 // ── Card ──────────────────────────────────────────────────────────────────────
 
-function ListingCard({ listing: l }: { listing: Listing }) {
+function ListingCard({ listing: l, typeLabels }: { listing: Listing; typeLabels: Record<string, string> }) {
+  const { t } = useI18n()
   const thumb = Array.isArray(l.photos_urls) && l.photos_urls.length > 0 ? l.photos_urls[0] : null
 
   return (
@@ -346,7 +349,7 @@ function ListingCard({ listing: l }: { listing: Listing }) {
             {l.generated_content ? (
               <span className="inline-flex items-center rounded-full bg-green-500 px-2 py-0.5 text-xs font-medium text-white shadow">AI</span>
             ) : (
-              <span className="inline-flex items-center rounded-full bg-neutral-800/70 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm">Bozza</span>
+              <span className="inline-flex items-center rounded-full bg-neutral-800/70 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm">{t('listings.badge.draft')}</span>
             )}
           </div>
         </div>
@@ -354,7 +357,7 @@ function ListingCard({ listing: l }: { listing: Listing }) {
           <div>
             <h3 className="font-semibold text-neutral-900 truncate text-sm leading-snug">{l.address}</h3>
             <p className="text-xs text-neutral-500 mt-0.5">
-              {TYPE_LABELS[l.property_type]} · {l.city}
+              {typeLabels[l.property_type]} · {l.city}
               {l.property_type === 'apartment' && l.floor != null ? ` · Piano ${l.floor}` : ''}
             </p>
           </div>
@@ -369,7 +372,7 @@ function ListingCard({ listing: l }: { listing: Listing }) {
             </span>
             <span className="flex items-center gap-1">
               <Home className="h-3 w-3 text-neutral-400" />
-              {l.rooms} loc.
+              {l.rooms} {t('common.rooms')}
             </span>
           </div>
           <div className="flex items-center justify-between border-t border-neutral-100 pt-3">
@@ -390,7 +393,7 @@ function ListingCard({ listing: l }: { listing: Listing }) {
 
 // ── Row ───────────────────────────────────────────────────────────────────────
 
-function ListingRow({ listing: l }: { listing: Listing }) {
+function ListingRow({ listing: l, typeLabels, draftLabel }: { listing: Listing; typeLabels: Record<string, string>; draftLabel: string }) {
   return (
     <Link
       href={`/listing/${l.id}`}
@@ -401,14 +404,14 @@ function ListingRow({ listing: l }: { listing: Listing }) {
         <p className="text-xs text-neutral-400 truncate">{l.city}</p>
       </div>
       <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium w-fit ${TYPE_COLORS[l.property_type] ?? 'bg-neutral-50 text-neutral-600 border-neutral-200'}`}>
-        {TYPE_LABELS[l.property_type]}
+        {typeLabels[l.property_type]}
       </span>
       <p className="text-xs font-medium text-neutral-800 text-right">€{l.price.toLocaleString('it-IT')}</p>
-      <p className="text-xs text-neutral-500 text-right">{l.sqm} m² · {l.rooms} loc.</p>
+      <p className="text-xs text-neutral-500 text-right">{l.sqm} m² · {l.rooms}</p>
       <span>
         {l.generated_content
-          ? <span className="rounded-full bg-green-100 text-green-700 px-2 py-0.5 text-[10px] font-medium">Sì</span>
-          : <span className="rounded-full bg-neutral-100 text-neutral-400 px-2 py-0.5 text-[10px] font-medium">No</span>
+          ? <span className="rounded-full bg-green-100 text-green-700 px-2 py-0.5 text-[10px] font-medium">AI</span>
+          : <span className="rounded-full bg-neutral-100 text-neutral-400 px-2 py-0.5 text-[10px] font-medium">{draftLabel}</span>
         }
       </span>
       <p className="text-xs text-neutral-400">{formatDate(l.created_at)}</p>
