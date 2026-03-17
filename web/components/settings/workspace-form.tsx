@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { Save } from 'lucide-react'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -71,7 +72,8 @@ export function WorkspaceForm({ workspace }: WorkspaceFormProps) {
         </Select>
         <p className="text-xs text-muted-foreground">Il tono selezionato sarà preselezionato nei nuovi annunci.</p>
       </div>
-      <button onClick={handleSave} disabled={isPending} className="btn-ai gap-2 disabled:opacity-60">
+      <button onClick={handleSave} disabled={isPending} className="btn-ai disabled:opacity-60">
+        <Save className="h-4 w-4" />
         {isPending ? 'Salvataggio...' : 'Salva modifiche'}
       </button>
     </div>

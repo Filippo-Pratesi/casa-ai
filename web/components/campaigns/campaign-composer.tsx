@@ -253,7 +253,7 @@ export function CampaignComposer({ cities, totalContacts }: CampaignComposerProp
         <button
           onClick={() => handleSend(true)}
           disabled={loading}
-          className="btn-ai flex-1 gap-2 disabled:opacity-60"
+          className="btn-ai flex-1 disabled:opacity-60"
         >
           <Send className="h-4 w-4" />
           {loading ? 'Invio in corso…' : 'Invia ora'}
@@ -261,7 +261,7 @@ export function CampaignComposer({ cities, totalContacts }: CampaignComposerProp
         <button
           onClick={() => handleSend(false)}
           disabled={loading}
-          className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-60"
         >
           <FileText className="h-4 w-4" />
           Salva bozza

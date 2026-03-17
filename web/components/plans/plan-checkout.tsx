@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Check, Loader2, Zap, Building2, Globe } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { PLAN_PRICES } from '@/lib/plan-limits'
+import { useI18n } from '@/lib/i18n/context'
 
 const ICON_MAP: Record<string, LucideIcon> = {
   Zap,
@@ -33,6 +34,7 @@ interface PlanCheckoutProps {
 export function PlanCheckout({ plans, currentPlan, workspaceId, prices }: PlanCheckoutProps) {
   const [billing, setBilling] = useState<'monthly' | 'annual'>('monthly')
   const [loading, setLoading] = useState<string | null>(null)
+  const { t } = useI18n()
 
   async function handleUpgrade(planId: string) {
     setLoading(planId)
@@ -64,7 +66,7 @@ export function PlanCheckout({ plans, currentPlan, workspaceId, prices }: PlanCh
               billing === 'monthly' ? 'bg-[oklch(0.57_0.20_33)] text-white' : 'text-muted-foreground hover:bg-muted'
             }`}
           >
-            Mensile
+            {t('plans.billing.monthly')}
           </button>
           <button
             onClick={() => setBilling('annual')}
@@ -72,7 +74,7 @@ export function PlanCheckout({ plans, currentPlan, workspaceId, prices }: PlanCh
               billing === 'annual' ? 'bg-[oklch(0.57_0.20_33)] text-white' : 'text-muted-foreground hover:bg-muted'
             }`}
           >
-            Annuale
+            {t('plans.billing.annual')}
             <span className={`text-xs font-semibold rounded-full px-1.5 py-0.5 ${
               billing === 'annual' ? 'bg-white/20 text-white' : 'bg-green-100 text-green-700'
             }`}>-5%</span>
@@ -100,7 +102,7 @@ export function PlanCheckout({ plans, currentPlan, workspaceId, prices }: PlanCh
               {plan.highlight && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <span className="rounded-full bg-gradient-to-r from-[oklch(0.57_0.20_33)] to-[oklch(0.66_0.15_188)] px-3 py-0.5 text-xs font-semibold text-white shadow-sm">
-                    Più popolare
+                    {t('plans.mostPopular')}
                   </span>
                 </div>
               )}
@@ -118,11 +120,11 @@ export function PlanCheckout({ plans, currentPlan, workspaceId, prices }: PlanCh
               <div className="mb-5">
                 <div className="flex items-baseline gap-1">
                   <span className="text-3xl font-bold">€{monthlyPrice}</span>
-                  <span className="text-sm text-muted-foreground">/mese</span>
+                  <span className="text-sm text-muted-foreground">{t('plans.perMonth')}</span>
                 </div>
                 {billing === 'annual' && (
                   <p className="text-xs text-green-600 mt-0.5">
-                    Fatturato €{monthlyPrice * 12}/anno
+                    {t('plans.billedAnnual').replace('{amount}', String(monthlyPrice * 12))}
                   </p>
                 )}
               </div>
@@ -138,7 +140,7 @@ export function PlanCheckout({ plans, currentPlan, workspaceId, prices }: PlanCh
 
               {isCurrent ? (
                 <div className="flex items-center justify-center rounded-xl bg-muted px-4 py-2.5 text-sm font-medium text-muted-foreground">
-                  Piano attuale
+                  {t('plans.currentPlan')}
                 </div>
               ) : (
                 <button
@@ -151,7 +153,7 @@ export function PlanCheckout({ plans, currentPlan, workspaceId, prices }: PlanCh
                   } disabled:opacity-60`}
                 >
                   {loading === plan.id && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {loading === plan.id ? 'Reindirizzo…' : 'Attiva piano'}
+                  {loading === plan.id ? t('plans.redirecting') : t('plans.activate')}
                 </button>
               )}
             </div>

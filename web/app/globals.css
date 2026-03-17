@@ -222,6 +222,17 @@ html {
 
 /* Coral gradient — AI buttons */
 .btn-ai {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  border: none;
   background: linear-gradient(135deg, oklch(0.57 0.20 33), oklch(0.62 0.18 20));
   color: white;
   position: relative;
