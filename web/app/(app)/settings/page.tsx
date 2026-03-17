@@ -8,6 +8,7 @@ import { TeamManagement } from '@/components/settings/team-management'
 import { UsageMeters } from '@/components/settings/usage-meters'
 import { BulkExportButton } from '@/components/settings/bulk-export-button'
 import { GoogleCalendarConnect } from '@/components/settings/google-calendar-connect'
+import { ImportContacts } from '@/components/settings/import-contacts'
 import { getPlanConfig } from '@/lib/plan-limits'
 import type { Workspace, Group } from '@/lib/supabase/types'
 
@@ -218,6 +219,20 @@ export default async function SettingsPage({
           />
         </CardContent>
       </Card>
+
+      {(profile?.role === 'admin' || profile?.role === 'group_admin') && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Importa contatti</CardTitle>
+            <CardDescription>
+              Carica un file CSV per importare clienti in blocco nel workspace
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ImportContacts />
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

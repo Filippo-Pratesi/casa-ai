@@ -14,6 +14,13 @@ export async function PATCH(
   if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
   const admin = createAdminClient()
+  const { data: profileData } = await admin
+    .from('users')
+    .select('workspace_id, role')
+    .eq('id', user.id)
+    .single()
+  const profile = profileData as { workspace_id: string; role: string } | null
+  if (!profile) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 404 })
 
   let body: Record<string, unknown>
   try {
@@ -43,6 +50,7 @@ export async function PATCH(
     .from('appointments')
     .update(allowed)
     .eq('id', id)
+    .eq('workspace_id', profile.workspace_id) // security: prevent cross-workspace modification
     .select('google_event_id, agent_id, title, starts_at, ends_at, notes')
     .single()
 
@@ -69,26 +77,38 @@ export async function DELETE(
   if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
   const admin = createAdminClient()
+  const { data: profileData } = await admin
+    .from('users')
+    .select('workspace_id, role')
+    .eq('id', user.id)
+    .single()
+  const profile = profileData as { workspace_id: string; role: string } | null
+  if (!profile) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 404 })
 
-  // Fetch before delete to get google_event_id
+  // Fetch before delete to get google_event_id — and verify workspace ownership
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: existing } = await (admin as any)
     .from('appointments')
-    .select('google_event_id, agent_id')
+    .select('google_event_id, agent_id, workspace_id')
     .eq('id', id)
     .single()
+
+  const ex = existing as { google_event_id: string | null; agent_id: string; workspace_id: string } | null
+  if (!ex || ex.workspace_id !== profile.workspace_id) {
+    return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 })
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (admin as any)
     .from('appointments')
     .delete()
     .eq('id', id)
+    .eq('workspace_id', profile.workspace_id) // double security check
 
   if (error) return NextResponse.json({ error: 'Errore nella cancellazione' }, { status: 500 })
 
   // Delete from Google Calendar if linked
-  const ex = existing as { google_event_id: string | null; agent_id: string } | null
-  if (ex?.google_event_id) {
+  if (ex.google_event_id) {
     deleteGoogleEvent(ex.google_event_id, ex.agent_id).catch(() => { /* silent */ })
   }
 

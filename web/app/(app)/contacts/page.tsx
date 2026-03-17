@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { UserPlus, Users, Phone, Mail, Euro, Home, Cake } from 'lucide-react'
+import { ExportContactsButton } from '@/components/contacts/export-contacts-button'
 
 const TYPE_LABELS: Record<string, string> = {
   buyer: 'Acquirente',
@@ -52,11 +53,12 @@ export default async function ContactsPage() {
   const admin = createAdminClient()
   const { data: profileData } = await admin
     .from('users')
-    .select('workspace_id')
+    .select('workspace_id, role')
     .eq('id', user!.id)
     .single()
 
-  const profile = profileData as { workspace_id: string } | null
+  const profile = profileData as { workspace_id: string; role: string } | null
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'group_admin'
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (admin as any)
@@ -77,10 +79,13 @@ export default async function ContactsPage() {
             {contacts.length > 0 ? `${contacts.length} contatti` : 'Nessun contatto ancora'}
           </p>
         </div>
-        <Button nativeButton={false} render={<Link href="/contacts/new" />} className="gap-2">
-          <UserPlus className="h-4 w-4" />
-          Nuovo cliente
-        </Button>
+        <div className="flex items-center gap-2">
+          {isAdmin && <ExportContactsButton />}
+          <Button nativeButton={false} render={<Link href="/contacts/new" />} className="gap-2">
+            <UserPlus className="h-4 w-4" />
+            Nuovo cliente
+          </Button>
+        </div>
       </div>
 
       {contacts.length === 0 ? (

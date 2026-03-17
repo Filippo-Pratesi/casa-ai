@@ -84,12 +84,22 @@ export async function DELETE(
   if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
   const admin = createAdminClient()
+  const { data: profileData } = await admin
+    .from('users')
+    .select('workspace_id, role')
+    .eq('id', user.id)
+    .single()
+  const profile = profileData as { workspace_id: string; role: string } | null
+  if (!profile || (profile.role !== 'admin' && profile.role !== 'group_admin')) {
+    return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 })
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (admin as any)
     .from('campaigns')
     .update({ attachment_url: null, attachment_name: null })
     .eq('id', id)
+    .eq('workspace_id', profile.workspace_id) // security: prevent cross-workspace modification
 
   return NextResponse.json({ success: true })
 }
