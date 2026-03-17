@@ -30,20 +30,20 @@ export function ValuationWidget({ currentPrice, currentSqm, comparables }: Valua
   const maxPrice = Math.max(...allPrices)
 
   return (
-    <div className="rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-4 space-y-4">
+    <div className="rounded-xl border border-border bg-muted px-4 py-4 space-y-4">
       <div className="flex items-center gap-2">
-        <TrendingUp className="h-4 w-4 text-neutral-500" />
-        <p className="text-xs text-neutral-500 uppercase tracking-wider font-medium">Stima di mercato</p>
+        <TrendingUp className="h-4 w-4 text-muted-foreground" />
+        <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Stima di mercato</p>
       </div>
 
       {/* Summary row */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-lg bg-white border border-neutral-100 px-3 py-2.5 text-center">
-          <p className="text-[10px] text-neutral-400 uppercase tracking-wide mb-0.5">Prezzo medio zona</p>
-          <p className="text-sm font-bold text-neutral-900">€{avgPrice.toLocaleString('it-IT')}</p>
+        <div className="rounded-lg bg-card border border-border px-3 py-2.5 text-center">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Prezzo medio zona</p>
+          <p className="text-sm font-bold text-foreground">€{avgPrice.toLocaleString('it-IT')}</p>
         </div>
         <div className={`rounded-lg border px-3 py-2.5 text-center ${isAbove ? 'bg-red-50 border-red-100' : 'bg-green-50 border-green-100'}`}>
-          <p className="text-[10px] text-neutral-400 uppercase tracking-wide mb-0.5">Differenza</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Differenza</p>
           <p className={`text-sm font-bold ${isAbove ? 'text-red-600' : 'text-green-600'}`}>
             {isAbove ? '+' : ''}{diffPct}%
           </p>

@@ -37,7 +37,7 @@ export function MlsToggle({ listingId, initialShared }: MlsToggleProps) {
         onClick={toggle}
         disabled={loading}
         className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
-          shared ? 'bg-blue-600' : 'bg-neutral-200'
+          shared ? 'bg-blue-600' : 'bg-muted'
         } ${loading ? 'opacity-50' : ''}`}
         role="switch"
         aria-checked={shared}

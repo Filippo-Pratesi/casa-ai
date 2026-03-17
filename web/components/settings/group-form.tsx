@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Save, Eye, EyeOff } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
@@ -44,10 +43,10 @@ export function GroupForm({ group }: { group: Group }) {
       </div>
 
       {/* Cross-agency visibility toggle */}
-      <div className="flex items-start gap-4 rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-4">
+      <div className="flex items-start gap-4 rounded-xl border border-border bg-muted/30 px-4 py-4">
         <div className="flex-1">
-          <p className="text-sm font-medium text-neutral-900">Mostra risultati tra agenzie</p>
-          <p className="text-xs text-neutral-500 mt-0.5">
+          <p className="text-sm font-medium">Mostra risultati tra agenzie</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
             Se attivo, gli agenti di ogni agenzia possono vedere le classifiche di tutto il gruppo.
             Se disattivo, ogni agenzia vede solo i propri risultati.
           </p>
@@ -57,8 +56,8 @@ export function GroupForm({ group }: { group: Group }) {
           onClick={() => setShowCrossAgency((v) => !v)}
           className={`mt-0.5 flex h-6 w-11 shrink-0 items-center rounded-full border-2 transition-colors ${
             showCrossAgency
-              ? 'border-neutral-900 bg-neutral-900'
-              : 'border-neutral-300 bg-neutral-200'
+              ? 'border-[oklch(0.57_0.20_33)] bg-[oklch(0.57_0.20_33)]'
+              : 'border-border bg-muted'
           }`}
         >
           <span
@@ -69,21 +68,21 @@ export function GroupForm({ group }: { group: Group }) {
         </button>
       </div>
 
-      <div className="flex items-center gap-2 text-xs text-neutral-500 rounded-lg border border-neutral-100 bg-neutral-50 px-3 py-2.5">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground rounded-lg border border-border bg-muted/30 px-3 py-2.5">
         {showCrossAgency ? (
           <Eye className="h-3.5 w-3.5 text-green-600 shrink-0" />
         ) : (
-          <EyeOff className="h-3.5 w-3.5 text-neutral-400 shrink-0" />
+          <EyeOff className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
         )}
         {showCrossAgency
           ? 'Tutti gli agenti del gruppo vedono le classifiche globali'
           : 'Ogni agenzia vede solo i propri risultati'}
       </div>
 
-      <Button onClick={handleSave} disabled={loading || !name.trim()} className="gap-2">
+      <button onClick={handleSave} disabled={loading || !name.trim()} className="btn-ai gap-2 disabled:opacity-60">
         <Save className="h-4 w-4" />
         {loading ? 'Salvataggio...' : 'Salva modifiche'}
-      </Button>
+      </button>
     </div>
   )
 }

@@ -37,34 +37,34 @@ export function ListingStats({ listingId, viewCount, shareCount, portalClickCoun
 
   return (
     <div className="flex items-center gap-3 flex-wrap">
-      <div className="flex items-center gap-1.5 rounded-full bg-neutral-100 px-3 py-1.5">
-        <Eye className="h-3.5 w-3.5 text-neutral-400" />
-        <span className="text-xs text-neutral-600 font-medium">{viewCount}</span>
-        <span className="text-xs text-neutral-400">visualizzazioni</span>
+      <div className="flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5">
+        <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+        <span className="text-xs text-muted-foreground font-medium">{viewCount}</span>
+        <span className="text-xs text-muted-foreground">visualizzazioni</span>
       </div>
 
-      <div className="flex items-center gap-1.5 rounded-full bg-neutral-100 px-3 py-1.5">
-        <Share2 className="h-3.5 w-3.5 text-neutral-400" />
-        <span className="text-xs text-neutral-600 font-medium">{shares}</span>
-        <span className="text-xs text-neutral-400">condivisioni</span>
+      <div className="flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5">
+        <Share2 className="h-3.5 w-3.5 text-muted-foreground" />
+        <span className="text-xs text-muted-foreground font-medium">{shares}</span>
+        <span className="text-xs text-muted-foreground">condivisioni</span>
       </div>
 
-      <div className="flex items-center gap-1.5 rounded-full bg-neutral-100 px-3 py-1.5">
-        <Globe className="h-3.5 w-3.5 text-neutral-400" />
-        <span className="text-xs text-neutral-600 font-medium">{portalClickCount}</span>
-        <span className="text-xs text-neutral-400">click portale</span>
+      <div className="flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5">
+        <Globe className="h-3.5 w-3.5 text-muted-foreground" />
+        <span className="text-xs text-muted-foreground font-medium">{portalClickCount}</span>
+        <span className="text-xs text-muted-foreground">click portale</span>
       </div>
 
       <button
         onClick={handleCopyLink}
-        className="flex items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-3 py-1.5 hover:bg-neutral-50 transition-colors"
+        className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 hover:bg-muted/50 transition-colors"
       >
         {copied ? (
           <Check className="h-3.5 w-3.5 text-green-500" />
         ) : (
-          <Copy className="h-3.5 w-3.5 text-neutral-400" />
+          <Copy className="h-3.5 w-3.5 text-muted-foreground" />
         )}
-        <span className="text-xs text-neutral-600 font-medium">
+        <span className="text-xs text-muted-foreground font-medium">
           {copied ? 'Copiato!' : 'Copia link'}
         </span>
       </button>
