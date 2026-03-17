@@ -8,7 +8,8 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const admin = createAdminClient()
-  const { data: profile } = await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: profile } = await (admin as any)
     .from('users')
     .select('role, workspace_id')
     .eq('id', user.id)
@@ -28,7 +29,8 @@ export async function POST(req: NextRequest) {
   const targetRole = role === 'admin' && profile.role === 'group_admin' ? 'admin' : 'agent'
 
   // Check if email already exists in workspace
-  const { data: existing } = await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: existing } = await (admin as any)
     .from('users')
     .select('id')
     .eq('email', email)
@@ -45,7 +47,8 @@ export async function POST(req: NextRequest) {
 
   if (existingAuthUser) {
     // User already exists in auth — just add them to this workspace
-    const { error: insertErr } = await admin
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: insertErr } = await (admin as any)
       .from('users')
       .insert({
         id: existingAuthUser.id,
@@ -77,7 +80,8 @@ export async function POST(req: NextRequest) {
   }
 
   // Pre-create user record so they appear in the team list immediately
-  const { error: insertErr } = await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: insertErr } = await (admin as any)
     .from('users')
     .insert({
       id: inviteData.user.id,

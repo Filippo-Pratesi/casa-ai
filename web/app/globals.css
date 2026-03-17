@@ -116,6 +116,10 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+html {
+  font-size: 106.25%; /* 17px base — slightly larger than default 16px */
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

@@ -28,7 +28,8 @@ export async function PATCH(req: NextRequest) {
   }
 
   const admin = createAdminClient()
-  const { data, error } = await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (admin as any)
     .from('users')
     .update(update)
     .eq('id', user.id)

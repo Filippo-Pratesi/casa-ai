@@ -57,24 +57,28 @@ export default async function AgentProfilePage({
   const admin = createAdminClient()
 
   // Verify the viewer is admin/group_admin
-  const { data: viewerProfile } = await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: viewerProfile } = await (admin as any)
     .from('users')
     .select('role, workspace_id')
     .eq('id', user.id)
     .single()
 
-  if (!viewerProfile || (viewerProfile.role !== 'admin' && viewerProfile.role !== 'group_admin')) {
+  const vp = viewerProfile as { role: string; workspace_id: string } | null
+  if (!vp || (vp.role !== 'admin' && vp.role !== 'group_admin')) {
     redirect('/dashboard')
   }
 
   // Fetch target agent (must be in same workspace)
-  const { data: agent } = await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: agent } = await (admin as any)
     .from('users')
     .select('id, name, email, role, created_at, workspace_id, phone, avatar_url')
     .eq('id', agentId)
     .single()
 
-  if (!agent || agent.workspace_id !== viewerProfile.workspace_id) notFound()
+  const agentData = agent as { id: string; name: string; email: string; role: string; created_at: string; workspace_id: string; phone: string | null; avatar_url: string | null } | null
+  if (!agentData || agentData.workspace_id !== vp!.workspace_id) notFound()
 
   // Fetch their listings
   const { data: listingsData } = await admin
@@ -106,7 +110,7 @@ export default async function AgentProfilePage({
   const { data: wsListingsData } = await admin
     .from('listings')
     .select('id, address, city')
-    .eq('workspace_id', viewerProfile.workspace_id)
+    .eq('workspace_id', vp!.workspace_id)
     .order('created_at', { ascending: false })
     .limit(100)
 
@@ -114,14 +118,14 @@ export default async function AgentProfilePage({
   const { data: wsContactsData } = await (admin as any)
     .from('contacts')
     .select('id, name')
-    .eq('workspace_id', viewerProfile.workspace_id)
+    .eq('workspace_id', vp!.workspace_id)
     .order('name', { ascending: true })
     .limit(200)
 
   const wsListings = (wsListingsData ?? []) as { id: string; address: string; city: string }[]
   const wsContacts = (wsContactsData ?? []) as { id: string; name: string }[]
 
-  const joinedDate = new Date(agent.created_at).toLocaleDateString('it-IT', {
+  const joinedDate = new Date(agentData.created_at).toLocaleDateString('it-IT', {
     day: '2-digit', month: 'long', year: 'numeric',
   })
 
@@ -138,29 +142,29 @@ export default async function AgentProfilePage({
       {/* Profile header */}
       <div className="flex items-start gap-5">
         <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-neutral-900 text-white text-xl font-bold overflow-hidden">
-          {(agent as { avatar_url?: string | null }).avatar_url ? (
+          {agentData.avatar_url ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={(agent as { avatar_url: string }).avatar_url} alt={agent.name} className="h-full w-full object-cover" />
+            <img src={agentData.avatar_url} alt={agentData.name} className="h-full w-full object-cover" />
           ) : (
-            getInitials(agent.name)
+            getInitials(agentData.name)
           )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-bold tracking-tight">{agent.name}</h1>
-            <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${ROLE_COLORS[agent.role]}`}>
-              {ROLE_LABELS[agent.role] ?? agent.role}
+            <h1 className="text-2xl font-bold tracking-tight">{agentData.name}</h1>
+            <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${ROLE_COLORS[agentData.role]}`}>
+              {ROLE_LABELS[agentData.role] ?? agentData.role}
             </span>
           </div>
           <div className="flex items-center gap-4 mt-1.5 flex-wrap text-sm text-neutral-500">
             <span className="flex items-center gap-1.5">
               <Mail className="h-3.5 w-3.5" />
-              {agent.email}
+              {agentData.email}
             </span>
-            {(agent as { phone?: string | null }).phone && (
+            {agentData.phone && (
               <span className="flex items-center gap-1.5">
                 <Phone className="h-3.5 w-3.5" />
-                {(agent as { phone: string }).phone}
+                {agentData.phone}
               </span>
             )}
             <span>Nel team dal {joinedDate}</span>
@@ -213,12 +217,12 @@ export default async function AgentProfilePage({
 
       {/* Calendar */}
       <CalendarClient
-        userId={agent.id}
-        role={viewerProfile.role}
+        userId={agentData.id}
+        role={vp!.role}
         listings={wsListings}
         contacts={wsContacts}
         filterAgentId={agentId}
-        filterAgentName={agent.name}
+        filterAgentName={agentData.name}
       />
 
       {/* Recent listings */}

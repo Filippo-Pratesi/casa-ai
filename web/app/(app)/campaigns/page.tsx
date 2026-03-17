@@ -6,6 +6,7 @@ import { Plus, Mail, Send, Clock, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
+import { getTranslations } from '@/lib/i18n/server'
 
 interface Campaign {
   id: string
@@ -18,17 +19,12 @@ interface Campaign {
   template: string
 }
 
-const STATUS_CONFIG = {
-  draft: { label: 'Bozza', color: 'bg-neutral-100 text-neutral-600', icon: Clock },
-  sending: { label: 'In invio', color: 'bg-blue-100 text-blue-700', icon: Send },
-  sent: { label: 'Inviata', color: 'bg-green-100 text-green-700', icon: Send },
-  failed: { label: 'Errore', color: 'bg-red-100 text-red-700', icon: AlertCircle },
-}
-
 export default async function CampaignsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  const { t, locale } = await getTranslations()
 
   const admin = createAdminClient()
   const { data: profileData } = await admin
@@ -48,33 +44,42 @@ export default async function CampaignsPage() {
 
   const campaigns = (data ?? []) as Campaign[]
 
+  const statusConfig = {
+    draft: { label: t('campaigns.status.draft'), color: 'bg-neutral-100 text-neutral-600', icon: Clock },
+    sending: { label: t('campaigns.status.sending'), color: 'bg-blue-100 text-blue-700', icon: Send },
+    sent: { label: t('campaigns.status.sent'), color: 'bg-green-100 text-green-700', icon: Send },
+    failed: { label: t('campaigns.status.failed'), color: 'bg-red-100 text-red-700', icon: AlertCircle },
+  }
+
+  const dateLocale = locale === 'en' ? 'en-GB' : 'it-IT'
+
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-12">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Campagne email</h1>
-          <p className="text-sm text-neutral-500 mt-1">Invia comunicazioni ai tuoi clienti</p>
+          <h1 className="text-2xl font-bold">{t('campaigns.title')}</h1>
+          <p className="text-sm text-neutral-500 mt-1">{t('campaigns.subtitle')}</p>
         </div>
         <Button nativeButton={false} render={<Link href="/campaigns/new" />} className="gap-2">
           <Plus className="h-4 w-4" />
-          Nuova campagna
+          {t('campaigns.new')}
         </Button>
       </div>
 
       {campaigns.length === 0 ? (
         <Card className="flex flex-col items-center justify-center py-16 text-center">
           <Mail className="h-10 w-10 text-neutral-300 mb-3" />
-          <p className="font-medium text-neutral-700">Nessuna campagna ancora</p>
-          <p className="text-sm text-neutral-400 mt-1 mb-5">Crea la tua prima campagna email</p>
+          <p className="font-medium text-neutral-700">{t('campaigns.empty.title')}</p>
+          <p className="text-sm text-neutral-400 mt-1 mb-5">{t('campaigns.empty.body')}</p>
           <Button nativeButton={false} render={<Link href="/campaigns/new" />} className="gap-2">
             <Plus className="h-4 w-4" />
-            Nuova campagna
+            {t('campaigns.new')}
           </Button>
         </Card>
       ) : (
         <div className="space-y-3">
           {campaigns.map((c) => {
-            const cfg = STATUS_CONFIG[c.status] ?? STATUS_CONFIG.draft
+            const cfg = statusConfig[c.status] ?? statusConfig.draft
             const StatusIcon = cfg.icon
             return (
               <Card key={c.id} className="flex items-center gap-4 px-5 py-4">
@@ -85,15 +90,15 @@ export default async function CampaignsPage() {
                   <p className="font-medium text-neutral-900 truncate">{c.subject}</p>
                   <p className="text-xs text-neutral-400 mt-0.5">
                     {c.sent_at
-                      ? `Inviata il ${new Date(c.sent_at).toLocaleDateString('it-IT')}`
-                      : `Creata il ${new Date(c.created_at).toLocaleDateString('it-IT')}`}
+                      ? `${t('campaigns.sentOn')} ${new Date(c.sent_at).toLocaleDateString(dateLocale)}`
+                      : `${t('campaigns.createdOn')} ${new Date(c.created_at).toLocaleDateString(dateLocale)}`}
                   </p>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
                   {c.status === 'sent' && (
                     <div className="text-right">
                       <p className="text-sm font-semibold text-neutral-800">{c.sent_count}</p>
-                      <p className="text-[10px] text-neutral-400 uppercase tracking-wide">Inviati</p>
+                      <p className="text-[10px] text-neutral-400 uppercase tracking-wide">{t('campaigns.sentCount')}</p>
                     </div>
                   )}
                   <Badge className={`flex items-center gap-1 text-xs font-medium border-0 ${cfg.color}`}>

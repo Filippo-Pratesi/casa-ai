@@ -17,7 +17,8 @@ export async function DELETE(
   }
 
   const admin = createAdminClient()
-  const { data: profile } = await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: profile } = await (admin as any)
     .from('users')
     .select('role, workspace_id')
     .eq('id', user.id)
@@ -28,7 +29,8 @@ export async function DELETE(
   }
 
   // Fetch target user
-  const { data: target } = await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: target } = await (admin as any)
     .from('users')
     .select('role, workspace_id')
     .eq('id', targetId)
@@ -46,7 +48,8 @@ export async function DELETE(
     return NextResponse.json({ error: 'Non puoi rimuovere un admin di gruppo' }, { status: 403 })
   }
 
-  const { error } = await admin.from('users').delete().eq('id', targetId)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (admin as any).from('users').delete().eq('id', targetId)
   if (error) {
     console.error('Delete member error:', error)
     return NextResponse.json({ error: 'Errore durante la rimozione' }, { status: 500 })
@@ -66,7 +69,8 @@ export async function PATCH(
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const admin = createAdminClient()
-  const { data: profile } = await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: profile } = await (admin as any)
     .from('users')
     .select('role, workspace_id')
     .eq('id', user.id)
@@ -81,7 +85,8 @@ export async function PATCH(
     return NextResponse.json({ error: 'Ruolo non valido' }, { status: 400 })
   }
 
-  const { data: target } = await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: target } = await (admin as any)
     .from('users')
     .select('role, workspace_id')
     .eq('id', targetId)
@@ -95,7 +100,8 @@ export async function PATCH(
     return NextResponse.json({ error: 'Non puoi modificare un admin di gruppo' }, { status: 403 })
   }
 
-  const { error } = await admin.from('users').update({ role }).eq('id', targetId)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (admin as any).from('users').update({ role }).eq('id', targetId)
   if (error) {
     console.error('Update role error:', error)
     return NextResponse.json({ error: 'Errore durante l\'aggiornamento' }, { status: 500 })
