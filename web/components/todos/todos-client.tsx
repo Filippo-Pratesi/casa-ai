@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useOptimistic, useTransition, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { CheckCircle2, Circle, Trash2, Plus, Send, UserRound } from 'lucide-react'
 import { useI18n } from '@/lib/i18n/context'
 
@@ -27,54 +27,90 @@ interface Props {
 
 export function TodosClient({ initialTodos, currentUserId, members }: Props) {
   const { t } = useI18n()
-  const [todos, setTodos] = useOptimistic<TodoItem[]>(initialTodos)
-  const [isPending, startTransition] = useTransition()
+  const [todos, setTodos] = useState<TodoItem[]>(initialTodos)
   const [newTitle, setNewTitle] = useState('')
   const [assignTo, setAssignTo] = useState<string>(currentUserId)
   const [submitting, setSubmitting] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const pendingTodos = todos.filter(td => !td.completed)
   const completedTodos = todos.filter(td => td.completed)
 
-  const handleToggle = useCallback((todo: TodoItem) => {
-    const updated = { ...todo, completed: !todo.completed, completed_at: !todo.completed ? new Date().toISOString() : null }
-    startTransition(async () => {
-      setTodos(prev => prev.map(t => t.id === todo.id ? updated : t))
-      await fetch(`/api/todos/${todo.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ completed: updated.completed }),
-      })
-    })
-  }, [setTodos])
-
-  const handleDelete = useCallback((id: string) => {
-    startTransition(async () => {
-      setTodos(prev => prev.filter(t => t.id !== id))
-      await fetch(`/api/todos/${id}`, { method: 'DELETE' })
-    })
-  }, [setTodos])
-
   const handleAdd = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newTitle.trim() || submitting) return
+    const title = newTitle.trim()
+    if (!title || submitting) return
+
+    // Optimistic: add immediately with a temp id
+    const tempId = `temp-${Date.now()}`
+    const tempTodo: TodoItem = {
+      id: tempId,
+      title,
+      completed: false,
+      completed_at: null,
+      created_at: new Date().toISOString(),
+      created_by: currentUserId,
+      assigned_to: assignTo,
+    }
+    setTodos(prev => [tempTodo, ...prev])
+    setNewTitle('')
+    setAssignTo(currentUserId)
+    inputRef.current?.focus()
     setSubmitting(true)
+
     try {
       const res = await fetch('/api/todos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: newTitle.trim(), assigned_to: assignTo }),
+        body: JSON.stringify({ title, assigned_to: assignTo }),
       })
       const json = await res.json()
       if (json.todo) {
-        setTodos(prev => [json.todo as TodoItem, ...prev])
-        setNewTitle('')
-        setAssignTo(currentUserId)
+        // Replace temp with real
+        setTodos(prev => prev.map(td => td.id === tempId ? json.todo as TodoItem : td))
+      } else {
+        // Revert on error
+        setTodos(prev => prev.filter(td => td.id !== tempId))
       }
+    } catch {
+      setTodos(prev => prev.filter(td => td.id !== tempId))
     } finally {
       setSubmitting(false)
     }
-  }, [newTitle, assignTo, submitting, currentUserId, setTodos])
+  }, [newTitle, assignTo, submitting, currentUserId])
+
+  const handleToggle = useCallback(async (todo: TodoItem) => {
+    // Optimistic flip
+    const nowCompleted = !todo.completed
+    setTodos(prev => prev.map(td =>
+      td.id === todo.id
+        ? { ...td, completed: nowCompleted, completed_at: nowCompleted ? new Date().toISOString() : null }
+        : td
+    ))
+
+    try {
+      await fetch(`/api/todos/${todo.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ completed: nowCompleted }),
+      })
+    } catch {
+      // Revert on error
+      setTodos(prev => prev.map(td =>
+        td.id === todo.id ? { ...td, completed: todo.completed, completed_at: todo.completed_at } : td
+      ))
+    }
+  }, [])
+
+  const handleDelete = useCallback(async (id: string) => {
+    // Optimistic remove
+    setTodos(prev => prev.filter(td => td.id !== id))
+    try {
+      await fetch(`/api/todos/${id}`, { method: 'DELETE' })
+    } catch {
+      // Silent — item is already gone visually
+    }
+  }, [])
 
   const memberName = (id: string) => members.find(m => m.id === id)?.name ?? t('todos.unknownUser')
 
@@ -93,12 +129,12 @@ export function TodosClient({ initialTodos, currentUserId, members }: Props) {
       {/* Add form */}
       <form onSubmit={handleAdd} className="flex gap-2 flex-wrap">
         <input
+          ref={inputRef}
           type="text"
           value={newTitle}
           onChange={e => setNewTitle(e.target.value)}
           placeholder={t('todos.placeholder')}
           className="flex-1 min-w-0 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-300"
-          disabled={submitting}
         />
         {members.length > 1 && (
           <select
@@ -123,8 +159,8 @@ export function TodosClient({ initialTodos, currentUserId, members }: Props) {
         </button>
       </form>
 
-      {/* Pending todos */}
-      {pendingTodos.length === 0 && completedTodos.length === 0 ? (
+      {/* Empty state */}
+      {todos.length === 0 && (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 py-20 text-center">
           <div className="mb-4 rounded-full bg-neutral-100 p-4">
             <CheckCircle2 className="h-8 w-8 text-neutral-300" />
@@ -132,7 +168,10 @@ export function TodosClient({ initialTodos, currentUserId, members }: Props) {
           <h2 className="text-base font-semibold text-neutral-800">{t('todos.empty.title')}</h2>
           <p className="mt-1 text-sm text-neutral-500 max-w-xs">{t('todos.empty.body')}</p>
         </div>
-      ) : (
+      )}
+
+      {/* Pending todos */}
+      {pendingTodos.length > 0 && (
         <div className="space-y-1">
           {pendingTodos.map(todo => (
             <TodoRow
@@ -142,7 +181,6 @@ export function TodosClient({ initialTodos, currentUserId, members }: Props) {
               memberName={memberName}
               onToggle={handleToggle}
               onDelete={handleDelete}
-              isPending={isPending}
             />
           ))}
         </div>
@@ -163,7 +201,6 @@ export function TodosClient({ initialTodos, currentUserId, members }: Props) {
                 memberName={memberName}
                 onToggle={handleToggle}
                 onDelete={handleDelete}
-                isPending={isPending}
               />
             ))}
           </div>
@@ -179,14 +216,12 @@ function TodoRow({
   memberName,
   onToggle,
   onDelete,
-  isPending,
 }: {
   todo: TodoItem
   currentUserId: string
   memberName: (id: string) => string
   onToggle: (todo: TodoItem) => void
   onDelete: (id: string) => void
-  isPending: boolean
 }) {
   const { t } = useI18n()
   const isAssignedToMe = todo.assigned_to === currentUserId
@@ -199,8 +234,8 @@ function TodoRow({
     }`}>
       <button
         onClick={() => onToggle(todo)}
-        disabled={isPending}
         className="mt-0.5 shrink-0 transition-colors hover:text-green-600"
+        aria-label={todo.completed ? 'Mark incomplete' : 'Mark complete'}
       >
         {todo.completed
           ? <CheckCircle2 className="h-5 w-5 text-green-500" />
@@ -225,15 +260,15 @@ function TodoRow({
             </span>
           )}
           <span className="text-[11px] text-neutral-400">
-            {new Date(todo.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}
+            {new Date(todo.created_at).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}
           </span>
         </div>
       </div>
 
       <button
         onClick={() => onDelete(todo.id)}
-        disabled={isPending}
         className="shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity text-neutral-300 hover:text-red-400"
+        aria-label="Delete todo"
       >
         <Trash2 className="h-4 w-4" />
       </button>

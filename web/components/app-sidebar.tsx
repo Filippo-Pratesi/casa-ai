@@ -104,7 +104,7 @@ export function AppSidebar({
           <WorkspaceSwitcher
             workspaces={groupWorkspaces}
             activeWorkspaceId={activeWorkspaceId}
-            groupName={groupName ?? 'Gruppo'}
+            groupName={groupName ?? t('sidebar.group')}
           />
         ) : (
           <div className="flex items-center gap-3 px-3 py-2.5">
@@ -179,12 +179,12 @@ export function AppSidebar({
           <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuItem onClick={() => router.push('/profile')}>
               <UserIcon className="mr-2 h-4 w-4" />
-              Il mio profilo
+              {t('sidebar.myProfile')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} variant="destructive">
               <LogOut className="mr-2 h-4 w-4" />
-              Esci
+              {t('sidebar.logout')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

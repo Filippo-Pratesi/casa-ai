@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useI18n } from '@/lib/i18n/context'
 import {
   ChevronLeft,
   ChevronRight,
@@ -62,13 +63,7 @@ type ViewMode = 'month' | 'week'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const TYPE_LABELS: Record<string, string> = {
-  viewing: 'Visita',
-  meeting: 'Riunione',
-  signing: 'Firma',
-  call: 'Telefonata',
-  other: 'Altro',
-}
+// TYPE_LABELS computed from i18n in each component
 
 const TYPE_COLORS: Record<string, string> = {
   viewing: 'bg-blue-100 text-blue-800 border-blue-200',
@@ -105,12 +100,7 @@ function agentColorIndex(agentId: string): number {
   return h % AGENT_COLORS.length
 }
 
-const MONTH_NAMES = [
-  'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
-  'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre',
-]
-
-const DAY_NAMES = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
+// MONTH_NAMES / DAY_NAMES computed from i18n in CalendarClient
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -164,6 +154,14 @@ interface ModalProps {
 }
 
 function AppointmentModal({ listings, contacts, agents, currentUserId, initial, editing, onClose, onSaved }: ModalProps) {
+  const { t } = useI18n()
+  const typeLabels: Record<string, string> = {
+    viewing: t('calendar.type.viewing'),
+    meeting: t('calendar.type.meeting'),
+    signing: t('calendar.type.signing'),
+    call: t('calendar.type.call'),
+    other: t('calendar.type.other'),
+  }
   const defaultDate = initial?.date ?? new Date()
   const pad = (n: number) => String(n).padStart(2, '0')
   const toDateInput = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
@@ -221,7 +219,7 @@ function AppointmentModal({ listings, contacts, agents, currentUserId, initial, 
       <div className="w-full max-w-md rounded-2xl bg-white shadow-xl">
         <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
           <h2 className="text-sm font-semibold text-neutral-900">
-            {editing ? 'Modifica appuntamento' : 'Nuovo appuntamento'}
+            {editing ? t('calendar.modal.editAppt') : t('calendar.modal.newAppt')}
           </h2>
           <button onClick={onClose} className="rounded-lg p-1 hover:bg-neutral-100 transition-colors">
             <X className="h-4 w-4 text-neutral-500" />
@@ -229,81 +227,81 @@ function AppointmentModal({ listings, contacts, agents, currentUserId, initial, 
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Titolo *</label>
+            <label className="block text-xs font-medium text-neutral-600 mb-1">{t('calendar.modal.title')}</label>
             <input
               value={title}
               onChange={e => setTitle(e.target.value)}
               required
-              placeholder="es. Visita appartamento Milano"
+              placeholder={t('calendar.modal.titlePlaceholder')}
               className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-300"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1.5">Tipo</label>
+            <label className="block text-xs font-medium text-neutral-600 mb-1.5">{t('calendar.modal.type')}</label>
             <div className="flex flex-wrap gap-2">
-              {(Object.keys(TYPE_LABELS) as Appointment['type'][]).map(t => (
+              {(Object.keys(typeLabels) as Appointment['type'][]).map(apptType => (
                 <button
-                  key={t}
+                  key={apptType}
                   type="button"
-                  onClick={() => setType(t)}
+                  onClick={() => setType(apptType)}
                   className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${
-                    type === t ? TYPE_COLORS[t] : 'border-neutral-200 text-neutral-500 hover:border-neutral-300'
+                    type === apptType ? TYPE_COLORS[apptType] : 'border-neutral-200 text-neutral-500 hover:border-neutral-300'
                   }`}
                 >
-                  {TYPE_LABELS[t]}
+                  {typeLabels[apptType]}
                 </button>
               ))}
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2">
             <div className="col-span-1">
-              <label className="block text-xs font-medium text-neutral-600 mb-1">Data *</label>
+              <label className="block text-xs font-medium text-neutral-600 mb-1">{t('calendar.modal.date')}</label>
               <input type="date" value={date} onChange={e => setDate(e.target.value)} required className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-neutral-600 mb-1">Inizio *</label>
+              <label className="block text-xs font-medium text-neutral-600 mb-1">{t('calendar.modal.start')}</label>
               <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} required className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-neutral-600 mb-1">Fine</label>
+              <label className="block text-xs font-medium text-neutral-600 mb-1">{t('calendar.modal.end')}</label>
               <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300" />
             </div>
           </div>
           {contacts.length > 0 && (
             <div>
-              <label className="block text-xs font-medium text-neutral-600 mb-1">Cliente</label>
+              <label className="block text-xs font-medium text-neutral-600 mb-1">{t('calendar.modal.client')}</label>
               <select value={contactId} onChange={e => setContactId(e.target.value)} className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300">
-                <option value="">— Nessuno —</option>
+                <option value="">{t('calendar.modal.none')}</option>
                 {contacts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
           )}
           {listings.length > 0 && (
             <div>
-              <label className="block text-xs font-medium text-neutral-600 mb-1">Immobile</label>
+              <label className="block text-xs font-medium text-neutral-600 mb-1">{t('calendar.modal.listing')}</label>
               <select value={listingId} onChange={e => setListingId(e.target.value)} className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300">
-                <option value="">— Nessuno —</option>
+                <option value="">{t('calendar.modal.none')}</option>
                 {listings.map(l => <option key={l.id} value={l.id}>{l.address}, {l.city}</option>)}
               </select>
             </div>
           )}
           {agents && agents.length > 1 && !editing && (
             <div>
-              <label className="block text-xs font-medium text-neutral-600 mb-1">Assegna a</label>
+              <label className="block text-xs font-medium text-neutral-600 mb-1">{t('calendar.modal.assignTo')}</label>
               <select value={assignedAgentId} onChange={e => setAssignedAgentId(e.target.value)} className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300">
-                {agents.map(a => <option key={a.id} value={a.id}>{a.name}{a.id === currentUserId ? ' (tu)' : ''}</option>)}
+                {agents.map(a => <option key={a.id} value={a.id}>{a.name}{a.id === currentUserId ? t('calendar.modal.you') : ''}</option>)}
               </select>
             </div>
           )}
           <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Note</label>
-            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Note opzionali…" className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-300 resize-none" />
+            <label className="block text-xs font-medium text-neutral-600 mb-1">{t('calendar.modal.notes')}</label>
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder={t('calendar.modal.notesPlaceholder')} className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-300 resize-none" />
           </div>
           <div className="flex gap-2 pt-1">
             <Button type="submit" disabled={loading} className="flex-1 h-9 text-sm">
-              {loading ? 'Salvo…' : editing ? 'Aggiorna' : 'Crea appuntamento'}
+              {loading ? t('calendar.modal.saving') : editing ? t('calendar.modal.update') : t('calendar.modal.create')}
             </Button>
-            <Button type="button" variant="ghost" onClick={onClose} className="h-9 text-sm px-4">Annulla</Button>
+            <Button type="button" variant="ghost" onClick={onClose} className="h-9 text-sm px-4">{t('calendar.modal.cancel')}</Button>
           </div>
         </form>
       </div>
@@ -323,6 +321,7 @@ interface CardProps {
 }
 
 function AppointmentCard({ appt, listings, agentColor, onStatusChange, onEdit, onDelete }: CardProps) {
+  const { t } = useI18n()
   const listing = appt.listing_id ? listings.find(l => l.id === appt.listing_id) : null
   const isCancelled = appt.status === 'cancelled'
   const isCompleted = appt.status === 'completed'
@@ -334,7 +333,7 @@ function AppointmentCard({ appt, listings, agentColor, onStatusChange, onEdit, o
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 mb-0.5">
             <span className={`h-2 w-2 rounded-full shrink-0 ${TYPE_DOT[appt.type]}`} />
-            <span className="text-xs font-medium opacity-80">{TYPE_LABELS[appt.type]}</span>
+            <span className="text-xs font-medium opacity-80">{t(`calendar.type.${appt.type}`)}</span>
           </div>
           <p className={`text-sm font-semibold truncate ${isCancelled ? 'line-through' : ''}`}>{appt.title}</p>
           <div className="flex items-center gap-3 mt-1">
@@ -387,6 +386,17 @@ function AppointmentCard({ appt, listings, agentColor, onStatusChange, onEdit, o
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export function CalendarClient({ listings, contacts, agents, role, userId, filterAgentId, filterAgentName }: CalendarClientProps) {
+  const { t } = useI18n()
+  const MONTH_NAMES = useMemo(() => [
+    t('calendar.month.jan'), t('calendar.month.feb'), t('calendar.month.mar'),
+    t('calendar.month.apr'), t('calendar.month.may'), t('calendar.month.jun'),
+    t('calendar.month.jul'), t('calendar.month.aug'), t('calendar.month.sep'),
+    t('calendar.month.oct'), t('calendar.month.nov'), t('calendar.month.dec'),
+  ], [t])
+  const DAY_NAMES = useMemo(() => [
+    t('calendar.day.mon'), t('calendar.day.tue'), t('calendar.day.wed'),
+    t('calendar.day.thu'), t('calendar.day.fri'), t('calendar.day.sat'), t('calendar.day.sun'),
+  ], [t])
   const today = new Date()
   const [view, setView] = useState<ViewMode>('month')
   const [year, setYear] = useState(today.getFullYear())

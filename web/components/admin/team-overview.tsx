@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import { useI18n } from '@/lib/i18n/context'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -77,11 +78,6 @@ function medalBg(rank: number) {
 
 type Metric = 'sold' | 'listings' | 'contacts'
 
-const METRICS: { id: Metric; label: string }[] = [
-  { id: 'sold', label: 'Immobili venduti' },
-  { id: 'listings', label: 'Annunci inseriti' },
-  { id: 'contacts', label: 'Clienti aggiunti' },
-]
 
 interface AgentStats {
   agent: AgentRawData
@@ -127,6 +123,12 @@ export function TeamOverview({
   currentUserId: string
 }) {
   const router = useRouter()
+  const { t } = useI18n()
+  const METRICS = [
+    { id: 'sold' as Metric, label: t('team.metric.sold') },
+    { id: 'listings' as Metric, label: t('team.metric.listings') },
+    { id: 'contacts' as Metric, label: t('team.metric.contacts') },
+  ]
   const now = new Date()
   const currentMonth = monthKey(now)
   const currentYear = `${now.getFullYear()}`
