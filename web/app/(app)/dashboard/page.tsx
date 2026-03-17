@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { PlusSquare, FileText, Euro, Maximize2, Home, User } from 'lucide-react'
+import { PlusSquare, FileText, Euro, Maximize2, Home, User, Users, CalendarDays, TrendingUp } from 'lucide-react'
 import type { Listing } from '@/lib/supabase/types'
 
 const TONE_LABELS: Record<string, string> = {
@@ -58,20 +58,53 @@ export default async function DashboardPage() {
   const { data: listings } = await listingsQuery
   const items = (listings ?? []) as ListingWithAgent[]
 
+  // Fetch stats in parallel
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [{ count: contactsCount }, { count: appointmentsCount }] = await Promise.all([
+    (admin as any).from('contacts').select('id', { count: 'exact', head: true }).eq('workspace_id', profile?.workspace_id ?? ''),
+    (admin as any).from('appointments').select('id', { count: 'exact', head: true }).eq('workspace_id', profile?.workspace_id ?? '').gte('starts_at', new Date().toISOString().slice(0, 10)),
+  ])
+
+  const stats = [
+    { label: 'Annunci attivi', value: items.length, icon: Home, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { label: 'Clienti', value: (contactsCount as number | null) ?? 0, icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { label: 'App. imminenti', value: (appointmentsCount as number | null) ?? 0, icon: CalendarDays, color: 'text-violet-600', bg: 'bg-violet-50' },
+    { label: 'Con contenuto AI', value: items.filter(l => l.generated_content).length, icon: TrendingUp, color: 'text-orange-600', bg: 'bg-orange-50' },
+  ]
+
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Annunci</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-neutral-500 text-sm mt-0.5">
-            {items.length > 0 ? `${items.length} annunci generati` : 'Nessun annuncio ancora'}
+            Benvenuto nel tuo back-office AI
           </p>
         </div>
-        <Button nativeButton={false} render={<Link href="/listing/new" />} className="gap-2">
+        <Button nativeButton={false} render={<Link href="/listing/new" />} className="gap-2 shadow-sm hover:shadow-md transition-shadow">
           <PlusSquare className="h-4 w-4" />
           Nuovo annuncio
         </Button>
+      </div>
+
+      {/* Stats bar */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {stats.map((s) => (
+          <div key={s.label} className="rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm hover:shadow-md transition-shadow duration-200">
+            <div className={`mb-3 inline-flex rounded-xl p-2 ${s.bg}`}>
+              <s.icon className={`h-4 w-4 ${s.color}`} />
+            </div>
+            <p className="text-2xl font-bold text-neutral-900 leading-none">{s.value}</p>
+            <p className="mt-1 text-xs text-neutral-500">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Section header */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-neutral-900">Annunci recenti</h2>
+        <span className="text-sm text-neutral-400">{items.length} totali</span>
       </div>
 
       {items.length === 0 ? (
@@ -97,7 +130,7 @@ export default async function DashboardPage() {
 
             return (
               <Link key={listing.id} href={`/listing/${listing.id}`} className="group block">
-                <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5">
+                <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm transition-all duration-200 hover:shadow-xl hover:-translate-y-1 hover:border-neutral-200">
                   {/* Photo / placeholder */}
                   <div className="relative h-44 w-full bg-neutral-100">
                     {thumb ? (

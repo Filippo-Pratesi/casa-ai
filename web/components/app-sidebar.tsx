@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { LayoutDashboard, PlusSquare, Settings, LogOut, Users, UserRound, Archive, UserIcon, CreditCard, Mail, Bell, CalendarDays, Building2 } from 'lucide-react'
@@ -81,9 +82,31 @@ export function AppSidebar({
     .toUpperCase()
     .slice(0, 2)
 
+  // Helper: nav item with optional badge
+  function NavItem({ href, icon: Icon, label, badge, exact = true }: { href: string; icon: React.ElementType; label: string; badge?: number | null; exact?: boolean }) {
+    const active = exact ? pathname === href : pathname.startsWith(href)
+    return (
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          render={<Link href={href} />}
+          isActive={active}
+          className="group/nav-item h-9 gap-3 rounded-lg px-3 text-sm font-medium transition-all duration-150"
+        >
+          <Icon className="h-4 w-4 shrink-0 transition-transform duration-150 group-hover/nav-item:scale-110" />
+          <span className="flex-1 truncate">{label}</span>
+          {!!badge && badge > 0 && (
+            <span className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+              {badge}
+            </span>
+          )}
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    )
+  }
+
   return (
-    <Sidebar>
-      <SidebarHeader>
+    <Sidebar className="border-r border-neutral-200/80">
+      <SidebarHeader className="pb-2">
         {isGroupAdmin && groupWorkspaces.length > 0 ? (
           <WorkspaceSwitcher
             workspaces={groupWorkspaces}
@@ -91,139 +114,70 @@ export function AppSidebar({
             groupName={groupName ?? 'Gruppo'}
           />
         ) : (
-          <div className="flex items-center gap-2.5 px-2 py-2">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-neutral-900 text-white text-xs font-bold">
+          <div className="flex items-center gap-3 px-3 py-2.5">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-neutral-800 to-neutral-950 text-white text-xs font-bold shadow-sm">
               CA
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-neutral-900 leading-tight">CasaAI</p>
+              <p className="text-sm font-bold text-neutral-900 leading-tight">CasaAI</p>
               <p className="text-[11px] text-neutral-400 truncate leading-tight">{workspace.name}</p>
             </div>
           </div>
         )}
       </SidebarHeader>
 
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Annunci</SidebarGroupLabel>
+      <SidebarContent className="px-2">
+        <SidebarGroup className="py-1">
+          <SidebarGroupLabel className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+            Lavoro
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {agentNav.map((item) => {
-                const badge = item.href === '/contacts' && birthdayCount > 0 ? birthdayCount : null
-                return (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      render={<Link href={item.href} />}
-                      isActive={pathname === item.href}
-                    >
-                      <item.icon />
-                      <span className="flex-1">{item.label}</span>
-                      {badge !== null && (
-                        <span className="ml-auto rounded-full bg-pink-500 text-white text-[10px] font-bold px-1.5 py-0.5 min-w-[18px] text-center leading-none">
-                          {badge}
-                        </span>
-                      )}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )
-              })}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  render={<Link href="/notifications" />}
-                  isActive={pathname === '/notifications'}
-                >
-                  <Bell />
-                  <span className="flex-1">Notifiche</span>
-                  {unreadNotifications > 0 && (
-                    <span className="ml-auto rounded-full bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 min-w-[18px] text-center leading-none">
-                      {unreadNotifications}
-                    </span>
-                  )}
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  render={<Link href="/calendar" />}
-                  isActive={pathname.startsWith('/calendar')}
-                >
-                  <CalendarDays />
-                  <span className="flex-1">Calendario</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              {hasGroup && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    render={<Link href="/mls" />}
-                    isActive={pathname.startsWith('/mls')}
-                  >
-                    <Building2 />
-                    <span className="flex-1">MLS</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
+            <SidebarMenu className="space-y-0.5">
+              <NavItem href="/dashboard" icon={LayoutDashboard} label="Dashboard" />
+              <NavItem href="/listing/new" icon={PlusSquare} label="Nuovo annuncio" />
+              <NavItem href="/contacts" icon={UserRound} label="Clienti" badge={birthdayCount} />
+              <NavItem href="/notifications" icon={Bell} label="Notifiche" badge={unreadNotifications} />
+              <NavItem href="/calendar" icon={CalendarDays} label="Calendario" exact={false} />
+              {hasGroup && <NavItem href="/mls" icon={Building2} label="MLS" exact={false} />}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>{isAdmin ? 'Amministrazione' : 'Team'}</SidebarGroupLabel>
+        <SidebarGroup className="py-1">
+          <SidebarGroupLabel className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+            {isAdmin ? 'Gestione' : 'Team'}
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {teamNav.filter(item => !item.adminOnly || isAdmin).map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    render={<Link href={item.href} />}
-                    isActive={pathname === item.href}
-                  >
-                    <item.icon />
-                    <span>{item.label}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  render={<Link href="/settings" />}
-                  isActive={pathname === '/settings'}
-                >
-                  <Settings />
-                  <span>Impostazioni</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              {isAdmin && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    render={<Link href="/plans" />}
-                    isActive={pathname === '/plans'}
-                  >
-                    <CreditCard />
-                    <span>Piano</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
+            <SidebarMenu className="space-y-0.5">
+              <NavItem href="/admin" icon={Users} label="Team" />
+              <NavItem href="/archive" icon={Archive} label="Archivio" />
+              {isAdmin && <NavItem href="/campaigns" icon={Mail} label="Campagne" />}
+              <NavItem href="/settings" icon={Settings} label="Impostazioni" />
+              {isAdmin && <NavItem href="/plans" icon={CreditCard} label="Piano" />}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
 
       {trialDaysLeft !== null && isAdmin && (
-        <div className="mx-2 mb-1 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
-          <p className="text-xs font-medium text-amber-800">Trial — {trialDaysLeft} giorni rimanenti</p>
-          <Link href="/plans" className="text-xs text-amber-600 hover:underline">Scegli un piano →</Link>
+        <div className="mx-3 mb-2 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 px-3 py-2.5">
+          <p className="text-xs font-semibold text-amber-800">Trial — {trialDaysLeft} giorni rimasti</p>
+          <Link href="/plans" className="text-xs text-amber-600 hover:text-amber-700 hover:underline transition-colors">
+            Scegli un piano →
+          </Link>
         </div>
       )}
 
-      <SidebarFooter>
+      <SidebarFooter className="px-2 pb-3">
         <DropdownMenu>
-          <DropdownMenuTrigger className="flex items-center gap-3 w-full px-2 py-2 rounded-md hover:bg-neutral-100 transition-colors text-left">
-            <Avatar className="h-8 w-8">
+          <DropdownMenuTrigger className="flex items-center gap-3 w-full rounded-xl px-3 py-2.5 hover:bg-neutral-100 transition-all duration-150 text-left group/footer">
+            <Avatar className="h-8 w-8 ring-2 ring-neutral-200 group-hover/footer:ring-neutral-300 transition-all">
               {user.avatar_url && <AvatarImage src={user.avatar_url} alt={user.name} />}
-              <AvatarFallback className="text-xs bg-neutral-200">{initials}</AvatarFallback>
+              <AvatarFallback className="text-xs bg-neutral-200 font-semibold">{initials}</AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{user.name}</p>
-              <p className="text-xs text-neutral-500 truncate">{user.email}</p>
+              <p className="text-sm font-semibold text-neutral-900 truncate leading-tight">{user.name}</p>
+              <p className="text-[11px] text-neutral-400 truncate leading-tight">{user.email}</p>
             </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
