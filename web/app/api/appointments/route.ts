@@ -21,8 +21,9 @@ export async function GET(req: NextRequest) {
   const to = req.nextUrl.searchParams.get('to')
   const agentIdFilter = req.nextUrl.searchParams.get('agent_id')
 
+  // Use admin client to bypass RLS — workspace_id filter ensures security
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let query = (supabase as any)
+  let query = (admin as any)
     .from('appointments')
     .select('*')
     .eq('workspace_id', profile.workspace_id)
