@@ -71,6 +71,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .eq('read', false)
   const unreadNotifications = (unreadNotificationsCount as number | null) ?? 0
 
+  // Pending todos assigned to me
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { count: pendingTodosCount } = await (admin as any)
+    .from('todos')
+    .select('id', { count: 'exact', head: true })
+    .eq('assigned_to', user.id)
+    .eq('completed', false)
+  const pendingTodos = (pendingTodosCount as number | null) ?? 0
+
   // Birthday contacts count for sidebar badge (contacts with birthday in next 7 days)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: birthdayContactsData } = await (admin as any)
@@ -107,6 +116,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         unreadNotifications={unreadNotifications}
         birthdayCount={birthdayCount}
         hasGroup={!!profile.group_id}
+        pendingTodos={pendingTodos}
       />
       <SidebarInset>
         <AppHeader />

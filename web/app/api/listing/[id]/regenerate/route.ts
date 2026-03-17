@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { regenerateTab } from '@/lib/deepseek'
 import type { GeneratedContent } from '@/lib/supabase/types'
 
@@ -31,8 +32,9 @@ export async function POST(
     return NextResponse.json({ error: 'Tab non valido' }, { status: 400 })
   }
 
-  // Fetch user's workspace for ownership enforcement
-  const { data: profileData } = await supabase
+  // Fetch user's workspace for ownership enforcement — admin client bypasses RLS
+  const admin = createAdminClient()
+  const { data: profileData } = await admin
     .from('users')
     .select('workspace_id')
     .eq('id', user.id)

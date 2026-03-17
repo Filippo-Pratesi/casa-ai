@@ -3,7 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, PlusSquare, Settings, LogOut, Users, UserRound, Archive, UserIcon, CreditCard, Mail, Bell, CalendarDays, Building2 } from 'lucide-react'
+import { LayoutDashboard, Settings, LogOut, Users, UserRound, Archive, UserIcon, CreditCard, Mail, Bell, CalendarDays, Building2, CheckSquare } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -38,19 +38,9 @@ interface AppSidebarProps {
   unreadNotifications: number
   birthdayCount: number
   hasGroup?: boolean
+  pendingTodos?: number
 }
 
-const agentNav = [
-  { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { label: 'Nuovo annuncio', href: '/listing/new', icon: PlusSquare },
-  { label: 'Clienti', href: '/contacts', icon: UserRound },
-]
-
-const teamNav = [
-  { label: 'Team', href: '/admin', icon: Users },
-  { label: 'Archivio', href: '/archive', icon: Archive },
-  { label: 'Campagne', href: '/campaigns', icon: Mail, adminOnly: true },
-]
 
 export function AppSidebar({
   user,
@@ -62,6 +52,7 @@ export function AppSidebar({
   unreadNotifications,
   birthdayCount,
   hasGroup = false,
+  pendingTodos = 0,
 }: AppSidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
@@ -134,8 +125,8 @@ export function AppSidebar({
           <SidebarGroupContent>
             <SidebarMenu className="space-y-0.5">
               <NavItem href="/dashboard" icon={LayoutDashboard} label="Dashboard" />
-              <NavItem href="/listing/new" icon={PlusSquare} label="Nuovo annuncio" />
               <NavItem href="/contacts" icon={UserRound} label="Clienti" badge={birthdayCount} />
+              <NavItem href="/todos" icon={CheckSquare} label="To Do" badge={pendingTodos} />
               <NavItem href="/notifications" icon={Bell} label="Notifiche" badge={unreadNotifications} />
               <NavItem href="/calendar" icon={CalendarDays} label="Calendario" exact={false} />
               {hasGroup && <NavItem href="/mls" icon={Building2} label="MLS" exact={false} />}
