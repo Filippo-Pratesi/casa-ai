@@ -464,6 +464,7 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
   // For admins: active agent filter (undefined = all)
   const [activeAgentId, setActiveAgentId] = useState<string | undefined>(filterAgentId)
   const isAdmin = role === 'admin'
+  const [googleEvents, setGoogleEvents] = useState<Array<{ id: string; summary: string; start: string; end: string }>>([])
 
   const fetchAppointments = useCallback(async () => {
     setLoading(true)
@@ -472,10 +473,18 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
       const to = new Date(year, month + 1, 0, 23, 59, 59).toISOString()
       let url = `/api/appointments?from=${from}&to=${to}`
       if (activeAgentId) url += `&agent_id=${activeAgentId}`
-      const res = await fetch(url)
-      if (!res.ok) return
-      const data = await res.json()
-      setAppointments(data.appointments ?? [])
+      const [apptRes, gcalRes] = await Promise.all([
+        fetch(url),
+        fetch(`/api/calendar/google-events?from=${from}&to=${to}`),
+      ])
+      if (apptRes.ok) {
+        const data = await apptRes.json()
+        setAppointments(data.appointments ?? [])
+      }
+      if (gcalRes.ok) {
+        const gcal = await gcalRes.json()
+        setGoogleEvents(gcal.events ?? [])
+      }
     } catch {
       // silent
     } finally {
@@ -548,6 +557,10 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
   const selectedDayAppts = appointments
     .filter(a => isSameDay(new Date(a.starts_at), selectedDay))
     .sort((a, b) => a.starts_at.localeCompare(b.starts_at))
+
+  const selectedDayGoogleEvents = googleEvents
+    .filter(e => isSameDay(new Date(e.start), selectedDay))
+    .sort((a, b) => a.start.localeCompare(b.start))
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-12">
@@ -718,6 +731,25 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
                   onEdit={openEditModal}
                   onDelete={handleDelete}
                 />
+              ))}
+            </div>
+          )}
+
+          {/* Google Calendar events */}
+          {selectedDayGoogleEvents.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <p className="text-xs font-medium text-neutral-400 uppercase tracking-wider flex items-center gap-1.5">
+                <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-neutral-200 text-[9px] font-bold text-neutral-500">G</span>
+                Da Google Calendar
+              </p>
+              {selectedDayGoogleEvents.map(e => (
+                <div key={e.id} className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3">
+                  <p className="text-sm font-medium text-neutral-700 truncate">{e.summary}</p>
+                  <p className="text-xs text-neutral-400 mt-0.5">
+                    {formatTime(e.start)}
+                    {e.end && ` – ${formatTime(e.end)}`}
+                  </p>
+                </div>
               ))}
             </div>
           )}

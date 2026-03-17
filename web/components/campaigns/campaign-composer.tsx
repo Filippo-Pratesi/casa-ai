@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Send, FileText } from 'lucide-react'
+import { ArrowLeft, Send, FileText, Paperclip, X } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -60,6 +60,18 @@ export function CampaignComposer({ cities, totalContacts }: CampaignComposerProp
   const [recipientType, setRecipientType] = useState('all')
   const [cityFilter, setCityFilter] = useState('')
   const [loading, setLoading] = useState(false)
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0] ?? null
+    setAttachmentFile(f)
+  }
+
+  function removeAttachment() {
+    setAttachmentFile(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
 
   function applyTemplate(id: string) {
     setTemplate(id)
@@ -97,6 +109,14 @@ export function CampaignComposer({ cities, totalContacts }: CampaignComposerProp
         toast.error(data.error ?? 'Errore')
         return
       }
+
+      // Upload attachment if present
+      if (attachmentFile && data.id) {
+        const fd = new FormData()
+        fd.append('file', attachmentFile)
+        await fetch(`/api/campaigns/${data.id}/attachment`, { method: 'POST', body: fd })
+      }
+
       if (sendNow) {
         toast.success(`Campagna inviata a ${data.sent} contatti`)
       } else {
@@ -163,6 +183,35 @@ export function CampaignComposer({ cities, totalContacts }: CampaignComposerProp
           rows={10}
           placeholder="Scrivi qui il corpo della mail…"
           className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-300 resize-none font-mono"
+        />
+      </div>
+
+      {/* Attachment */}
+      <div>
+        <label className="block text-xs font-medium text-neutral-600 mb-1">Allegato (opzionale)</label>
+        {attachmentFile ? (
+          <div className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2">
+            <Paperclip className="h-4 w-4 text-neutral-400 shrink-0" />
+            <span className="text-sm text-neutral-700 truncate flex-1">{attachmentFile.name}</span>
+            <button onClick={removeAttachment} className="rounded p-0.5 hover:bg-neutral-200 transition-colors">
+              <X className="h-3.5 w-3.5 text-neutral-500" />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-2 rounded-lg border border-dashed border-neutral-300 px-3 py-2 text-sm text-neutral-500 hover:border-neutral-400 hover:text-neutral-700 transition-colors"
+          >
+            <Paperclip className="h-4 w-4" />
+            Aggiungi allegato
+          </button>
+        )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          onChange={handleFileChange}
+          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
         />
       </div>
 

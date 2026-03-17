@@ -55,7 +55,7 @@ export default async function CampaignsPage() {
           <h1 className="text-2xl font-bold">Campagne email</h1>
           <p className="text-sm text-neutral-500 mt-1">Invia comunicazioni ai tuoi clienti</p>
         </div>
-        <Button render={<Link href="/campaigns/new" />} className="gap-2">
+        <Button nativeButton={false} render={<Link href="/campaigns/new" />} className="gap-2">
           <Plus className="h-4 w-4" />
           Nuova campagna
         </Button>
@@ -66,7 +66,7 @@ export default async function CampaignsPage() {
           <Mail className="h-10 w-10 text-neutral-300 mb-3" />
           <p className="font-medium text-neutral-700">Nessuna campagna ancora</p>
           <p className="text-sm text-neutral-400 mt-1 mb-5">Crea la tua prima campagna email</p>
-          <Button render={<Link href="/campaigns/new" />} className="gap-2">
+          <Button nativeButton={false} render={<Link href="/campaigns/new" />} className="gap-2">
             <Plus className="h-4 w-4" />
             Nuova campagna
           </Button>

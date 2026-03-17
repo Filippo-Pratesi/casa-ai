@@ -17,17 +17,17 @@ export default async function NewCampaignPage() {
   const profile = profileData as { role: string; workspace_id: string } | null
   if (!profile || (profile.role !== 'admin' && profile.role !== 'group_admin')) redirect('/dashboard')
 
-  // Fetch distinct cities from contacts for filter
+  // Fetch contacts with valid email for campaign targeting
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: contactsData } = await (admin as any)
     .from('contacts')
-    .select('type, city')
+    .select('type, city_of_residence')
     .eq('workspace_id', profile.workspace_id)
     .not('email', 'is', null)
     .neq('email', '')
 
-  const contacts = (contactsData ?? []) as { type: string; city: string | null }[]
-  const cities = [...new Set(contacts.map(c => c.city).filter(Boolean) as string[])].sort()
+  const contacts = (contactsData ?? []) as { type: string; city_of_residence: string | null }[]
+  const cities = [...new Set(contacts.map(c => c.city_of_residence).filter(Boolean) as string[])].sort()
   const totalContacts = contacts.length
 
   return (

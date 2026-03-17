@@ -19,6 +19,8 @@ import { PriceHistory } from '@/components/listing/price-history'
 import { ValuationWidget } from '@/components/listing/valuation-widget'
 import { FloorPlanUploader } from '@/components/listing/floor-plan-uploader'
 import { NotifyBuyersButton } from '@/components/listing/notify-buyers-button'
+import { ListingStats } from '@/components/listing/listing-stats'
+import { MlsToggle } from '@/components/listing/mls-toggle'
 import type { Listing, GeneratedContent } from '@/lib/supabase/types'
 
 interface MatchingContact {
@@ -126,10 +128,10 @@ export default async function ListingDetailPage({
   // Fetch workspace members for "mark as sold" flow
   const { data: profileData } = await admin
     .from('users')
-    .select('workspace_id')
+    .select('workspace_id, role')
     .eq('id', user!.id)
     .single()
-  const profile = profileData as { workspace_id: string } | null
+  const profile = profileData as { workspace_id: string; role: string } | null
 
   const { data: membersData } = await admin
     .from('users')
@@ -207,6 +209,22 @@ export default async function ListingDetailPage({
         <p className="text-xs text-neutral-400 uppercase tracking-wider mb-1">Prezzo</p>
         <p className="text-3xl font-bold">€{listing.price.toLocaleString('it-IT')}</p>
       </div>
+
+      {/* MLS toggle (admins only) */}
+      {(profile?.role === 'admin' || profile?.role === 'group_admin') && (
+        <MlsToggle
+          listingId={listing.id}
+          initialShared={(listing as unknown as { shared_with_group: boolean }).shared_with_group ?? false}
+        />
+      )}
+
+      {/* Listing stats */}
+      <ListingStats
+        listingId={listing.id}
+        viewCount={(listing as unknown as { view_count: number }).view_count ?? 0}
+        shareCount={(listing as unknown as { share_count: number }).share_count ?? 0}
+        portalClickCount={(listing as unknown as { portal_click_count: number }).portal_click_count ?? 0}
+      />
 
       {/* Price history */}
       <div className="rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-4">

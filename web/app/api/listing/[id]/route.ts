@@ -24,6 +24,24 @@ export async function PATCH(
   let body: Record<string, unknown>
   try { body = await req.json() } catch { return NextResponse.json({ error: 'Corpo non valido' }, { status: 400 }) }
 
+  // Handle stat increment (share_count, view_count, portal_click_count)
+  const statFields = ['share_count', 'view_count', 'portal_click_count', 'shared_with_group']
+  const statUpdate: Record<string, unknown> = {}
+  for (const field of statFields) {
+    if (field in body) statUpdate[field] = body[field]
+  }
+  if (Object.keys(statUpdate).length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (admin as any)
+      .from('listings')
+      .update(statUpdate)
+      .eq('id', id)
+      .eq('workspace_id', profile.workspace_id)
+    if (error) return NextResponse.json({ error: 'Errore aggiornamento' }, { status: 500 })
+    return NextResponse.json({ success: true })
+  }
+
+  // Price update with history
   const newPrice = typeof body.price === 'number' ? Math.round(body.price) : null
   if (!newPrice || newPrice <= 0) return NextResponse.json({ error: 'Prezzo non valido' }, { status: 400 })
 

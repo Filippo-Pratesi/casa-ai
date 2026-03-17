@@ -106,6 +106,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         trialDaysLeft={trialDaysLeft}
         unreadNotifications={unreadNotifications}
         birthdayCount={birthdayCount}
+        hasGroup={!!profile.group_id}
       />
       <SidebarInset>
         <AppHeader />

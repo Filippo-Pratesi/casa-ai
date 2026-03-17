@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
     contactsQuery = contactsQuery.eq('type', filterType)
   }
   if (typeof recipientFilter.city === 'string' && recipientFilter.city) {
-    contactsQuery = contactsQuery.ilike('city', `%${recipientFilter.city}%`)
+    contactsQuery = contactsQuery.ilike('city_of_residence', `%${recipientFilter.city}%`)
   }
 
   const { data: contactsData } = await contactsQuery

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { updateGoogleEvent, deleteGoogleEvent } from '@/lib/google-calendar'
 
 // PATCH /api/appointments/[id] — update status or fields
 export async function PATCH(
@@ -38,12 +39,21 @@ export async function PATCH(
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (admin as any)
+  const { data: updated, error } = await (admin as any)
     .from('appointments')
     .update(allowed)
     .eq('id', id)
+    .select('google_event_id, agent_id, title, starts_at, ends_at, notes')
+    .single()
 
   if (error) return NextResponse.json({ error: 'Errore nel salvataggio' }, { status: 500 })
+
+  // Sync to Google Calendar if event exists
+  const upd = updated as { google_event_id: string | null; agent_id: string; title: string; starts_at: string; ends_at: string | null; notes: string | null } | null
+  if (upd?.google_event_id && (allowed.title || allowed.starts_at || allowed.ends_at || allowed.notes !== undefined)) {
+    updateGoogleEvent(upd.google_event_id, { title: upd.title, starts_at: upd.starts_at, ends_at: upd.ends_at, notes: upd.notes }, upd.agent_id)
+      .catch(() => { /* silent */ })
+  }
 
   return NextResponse.json({ success: true })
 }
@@ -60,6 +70,14 @@ export async function DELETE(
 
   const admin = createAdminClient()
 
+  // Fetch before delete to get google_event_id
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: existing } = await (admin as any)
+    .from('appointments')
+    .select('google_event_id, agent_id')
+    .eq('id', id)
+    .single()
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (admin as any)
     .from('appointments')
@@ -67,6 +85,12 @@ export async function DELETE(
     .eq('id', id)
 
   if (error) return NextResponse.json({ error: 'Errore nella cancellazione' }, { status: 500 })
+
+  // Delete from Google Calendar if linked
+  const ex = existing as { google_event_id: string | null; agent_id: string } | null
+  if (ex?.google_event_id) {
+    deleteGoogleEvent(ex.google_event_id, ex.agent_id).catch(() => { /* silent */ })
+  }
 
   return NextResponse.json({ success: true })
 }

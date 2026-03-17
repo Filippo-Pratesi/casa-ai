@@ -7,17 +7,23 @@ import { GroupForm } from '@/components/settings/group-form'
 import { TeamManagement } from '@/components/settings/team-management'
 import { UsageMeters } from '@/components/settings/usage-meters'
 import { BulkExportButton } from '@/components/settings/bulk-export-button'
+import { GoogleCalendarConnect } from '@/components/settings/google-calendar-connect'
 import { getPlanConfig } from '@/lib/plan-limits'
 import type { Workspace, Group } from '@/lib/supabase/types'
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ google?: string }>
+}) {
+  const { google } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   const admin = createAdminClient()
   const { data: profileData } = await admin
     .from('users')
-    .select('role, workspace_id, group_id, workspaces(*)')
+    .select('role, workspace_id, group_id, workspaces(*), google_access_token')
     .eq('id', user!.id)
     .single()
 
@@ -26,6 +32,7 @@ export default async function SettingsPage() {
     workspace_id: string
     group_id: string | null
     workspaces: Workspace
+    google_access_token: string | null
   } | null
 
   const isAdmin = profile?.role === 'admin' || profile?.role === 'group_admin'
@@ -194,6 +201,21 @@ export default async function SettingsPage() {
         </CardHeader>
         <CardContent>
           <SocialConnections connections={connections} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Google Calendar</CardTitle>
+          <CardDescription>
+            Sincronizza gli appuntamenti di CasaAI con il tuo Google Calendar
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <GoogleCalendarConnect
+            isConnected={!!profile?.google_access_token}
+            flashMessage={google}
+          />
         </CardContent>
       </Card>
     </div>

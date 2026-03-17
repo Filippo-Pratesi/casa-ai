@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { pushAppointmentToGoogle } from '@/lib/google-calendar'
 
 // GET /api/appointments — list appointments for user (or all if admin)
 export async function GET(req: NextRequest) {
@@ -104,5 +105,34 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: 'Errore nel salvataggio' }, { status: 500 })
 
-  return NextResponse.json({ id: (data as { id: string }).id }, { status: 201 })
+  const newId = (data as { id: string }).id
+
+  // Notify agent if appointment was created by a different user (admin assigned it)
+  if (targetAgentId !== user.id) {
+    const startsAtLabel = new Date(String(body.starts_at)).toLocaleString('it-IT', {
+      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (admin as any).from('notifications').insert({
+      workspace_id: profile.workspace_id,
+      agent_id: targetAgentId,
+      type: 'appointment_assigned',
+      title: 'Nuovo appuntamento assegnato',
+      body: `${title} — ${startsAtLabel}`,
+      read: false,
+    })
+  }
+
+  // Push to Google Calendar if agent has tokens (fire-and-forget)
+  pushAppointmentToGoogle(
+    { title, starts_at: String(body.starts_at), ends_at: body.ends_at ? String(body.ends_at) : null, notes: payload.notes },
+    targetAgentId
+  ).then(async (googleEventId) => {
+    if (googleEventId) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (admin as any).from('appointments').update({ google_event_id: googleEventId }).eq('id', newId)
+    }
+  }).catch(() => { /* silent — Google Calendar is optional */ })
+
+  return NextResponse.json({ id: newId }, { status: 201 })
 }

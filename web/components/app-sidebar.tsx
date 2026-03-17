@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, PlusSquare, Settings, LogOut, Users, UserRound, Archive, UserIcon, CreditCard, Mail, Bell } from 'lucide-react'
+import { LayoutDashboard, PlusSquare, Settings, LogOut, Users, UserRound, Archive, UserIcon, CreditCard, Mail, Bell, CalendarDays, Building2 } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -36,6 +36,7 @@ interface AppSidebarProps {
   trialDaysLeft: number | null
   unreadNotifications: number
   birthdayCount: number
+  hasGroup?: boolean
 }
 
 const agentNav = [
@@ -59,6 +60,7 @@ export function AppSidebar({
   trialDaysLeft,
   unreadNotifications,
   birthdayCount,
+  hasGroup = false,
 }: AppSidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
@@ -139,6 +141,28 @@ export function AppSidebar({
                   )}
                 </SidebarMenuButton>
               </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  render={<Link href="/calendar" />}
+                  isActive={pathname.startsWith('/calendar')}
+                >
+                  <CalendarDays />
+                  <span className="flex-1">Calendario</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {hasGroup && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    render={<Link href="/mls" />}
+                    isActive={pathname.startsWith('/mls')}
+                  >
+                    <Building2 />
+                    <span className="flex-1">MLS</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
