@@ -70,6 +70,26 @@ export function MarkAsSoldButton({ listingId, address, workspaceMembers }: MarkA
         return
       }
       toast.success('Immobile segnato come venduto')
+
+      // Fire-and-forget: generate AI thank-you email draft if we have a buyer name
+      if (buyerName) {
+        fetch(`/api/listing/${listingId}/thankyou-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            buyer_name: buyerName,
+            buyer_contact_id: (!isExternal && selectedContact) ? selectedContact.id : null,
+            address,
+            transaction_type: 'sold',
+          }),
+        })
+          .then(r => r.ok
+            ? toast.success('Bozza email di ringraziamento creata in Campagne', { duration: 4000 })
+            : null
+          )
+          .catch(() => null)
+      }
+
       router.push('/dashboard')
       router.refresh()
     } catch {

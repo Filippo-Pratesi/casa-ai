@@ -1,9 +1,31 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Upload, X, Check, AlertCircle } from 'lucide-react'
+import { Upload, X, Check, AlertCircle, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
+
+const CSV_HEADERS = [
+  'Nome', 'Email', 'Telefono', 'Tipo', 'Città', 'Note',
+  'Budget Min', 'Budget Max', 'Stanze Min', 'MQ Min', 'Data Nascita',
+]
+
+const CSV_EXAMPLES = [
+  ['Mario Rossi', 'mario@email.it', '+39 333 1234567', 'buyer', 'Milano', 'Cerca trilocale zona centro', '200000', '350000', '3', '70', '1985-04-12'],
+  ['Giulia Bianchi', 'giulia@email.it', '+39 347 9876543', 'renter', 'Roma', 'Disponibile da giugno', '1200', '1800', '2', '55', ''],
+]
+
+function downloadCsvTemplate() {
+  const rows = [CSV_HEADERS, ...CSV_EXAMPLES]
+  const csv = rows.map(r => r.map(v => `"${v.replace(/"/g, '""')}"`).join(',')).join('\n')
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'template_contatti_casaai.csv'
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
 interface CsvRow {
   [key: string]: string
@@ -97,11 +119,21 @@ export function ImportContacts() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h3 className="text-sm font-semibold text-neutral-900">Importa contatti da CSV</h3>
-        <p className="text-xs text-neutral-500 mt-0.5">
-          Il file deve avere le colonne: Nome, Email, Telefono, Tipo, Città, Note, Budget Min, Budget Max, Stanze Min, MQ Min, Data Nascita
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold text-neutral-900">Importa contatti da CSV</h3>
+          <p className="text-xs text-neutral-500 mt-0.5">
+            Il file deve avere le colonne: Nome, Email, Telefono, Tipo, Città, Note, Budget Min, Budget Max, Stanze Min, MQ Min, Data Nascita
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={downloadCsvTemplate}
+          className="flex shrink-0 items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50 transition-colors"
+        >
+          <Download className="h-3.5 w-3.5" />
+          Scarica template
+        </button>
       </div>
 
       {!parsed ? (
