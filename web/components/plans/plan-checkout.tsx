@@ -57,11 +57,11 @@ export function PlanCheckout({ plans, currentPlan, workspaceId, prices }: PlanCh
     <div className="space-y-6">
       {/* Billing toggle */}
       <div className="flex justify-center">
-        <div className="flex rounded-xl border border-neutral-200 bg-white overflow-hidden p-0.5 gap-0.5">
+        <div className="flex rounded-xl border border-border bg-card overflow-hidden p-0.5 gap-0.5">
           <button
             onClick={() => setBilling('monthly')}
             className={`px-5 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-              billing === 'monthly' ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-50'
+              billing === 'monthly' ? 'bg-[oklch(0.57_0.20_33)] text-white' : 'text-muted-foreground hover:bg-muted'
             }`}
           >
             Mensile
@@ -69,7 +69,7 @@ export function PlanCheckout({ plans, currentPlan, workspaceId, prices }: PlanCh
           <button
             onClick={() => setBilling('annual')}
             className={`flex items-center gap-2 px-5 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-              billing === 'annual' ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-50'
+              billing === 'annual' ? 'bg-[oklch(0.57_0.20_33)] text-white' : 'text-muted-foreground hover:bg-muted'
             }`}
           >
             Annuale
@@ -91,15 +91,15 @@ export function PlanCheckout({ plans, currentPlan, workspaceId, prices }: PlanCh
           return (
             <div
               key={plan.id}
-              className={`relative flex flex-col rounded-2xl border-2 p-6 ${
+              className={`relative flex flex-col rounded-2xl border-2 p-6 bg-card ${
                 plan.highlight
-                  ? 'border-purple-300 shadow-lg shadow-purple-100'
-                  : 'border-neutral-200'
-              } bg-white`}
+                  ? 'border-[oklch(0.57_0.20_33/0.6)] shadow-lg shadow-[oklch(0.57_0.20_33/0.15)]'
+                  : 'border-border'
+              }`}
             >
               {plan.highlight && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="rounded-full bg-purple-600 px-3 py-0.5 text-xs font-semibold text-white">
+                  <span className="rounded-full bg-gradient-to-r from-[oklch(0.57_0.20_33)] to-[oklch(0.66_0.15_188)] px-3 py-0.5 text-xs font-semibold text-white shadow-sm">
                     Più popolare
                   </span>
                 </div>
@@ -110,15 +110,15 @@ export function PlanCheckout({ plans, currentPlan, workspaceId, prices }: PlanCh
                   <Icon className={`h-5 w-5 ${plan.color}`} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-neutral-900">{plan.name}</h3>
-                  <p className="text-xs text-neutral-500">{plan.description}</p>
+                  <h3 className="font-bold">{plan.name}</h3>
+                  <p className="text-xs text-muted-foreground">{plan.description}</p>
                 </div>
               </div>
 
               <div className="mb-5">
                 <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-bold text-neutral-900">€{monthlyPrice}</span>
-                  <span className="text-sm text-neutral-500">/mese</span>
+                  <span className="text-3xl font-bold">€{monthlyPrice}</span>
+                  <span className="text-sm text-muted-foreground">/mese</span>
                 </div>
                 {billing === 'annual' && (
                   <p className="text-xs text-green-600 mt-0.5">
@@ -129,7 +129,7 @@ export function PlanCheckout({ plans, currentPlan, workspaceId, prices }: PlanCh
 
               <ul className="space-y-2 flex-1 mb-6">
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm text-neutral-700">
+                  <li key={f} className="flex items-start gap-2 text-sm">
                     <Check className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
                     {f}
                   </li>
@@ -137,7 +137,7 @@ export function PlanCheckout({ plans, currentPlan, workspaceId, prices }: PlanCh
               </ul>
 
               {isCurrent ? (
-                <div className="flex items-center justify-center rounded-xl bg-neutral-100 px-4 py-2.5 text-sm font-medium text-neutral-500">
+                <div className="flex items-center justify-center rounded-xl bg-muted px-4 py-2.5 text-sm font-medium text-muted-foreground">
                   Piano attuale
                 </div>
               ) : (
@@ -146,8 +146,8 @@ export function PlanCheckout({ plans, currentPlan, workspaceId, prices }: PlanCh
                   disabled={loading === plan.id}
                   className={`flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors ${
                     plan.highlight
-                      ? 'bg-purple-600 text-white hover:bg-purple-700'
-                      : 'bg-neutral-900 text-white hover:bg-neutral-800'
+                      ? 'bg-gradient-to-r from-[oklch(0.57_0.20_33)] to-[oklch(0.66_0.15_188)] text-white hover:opacity-90'
+                      : 'bg-[oklch(0.57_0.20_33)] text-white hover:bg-[oklch(0.52_0.20_33)]'
                   } disabled:opacity-60`}
                 >
                   {loading === plan.id && <Loader2 className="h-4 w-4 animate-spin" />}
