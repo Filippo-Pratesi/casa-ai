@@ -107,9 +107,7 @@ export function ProposalList({ proposals: initialProposals }: ProposalListProps)
         </div>
         <h3 className="text-lg font-semibold">Nessuna proposta ancora</h3>
         <p className="mt-1 text-sm text-muted-foreground max-w-sm">Crea la prima proposta d&apos;acquisto selezionando un immobile e un acquirente.</p>
-        <Button asChild className="btn-ai mt-6">
-          <Link href="/proposte/nuova">Crea proposta</Link>
-        </Button>
+        <Link href="/proposte/nuova" className="btn-ai mt-6 inline-flex items-center justify-center rounded-lg px-2.5 h-8 text-sm font-medium">Crea proposta</Link>
       </div>
     )
   }

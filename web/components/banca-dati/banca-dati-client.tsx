@@ -4,7 +4,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { useState, useCallback, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Plus, Search, X, ChevronLeft, ChevronRight, ArrowUpDown, Building2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -120,12 +120,10 @@ export function BancaDatiClient({
               : `${total} di ${totalAll} immobili`}
           </p>
         </div>
-        <Button asChild>
-          <Link href="/banca-dati/nuovo">
-            <Plus className="h-4 w-4 mr-2" />
-            Nuovo Immobile
-          </Link>
-        </Button>
+        <Link href="/banca-dati/nuovo" className={buttonVariants()}>
+          <Plus className="h-4 w-4 mr-2" />
+          Nuovo Immobile
+        </Link>
       </div>
 
       {/* Stage summary badges */}
@@ -285,12 +283,10 @@ export function BancaDatiClient({
               Rimuovi filtri
             </button>
           ) : (
-            <Button asChild className="mt-4" variant="outline">
-              <Link href="/banca-dati/nuovo">
-                <Plus className="h-4 w-4 mr-2" />
-                Aggiungi il primo immobile
-              </Link>
-            </Button>
+            <Link href="/banca-dati/nuovo" className={buttonVariants({ variant: 'outline' }) + ' mt-4'}>
+              <Plus className="h-4 w-4 mr-2" />
+              Aggiungi il primo immobile
+            </Link>
           )}
         </div>
       ) : (

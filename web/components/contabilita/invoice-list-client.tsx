@@ -115,9 +115,7 @@ export function InvoiceListClient({ invoices: initialInvoices }: InvoiceListClie
         </div>
         <h3 className="text-lg font-semibold">Nessuna fattura ancora</h3>
         <p className="mt-1 text-sm text-muted-foreground max-w-sm">Crea la tua prima fattura e gestisci la contabilità direttamente da CasaAI.</p>
-        <Button asChild className="btn-ai mt-6">
-          <Link href="/contabilita/nuova">Crea la prima fattura</Link>
-        </Button>
+        <Link href="/contabilita/nuova" className="btn-ai mt-6 inline-flex items-center justify-center rounded-lg px-2.5 h-8 text-sm font-medium">Crea la prima fattura</Link>
       </div>
     )
   }
