@@ -112,7 +112,7 @@ export default async function BancaDatiPage({
 
   return (
     <BancaDatiClient
-      properties={properties}
+      properties={properties as import('@/components/banca-dati/property-card').PropertyCardData[]}
       total={count ?? 0}
       page={page}
       perPage={per_page}

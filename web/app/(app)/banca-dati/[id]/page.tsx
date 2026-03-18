@@ -74,7 +74,7 @@ export default async function ImmobileDetailPage({ params }: { params: Promise<{
   }
 
   const isAdmin = profile.role === 'admin' || profile.role === 'group_admin'
-  const isOwner = (property as { agent_id: string }).agent_id === user.id
+  const isOwner = (property as unknown as { agent_id: string }).agent_id === user.id
 
   return (
     <ImmobileDetailClient

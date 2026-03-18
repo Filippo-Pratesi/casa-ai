@@ -145,7 +145,7 @@ export function BancaDatiClient({
         {zones.length > 0 && (
           <Select
             value={initialFilters.zone || 'all'}
-            onValueChange={(v) => updateUrl({ zone: v === 'all' ? '' : v, page: '1' })}
+            onValueChange={(v) => updateUrl({ zone: !v || v === 'all' ? '' : v, page: '1' })}
           >
             <SelectTrigger className="h-8 w-[150px] text-sm">
               <SelectValue placeholder="Zona" />
@@ -160,7 +160,7 @@ export function BancaDatiClient({
         {/* Transaction type */}
         <Select
           value={initialFilters.transaction_type || 'all'}
-          onValueChange={(v) => updateUrl({ transaction_type: v === 'all' ? '' : v, page: '1' })}
+          onValueChange={(v) => updateUrl({ transaction_type: !v || v === 'all' ? '' : v, page: '1' })}
         >
           <SelectTrigger className="h-8 w-[130px] text-sm">
             <SelectValue placeholder="Tipo" />
@@ -175,7 +175,7 @@ export function BancaDatiClient({
         {/* Disposition filter */}
         <Select
           value={initialFilters.disposition || 'all'}
-          onValueChange={(v) => updateUrl({ disposition: v === 'all' ? '' : v, page: '1' })}
+          onValueChange={(v) => updateUrl({ disposition: !v || v === 'all' ? '' : v, page: '1' })}
         >
           <SelectTrigger className="h-8 w-[160px] text-sm">
             <SelectValue placeholder="Stato proprietario" />
@@ -192,7 +192,7 @@ export function BancaDatiClient({
         {isAdmin && agents.length > 1 && (
           <Select
             value={initialFilters.agent_id || 'all'}
-            onValueChange={(v) => updateUrl({ agent_id: v === 'all' ? '' : v, page: '1' })}
+            onValueChange={(v) => updateUrl({ agent_id: !v || v === 'all' ? '' : v, page: '1' })}
           >
             <SelectTrigger className="h-8 w-[140px] text-sm">
               <SelectValue placeholder="Agente" />

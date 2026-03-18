@@ -260,7 +260,7 @@ export function EventTimeline({ propertyId, events, onEventAdded }: EventTimelin
           <div className="space-y-4 pt-2">
             <div className="space-y-1.5">
               <Label>Tipo evento</Label>
-              <Select value={formType} onValueChange={setFormType}>
+              <Select value={formType} onValueChange={(v) => setFormType(v ?? '')}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -295,7 +295,7 @@ export function EventTimeline({ propertyId, events, onEventAdded }: EventTimelin
 
             <div className="space-y-1.5">
               <Label>Sentiment (opzionale)</Label>
-              <Select value={formSentiment} onValueChange={setFormSentiment}>
+              <Select value={formSentiment} onValueChange={(v) => setFormSentiment(v ?? '')}>
                 <SelectTrigger>
                   <SelectValue placeholder="Seleziona..." />
                 </SelectTrigger>

@@ -100,7 +100,7 @@ export function ZoneSelector({
       <div className="flex gap-2">
         <Select
           value={value}
-          onValueChange={onChange}
+          onValueChange={(v) => v && onChange(v)}
           disabled={disabled || loading || !city}
         >
           <SelectTrigger className="flex-1">
@@ -126,7 +126,7 @@ export function ZoneSelector({
 
       {/* Sub-zone selector */}
       {onSubZoneChange && subZones.length > 0 && (
-        <Select value={subZoneValue} onValueChange={onSubZoneChange} disabled={disabled}>
+        <Select value={subZoneValue} onValueChange={(v) => onSubZoneChange && onSubZoneChange(v ?? '')} disabled={disabled}>
           <SelectTrigger>
             <SelectValue placeholder="Sotto-zona (opzionale)..." />
           </SelectTrigger>

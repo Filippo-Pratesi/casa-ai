@@ -487,7 +487,7 @@ export function ImmobileDetailClient({
 
             <div className="space-y-1.5">
               <Label>Ruolo *</Label>
-              <Select value={contactRole} onValueChange={setContactRole}>
+              <Select value={contactRole} onValueChange={(v) => setContactRole(v ?? '')}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {Object.entries(ROLE_LABELS).map(([key, label]) => (
