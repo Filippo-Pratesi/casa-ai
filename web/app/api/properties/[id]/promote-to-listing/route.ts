@@ -72,17 +72,21 @@ export async function POST(_req: NextRequest, { params }: RouteContext) {
 
   const listingId = (listing as { id: string }).id
 
-  // Update property with listing_id reference
+  // Update property with listing_id reference — log error but don't fail
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase as any)
+  const { error: propUpdateError } = await (supabase as any)
     .from('properties')
     .update({ listing_id: listingId })
     .eq('id', id)
     .eq('workspace_id', workspaceId)
 
-  // Create annuncio_creato event
+  if (propUpdateError) {
+    console.error('[promote-to-listing] Failed to update property.listing_id:', propUpdateError)
+  }
+
+  // Create annuncio_creato event — log error but don't fail (listing already created)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase as any)
+  const { error: eventError } = await (supabase as any)
     .from('property_events')
     .insert({
       workspace_id: workspaceId,
@@ -93,6 +97,10 @@ export async function POST(_req: NextRequest, { params }: RouteContext) {
       description: `Annuncio #${listingId} creato dall\'immobile`,
       metadata: { listing_id: listingId },
     })
+
+  if (eventError) {
+    console.error('[promote-to-listing] Failed to create annuncio_creato event:', eventError)
+  }
 
   return NextResponse.json({ listing_id: listingId })
 }

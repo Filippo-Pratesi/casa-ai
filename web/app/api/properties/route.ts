@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
   const agent_id = params.get('agent_id')
   const disposition = params.get('disposition')
   const transaction_type = params.get('transaction_type')
+  const last_contact = params.get('last_contact') // today | week | month | over_30 | over_60
   const q = params.get('q')
   const page = Math.max(1, parseInt(params.get('page') ?? '1', 10))
   const per_page = Math.min(200, Math.max(1, parseInt(params.get('per_page') ?? '50', 10)))
@@ -33,7 +34,7 @@ export async function GET(req: NextRequest) {
     .from('properties')
     .select('*', { count: 'exact' })
     .eq('workspace_id', profile.workspace_id)
-    .order('created_at', { ascending: false })
+    .order('updated_at', { ascending: false })
     .range(offset, offset + per_page - 1)
 
   if (stage) query = query.eq('stage', stage)
@@ -45,6 +46,22 @@ export async function GET(req: NextRequest) {
   if (q) {
     const search = `%${q}%`
     query = query.or(`address.ilike.${search},city.ilike.${search}`)
+  }
+
+  // last_contact filter uses updated_at as proxy for last interaction date
+  if (last_contact) {
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+    const weekAgo = new Date(Date.now() - 7 * 86400_000).toISOString()
+    const monthAgo = new Date(Date.now() - 30 * 86400_000).toISOString()
+    const days30Ago = monthAgo
+    const days60Ago = new Date(Date.now() - 60 * 86400_000).toISOString()
+
+    if (last_contact === 'today') query = query.gte('updated_at', today)
+    else if (last_contact === 'week') query = query.gte('updated_at', weekAgo)
+    else if (last_contact === 'month') query = query.gte('updated_at', monthAgo)
+    else if (last_contact === 'over_30') query = query.lt('updated_at', days30Ago)
+    else if (last_contact === 'over_60') query = query.lt('updated_at', days60Ago)
   }
 
   const { data, error, count } = await query

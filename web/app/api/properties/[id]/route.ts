@@ -154,5 +154,5 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
 
   if (error) return NextResponse.json({ error: "Errore nell'eliminazione immobile" }, { status: 500 })
 
-  return NextResponse.json({ success: true })
+  return new NextResponse(null, { status: 204 })
 }

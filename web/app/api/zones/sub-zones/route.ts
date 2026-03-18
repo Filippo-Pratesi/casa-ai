@@ -163,6 +163,32 @@ export async function DELETE(req: NextRequest) {
   const subZoneId = req.nextUrl.searchParams.get('id')
   if (!subZoneId) return NextResponse.json({ error: 'ID sotto-zona obbligatorio' }, { status: 400 })
 
+  // Verify sub-zone belongs to workspace and get its name
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: subZone } = await (supabase as any)
+    .from('sub_zones')
+    .select('name')
+    .eq('id', subZoneId)
+    .eq('workspace_id', userProfile.workspace_id)
+    .single()
+
+  if (!subZone) return NextResponse.json({ error: 'Sotto-zona non trovata' }, { status: 404 })
+
+  // Check if any properties reference this sub_zone by name
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { count: propertyCount } = await (supabase as any)
+    .from('properties')
+    .select('id', { count: 'exact', head: true })
+    .eq('workspace_id', userProfile.workspace_id)
+    .eq('sub_zone', (subZone as { name: string }).name)
+
+  if ((propertyCount ?? 0) > 0) {
+    return NextResponse.json(
+      { error: `Impossibile eliminare: ${propertyCount} immobil${propertyCount === 1 ? 'e usa' : 'i usano'} questa sotto-zona`, property_count: propertyCount },
+      { status: 409 }
+    )
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)
     .from('sub_zones')
@@ -172,5 +198,5 @@ export async function DELETE(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: "Errore nell'eliminazione sotto-zona" }, { status: 500 })
 
-  return NextResponse.json({ success: true })
+  return new NextResponse(null, { status: 204 })
 }

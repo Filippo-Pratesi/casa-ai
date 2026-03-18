@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
 
   const lat = parseFloat(latStr ?? '')
   const lng = parseFloat(lngStr ?? '')
-  const radius = Math.max(1, parseFloat(radiusStr))
+  const radius = Math.min(5000, Math.max(1, parseFloat(radiusStr)))
 
   if (isNaN(lat) || isNaN(lng)) {
     return NextResponse.json({ error: 'Parametri lat e lng obbligatori' }, { status: 400 })

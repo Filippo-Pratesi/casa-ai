@@ -4,6 +4,11 @@ import { createClient } from '@/lib/supabase/server'
 type RouteContext = { params: Promise<{ id: string }> }
 
 const VALID_STAGES = ['sconosciuto', 'ignoto', 'conosciuto', 'incarico', 'venduto', 'locato', 'disponibile']
+// Stage order index — higher index = more advanced. Used to detect backward transitions.
+const STAGE_ORDER: Record<string, number> = {
+  sconosciuto: 0, ignoto: 1, conosciuto: 2, incarico: 3,
+  venduto: 4, locato: 4, disponibile: 5,
+}
 
 async function getWorkspaceAndRole(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
   const { data } = await supabase
@@ -53,6 +58,15 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
 
   const p = property as Record<string, unknown>
   const oldStage = p.stage as string
+
+  // Backward transitions require a reason
+  const isBackward = (STAGE_ORDER[targetStage] ?? 0) < (STAGE_ORDER[oldStage] ?? 0)
+  if (isBackward && !reason) {
+    return NextResponse.json(
+      { error: 'Un motivo è obbligatorio per le regressioni di fase' },
+      { status: 400 }
+    )
+  }
 
   // Validate stage-specific requirements
   const validationError = validateStageAdvance(p, targetStage, reason)
