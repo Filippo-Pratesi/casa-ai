@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Send, FileText, Paperclip, X } from 'lucide-react'
+import { ArrowLeft, Send, FileText, Paperclip, X, Mail, MessageCircle } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 
@@ -53,6 +53,7 @@ interface CampaignComposerProps {
 
 export function CampaignComposer({ cities, totalContacts }: CampaignComposerProps) {
   const router = useRouter()
+  const [channel, setChannel] = useState<'email' | 'whatsapp'>('email')
   const [template, setTemplate] = useState('custom')
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
@@ -82,8 +83,12 @@ export function CampaignComposer({ cities, totalContacts }: CampaignComposerProp
   }
 
   async function handleSend(sendNow: boolean) {
-    if (!subject.trim() || !body.trim()) {
-      toast.error('Compila oggetto e corpo della mail')
+    if (channel === 'email' && !subject.trim()) {
+      toast.error('Inserisci l\'oggetto della email')
+      return
+    }
+    if (!body.trim()) {
+      toast.error('Compila il testo del messaggio')
       return
     }
     setLoading(true)
@@ -92,8 +97,9 @@ export function CampaignComposer({ cities, totalContacts }: CampaignComposerProp
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          channel,
           subject: subject.trim(),
-          body_html: body.replace(/\n/g, '<br/>'),
+          body_html: channel === 'email' ? body.replace(/\n/g, '<br/>') : body,
           body_text: body,
           template,
           recipient_filter: {
@@ -117,7 +123,9 @@ export function CampaignComposer({ cities, totalContacts }: CampaignComposerProp
       }
 
       if (sendNow) {
-        toast.success(`Campagna inviata a ${data.sent} contatti`)
+        toast.success(channel === 'whatsapp'
+          ? `Link WhatsApp generato per ${data.sent} contatti`
+          : `Campagna inviata a ${data.sent} contatti`)
       } else {
         toast.success('Bozza salvata')
       }
@@ -138,8 +146,44 @@ export function CampaignComposer({ cities, totalContacts }: CampaignComposerProp
         </Link>
         <div>
           <h1 className="text-xl font-extrabold tracking-tight">Nuova campagna</h1>
-          <p className="text-sm text-muted-foreground">{totalContacts} contatti con email disponibili</p>
+          <p className="text-sm text-muted-foreground">
+            {channel === 'whatsapp' ? `${totalContacts} contatti con numero di telefono` : `${totalContacts} contatti con email disponibili`}
+          </p>
         </div>
+      </div>
+
+      {/* Channel selector */}
+      <div>
+        <label className="block text-xs font-medium text-muted-foreground mb-2">Canale</label>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setChannel('email')}
+            className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all ${
+              channel === 'email'
+                ? 'border-[oklch(0.57_0.20_33)] bg-[oklch(0.57_0.20_33)] text-white'
+                : 'border-border bg-card text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground'
+            }`}
+          >
+            <Mail className="h-4 w-4" />
+            Email
+          </button>
+          <button
+            onClick={() => setChannel('whatsapp')}
+            className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all ${
+              channel === 'whatsapp'
+                ? 'border-green-600 bg-green-600 text-white'
+                : 'border-border bg-card text-muted-foreground hover:border-green-600/50 hover:text-foreground'
+            }`}
+          >
+            <MessageCircle className="h-4 w-4" />
+            WhatsApp
+          </button>
+        </div>
+        {channel === 'whatsapp' && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            La campagna WhatsApp genera un testo pre-compilato che aprirai in WhatsApp Web per ogni contatto con numero di telefono.
+          </p>
+        )}
       </div>
 
       {/* Template picker */}
@@ -162,57 +206,63 @@ export function CampaignComposer({ cities, totalContacts }: CampaignComposerProp
         </div>
       </div>
 
-      {/* Subject */}
-      <div>
-        <label className="block text-xs font-medium text-muted-foreground mb-1">Oggetto *</label>
-        <input
-          value={subject}
-          onChange={e => setSubject(e.target.value)}
-          placeholder="Oggetto della email…"
-          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.3)]"
-        />
-      </div>
+      {/* Subject — email only */}
+      {channel === 'email' && (
+        <div>
+          <label className="block text-xs font-medium text-muted-foreground mb-1">Oggetto *</label>
+          <input
+            value={subject}
+            onChange={e => setSubject(e.target.value)}
+            placeholder="Oggetto della email…"
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.3)]"
+          />
+        </div>
+      )}
 
       {/* Body */}
       <div>
-        <label className="block text-xs font-medium text-muted-foreground mb-1">Testo *</label>
+        <label className="block text-xs font-medium text-muted-foreground mb-1">
+          {channel === 'whatsapp' ? 'Messaggio WhatsApp *' : 'Testo *'}
+        </label>
         <textarea
           value={body}
           onChange={e => setBody(e.target.value)}
           rows={10}
-          placeholder="Scrivi qui il corpo della mail…"
+          placeholder={channel === 'whatsapp' ? 'Scrivi il messaggio WhatsApp…' : 'Scrivi qui il corpo della mail…'}
           className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.3)] resize-none font-mono"
         />
       </div>
 
-      {/* Attachment */}
-      <div>
-        <label className="block text-xs font-medium text-muted-foreground mb-1">Allegato (opzionale)</label>
-        {attachmentFile ? (
-          <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2">
-            <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
-            <span className="text-sm text-foreground truncate flex-1">{attachmentFile.name}</span>
-            <button onClick={removeAttachment} className="rounded p-0.5 hover:bg-muted transition-colors">
-              <X className="h-3.5 w-3.5 text-muted-foreground" />
+      {/* Attachment — email only */}
+      {channel === 'email' && (
+        <div>
+          <label className="block text-xs font-medium text-muted-foreground mb-1">Allegato (opzionale)</label>
+          {attachmentFile ? (
+            <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2">
+              <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="text-sm text-foreground truncate flex-1">{attachmentFile.name}</span>
+              <button onClick={removeAttachment} className="rounded p-0.5 hover:bg-muted transition-colors">
+                <X className="h-3.5 w-3.5 text-muted-foreground" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2 text-sm text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground transition-colors"
+            >
+              <Paperclip className="h-4 w-4" />
+              Aggiungi allegato
             </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2 text-sm text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground transition-colors"
-          >
-            <Paperclip className="h-4 w-4" />
-            Aggiungi allegato
-          </button>
-        )}
-        <input
-          ref={fileInputRef}
-          type="file"
-          className="hidden"
-          onChange={handleFileChange}
-          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-        />
-      </div>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            onChange={handleFileChange}
+            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+          />
+        </div>
+      )}
 
       {/* Recipients */}
       <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-3">
@@ -248,15 +298,29 @@ export function CampaignComposer({ cities, totalContacts }: CampaignComposerProp
         </div>
       </div>
 
+      {/* WhatsApp info */}
+      {channel === 'whatsapp' && (
+        <div className="rounded-xl border border-green-200 bg-green-50 dark:border-green-900/40 dark:bg-green-900/10 p-4 space-y-1.5">
+          <p className="text-xs font-semibold text-green-800 dark:text-green-300">Come funziona la campagna WhatsApp</p>
+          <p className="text-xs text-green-700 dark:text-green-400 leading-relaxed">
+            Dopo aver salvato, potrai aprire WhatsApp Web per ogni contatto con numero di telefono. Il messaggio sarà pre-compilato e pronto da inviare.
+          </p>
+        </div>
+      )}
+
       {/* Actions */}
       <div className="flex gap-3">
         <button
           onClick={() => handleSend(true)}
           disabled={loading}
-          className="btn-ai flex-1 disabled:opacity-60"
+          className={`inline-flex items-center justify-center gap-2 flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold disabled:opacity-60 ${
+            channel === 'whatsapp'
+              ? 'bg-green-600 hover:bg-green-700 text-white transition-colors'
+              : 'btn-ai'
+          }`}
         >
-          <Send className="h-4 w-4" />
-          {loading ? 'Invio in corso…' : 'Invia ora'}
+          {channel === 'whatsapp' ? <MessageCircle className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+          {loading ? 'Salvataggio…' : channel === 'whatsapp' ? 'Salva campagna WhatsApp' : 'Invia ora'}
         </button>
         <button
           onClick={() => handleSend(false)}

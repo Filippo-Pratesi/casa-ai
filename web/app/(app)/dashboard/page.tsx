@@ -31,9 +31,10 @@ export default async function DashboardPage() {
   const listings = (listingsData ?? []) as ListingWithAgent[]
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [{ count: contactsCount }, { count: appointmentsCount }] = await Promise.all([
+  const [{ count: contactsCount }, { count: appointmentsCount }, { count: bancaDatiCount }] = await Promise.all([
     (admin as any).from('contacts').select('id', { count: 'exact', head: true }).eq('workspace_id', profile?.workspace_id ?? ''),
     (admin as any).from('appointments').select('id', { count: 'exact', head: true }).eq('workspace_id', profile?.workspace_id ?? '').gte('starts_at', new Date().toISOString()).neq('status', 'cancelled'),
+    (admin as any).from('properties').select('id', { count: 'exact', head: true }).eq('workspace_id', profile?.workspace_id ?? ''),
   ])
 
   const isAdmin = profile?.role === 'admin' || profile?.role === 'group_admin'
@@ -60,6 +61,7 @@ export default async function DashboardPage() {
         contacts: (contactsCount as number | null) ?? 0,
         appointments: (appointmentsCount as number | null) ?? 0,
         aiContent: listings.filter(l => l.generated_content).length,
+        bancaDati: (bancaDatiCount as number | null) ?? 0,
       }}
       isAdmin={isAdmin}
     />

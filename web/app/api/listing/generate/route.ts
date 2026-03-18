@@ -31,7 +31,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Payload non valido' }, { status: 400 })
   }
 
+  const VALID_PROPERTY_TYPES = ['apartment', 'house', 'villa', 'commercial', 'land', 'garage', 'other']
+  const VALID_TRANSACTION_TYPES = ['vendita', 'affitto']
+  const VALID_TONES = ['standard', 'luxury', 'approachable', 'investment']
+
   const property_type = formData.get('property_type') as string
+  const transaction_type = (formData.get('transaction_type') as string) || 'vendita'
   const floor = formData.get('floor') ? Number(formData.get('floor')) : null
   const total_floors = formData.get('total_floors') ? Number(formData.get('total_floors')) : null
   const address = formData.get('address') as string
@@ -41,7 +46,6 @@ export async function POST(req: NextRequest) {
   const sqm = Number(formData.get('sqm'))
   const rooms = Number(formData.get('rooms'))
   const bathrooms = Number(formData.get('bathrooms') ?? '1')
-  const features = JSON.parse((formData.get('features') as string) ?? '[]') as string[]
   const condition = (formData.get('condition') as string) || null
   const notes = (formData.get('notes') as string) || null
   const tone = (formData.get('tone') as string) || 'standard'
@@ -51,8 +55,37 @@ export async function POST(req: NextRequest) {
   const categoria_catastale = (formData.get('categoria_catastale') as string) || null
   const rendita_catastale = formData.get('rendita_catastale') ? Number(formData.get('rendita_catastale')) : null
 
+  // Safe JSON parse for features array
+  let features: string[] = []
+  try {
+    const featuresRaw = formData.get('features') as string
+    const parsed = featuresRaw ? JSON.parse(featuresRaw) : []
+    features = Array.isArray(parsed) ? parsed : []
+  } catch {
+    return NextResponse.json({ error: 'Campo features non valido' }, { status: 400 })
+  }
+
+  // Field validation
   if (!property_type || !address || !city || !price || !sqm || !rooms) {
     return NextResponse.json({ error: 'Campi obbligatori mancanti' }, { status: 400 })
+  }
+  if (!VALID_PROPERTY_TYPES.includes(property_type)) {
+    return NextResponse.json({ error: 'Tipo immobile non valido' }, { status: 400 })
+  }
+  if (!VALID_TRANSACTION_TYPES.includes(transaction_type)) {
+    return NextResponse.json({ error: 'Tipo transazione non valido' }, { status: 400 })
+  }
+  if (!VALID_TONES.includes(tone)) {
+    return NextResponse.json({ error: 'Tono non valido' }, { status: 400 })
+  }
+  if (sqm <= 0 || isNaN(sqm)) {
+    return NextResponse.json({ error: 'Superficie deve essere > 0' }, { status: 400 })
+  }
+  if (rooms <= 0 || isNaN(rooms)) {
+    return NextResponse.json({ error: 'Numero vani deve essere > 0' }, { status: 400 })
+  }
+  if (price <= 0 || isNaN(price)) {
+    return NextResponse.json({ error: 'Prezzo deve essere > 0' }, { status: 400 })
   }
 
   const photoFiles = formData.getAll('photos') as File[]
@@ -112,6 +145,7 @@ export async function POST(req: NextRequest) {
       workspace_id: profile.workspace_id,
       agent_id: user.id,
       property_type: property_type as 'apartment' | 'house' | 'villa' | 'commercial' | 'land' | 'garage' | 'other',
+      transaction_type: transaction_type as 'vendita' | 'affitto',
       floor,
       total_floors,
       address,
@@ -145,5 +179,130 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Errore nel salvataggio' }, { status: 500 })
   }
 
+  // Auto-create banca dati property entry — non-blocking, best-effort
+  void autoCreateProperty({
+    supabase,
+    workspaceId: profile.workspace_id,
+    agentId: user.id,
+    listingId: listing.id,
+    address,
+    city,
+    zone: neighborhood ?? 'Da definire',
+    propertyType: property_type,
+    transactionType: transaction_type,
+    sqm,
+    rooms,
+    bathrooms,
+    floor,
+    totalFloors: total_floors,
+    estimatedValue: price,
+    foglio: foglio ?? undefined,
+    particella: particella ?? undefined,
+    subalterno: subalterno ?? undefined,
+  })
+
   return NextResponse.json({ listing_id: listing.id, generated_content }, { status: 201 })
+}
+
+async function autoCreateProperty(opts: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any
+  workspaceId: string
+  agentId: string
+  listingId: string
+  address: string
+  city: string
+  zone: string
+  propertyType: string
+  transactionType: string
+  sqm: number
+  rooms: number
+  bathrooms: number
+  floor: number | null
+  totalFloors: number | null
+  estimatedValue: number
+  foglio?: string
+  particella?: string
+  subalterno?: string
+}) {
+  try {
+    // Geocode address via Mapbox to get coordinates
+    const token = process.env.MAPBOX_ACCESS_TOKEN
+    let latitude: number | null = null
+    let longitude: number | null = null
+    if (token) {
+      try {
+        const geoUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(`${opts.address}, ${opts.city}`)}.json?country=it&language=it&types=address&limit=1&access_token=${token}`
+        const geoRes = await fetch(geoUrl, { next: { revalidate: 0 } })
+        if (geoRes.ok) {
+          const geoData = await geoRes.json() as { features?: Array<{ geometry: { coordinates: [number, number] } }> }
+          if (geoData.features?.[0]) {
+            ;[longitude, latitude] = geoData.features[0].geometry.coordinates
+          }
+        }
+      } catch (geoErr) {
+        // Geocoding failed — property will be created without coordinates
+        console.warn('Geocoding failed for auto-property creation (non-critical):', geoErr instanceof Error ? geoErr.message : 'unknown error')
+      }
+    }
+
+    // Check if a property with same listing_id already exists
+    const { data: existing } = await opts.supabase
+      .from('properties')
+      .select('id')
+      .eq('listing_id', opts.listingId)
+      .single()
+    if (existing) return // Already linked
+
+    // Create property record
+    const { data: property } = await opts.supabase
+      .from('properties')
+      .insert({
+        workspace_id: opts.workspaceId,
+        agent_id: opts.agentId,
+        listing_id: opts.listingId,
+        address: opts.address,
+        city: opts.city,
+        zone: opts.zone,
+        latitude,
+        longitude,
+        property_type: opts.propertyType,
+        transaction_type: opts.transactionType,
+        sqm: opts.sqm,
+        rooms: opts.rooms,
+        bathrooms: opts.bathrooms,
+        floor: opts.floor,
+        total_floors: opts.totalFloors,
+        estimated_value: opts.estimatedValue,
+        foglio: opts.foglio ?? null,
+        particella: opts.particella ?? null,
+        subalterno: opts.subalterno ?? null,
+        stage: 'incarico',
+        owner_disposition: 'incarico_firmato',
+      })
+      .select('id')
+      .single()
+
+    if (!property) return
+
+    // Back-link listing to property
+    await opts.supabase
+      .from('listings')
+      .update({ property_id: property.id })
+      .eq('id', opts.listingId)
+
+    // Create initial event
+    await opts.supabase
+      .from('property_events')
+      .insert({
+        workspace_id: opts.workspaceId,
+        property_id: property.id,
+        agent_id: opts.agentId,
+        event_type: 'annuncio_creato',
+        title: 'Annuncio creato',
+        description: `Annuncio creato dal form — immobile aggiunto automaticamente alla banca dati`,
+      })
+  } catch (err) {
+    console.error('autoCreateProperty failed (non-critical):', err)
+  }
 }

@@ -1,0 +1,159 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+
+// GET /api/properties — list workspace properties with filters
+export async function GET(req: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
+
+  const { data: profileData } = await supabase
+    .from('users')
+    .select('workspace_id')
+    .eq('id', user.id)
+    .single()
+
+  const profile = profileData as { workspace_id: string } | null
+  if (!profile) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 404 })
+
+  const params = req.nextUrl.searchParams
+  const stage = params.get('stage')
+  const zone = params.get('zone')
+  const sub_zone = params.get('sub_zone')
+  const agent_id = params.get('agent_id')
+  const disposition = params.get('disposition')
+  const transaction_type = params.get('transaction_type')
+  const last_contact = params.get('last_contact') // today | week | month | over_30 | over_60
+  // Sanitize search query: strip PostgREST special chars, limit to 100 chars
+  const rawQ = params.get('q') ?? ''
+  const q = rawQ.replace(/['"();\\]/g, '').trim().slice(0, 100) || null
+  const page = Math.max(1, parseInt(params.get('page') ?? '1', 10))
+  const per_page = Math.min(200, Math.max(1, parseInt(params.get('per_page') ?? '50', 10)))
+  const offset = (page - 1) * per_page
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let query = (supabase as any)
+    .from('properties')
+    .select('*', { count: 'exact' })
+    .eq('workspace_id', profile.workspace_id)
+    .order('updated_at', { ascending: false })
+    .range(offset, offset + per_page - 1)
+
+  if (stage) query = query.eq('stage', stage)
+  if (zone) query = query.eq('zone', zone)
+  if (sub_zone) query = query.eq('sub_zone', sub_zone)
+  if (agent_id) query = query.eq('agent_id', agent_id)
+  if (disposition) query = query.eq('owner_disposition', disposition)
+  if (transaction_type) query = query.eq('transaction_type', transaction_type)
+  if (q) {
+    const search = `%${q}%`
+    query = query.or(`address.ilike.${search},city.ilike.${search}`)
+  }
+
+  // last_contact filter uses updated_at as proxy for last interaction date
+  if (last_contact) {
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+    const weekAgo = new Date(Date.now() - 7 * 86400_000).toISOString()
+    const monthAgo = new Date(Date.now() - 30 * 86400_000).toISOString()
+    const days30Ago = monthAgo
+    const days60Ago = new Date(Date.now() - 60 * 86400_000).toISOString()
+
+    if (last_contact === 'today') query = query.gte('updated_at', today)
+    else if (last_contact === 'week') query = query.gte('updated_at', weekAgo)
+    else if (last_contact === 'month') query = query.gte('updated_at', monthAgo)
+    else if (last_contact === 'over_30') query = query.lt('updated_at', days30Ago)
+    else if (last_contact === 'over_60') query = query.lt('updated_at', days60Ago)
+  }
+
+  const { data, error, count } = await query
+  if (error) return NextResponse.json({ error: 'Errore nel recupero immobili' }, { status: 500 })
+
+  return NextResponse.json({
+    data: data ?? [],
+    total: count ?? 0,
+    page,
+    per_page,
+  })
+}
+
+// POST /api/properties — create new property
+export async function POST(req: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
+
+  const { data: profileData } = await supabase
+    .from('users')
+    .select('workspace_id')
+    .eq('id', user.id)
+    .single()
+
+  const profile = profileData as { workspace_id: string } | null
+  if (!profile) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 404 })
+
+  let body: Record<string, unknown>
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Corpo richiesta non valido' }, { status: 400 })
+  }
+
+  const address = typeof body.address === 'string' ? body.address.trim() : ''
+  const city = typeof body.city === 'string' ? body.city.trim() : ''
+  const latitude = typeof body.latitude === 'number' ? body.latitude : null
+  const longitude = typeof body.longitude === 'number' ? body.longitude : null
+  const zone = typeof body.zone === 'string' ? body.zone.trim() || null : null
+
+  if (!address) return NextResponse.json({ error: "L'indirizzo è obbligatorio" }, { status: 400 })
+  if (!city) return NextResponse.json({ error: 'La città è obbligatoria' }, { status: 400 })
+  if (!zone) return NextResponse.json({ error: 'La zona è obbligatoria' }, { status: 400 })
+  if (latitude === null) return NextResponse.json({ error: 'La latitudine è obbligatoria' }, { status: 400 })
+  if (longitude === null) return NextResponse.json({ error: 'La longitudine è obbligatoria' }, { status: 400 })
+
+  const payload = {
+    workspace_id: profile.workspace_id,
+    agent_id: user.id,
+    address,
+    city,
+    latitude,
+    longitude,
+    zone,
+    sub_zone: typeof body.sub_zone === 'string' ? body.sub_zone.trim() || null : null,
+    doorbell: typeof body.doorbell === 'string' ? body.doorbell.trim() || null : null,
+    building_notes: typeof body.building_notes === 'string' ? body.building_notes.trim() || null : null,
+    transaction_type: body.transaction_type === 'affitto' ? 'affitto' : 'vendita',
+    stage: 'sconosciuto',
+    owner_disposition: 'non_definito',
+    labels: Array.isArray(body.labels) ? body.labels : [],
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('properties')
+    .insert(payload)
+    .select('id')
+    .single()
+
+  if (error) return NextResponse.json({ error: 'Errore nel salvataggio immobile' }, { status: 500 })
+
+  const propertyId = (data as { id: string }).id
+
+  // If initial_note provided, create a property_event of type 'nota'
+  const initialNote = typeof body.initial_note === 'string' ? body.initial_note.trim() : ''
+  if (initialNote) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any)
+      .from('property_events')
+      .insert({
+        workspace_id: profile.workspace_id,
+        property_id: propertyId,
+        agent_id: user.id,
+        event_type: 'nota',
+        title: 'Nota iniziale',
+        description: initialNote,
+      })
+  }
+
+  return NextResponse.json({ id: propertyId }, { status: 201 })
+}

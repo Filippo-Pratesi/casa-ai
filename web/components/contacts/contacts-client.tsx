@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { UserPlus, Users, Phone, Mail, Euro, Home, Cake, LayoutGrid, List, Search, X, MapPin } from 'lucide-react'
+import { UserPlus, Users, Phone, Mail, Euro, Home, Cake, LayoutGrid, List, Search, X, MapPin, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { ExportContactsButton } from '@/components/contacts/export-contacts-button'
 import { useI18n } from '@/lib/i18n/context'
 
@@ -44,6 +44,7 @@ interface Contact {
   min_rooms: number | null
   date_of_birth: string | null
   created_at: string
+  agent_name: string | null
 }
 
 function birthdayDaysLeft(dob: string | null): number | null {
@@ -61,12 +62,15 @@ interface ContactsClientProps {
   isAdmin: boolean
 }
 
+type SortKey = 'date_desc' | 'date_asc' | 'budget_desc' | 'budget_asc'
+
 export function ContactsClient({ contacts, isAdmin }: ContactsClientProps) {
   const { t } = useI18n()
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card')
   const [activeTypes, setActiveTypes] = useState<Set<string>>(new Set())
   const [citySearch, setCitySearch] = useState('')
   const [budgetMax, setBudgetMax] = useState('')
+  const [sortBy, setSortBy] = useState<SortKey>('date_desc')
 
   const TYPE_LABELS: Record<string, string> = useMemo(() => ({
     buyer: t('contacts.type.buyer'),
@@ -94,7 +98,7 @@ export function ContactsClient({ contacts, isAdmin }: ContactsClientProps) {
   }
 
   const filtered = useMemo(() => {
-    return contacts.filter(c => {
+    const list = contacts.filter(c => {
       if (activeTypes.size > 0 && !activeTypes.has(c.type)) return false
       if (citySearch.trim()) {
         const q = citySearch.trim().toLowerCase()
@@ -107,7 +111,14 @@ export function ContactsClient({ contacts, isAdmin }: ContactsClientProps) {
       }
       return true
     })
-  }, [contacts, activeTypes, citySearch, budgetMax])
+    return [...list].sort((a, b) => {
+      if (sortBy === 'date_asc') return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      if (sortBy === 'date_desc') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      if (sortBy === 'budget_desc') return (b.budget_max ?? b.budget_min ?? 0) - (a.budget_max ?? a.budget_min ?? 0)
+      if (sortBy === 'budget_asc') return (a.budget_max ?? a.budget_min ?? 0) - (b.budget_max ?? b.budget_min ?? 0)
+      return 0
+    })
+  }, [contacts, activeTypes, citySearch, budgetMax, sortBy])
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -185,6 +196,19 @@ export function ContactsClient({ contacts, isAdmin }: ContactsClientProps) {
                 className="w-full rounded-lg border border-border bg-background pl-8 pr-3 py-2 text-sm placeholder-muted-foreground"
               />
             </div>
+            <div className="relative min-w-[160px]">
+              <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+              <select
+                value={sortBy}
+                onChange={e => setSortBy(e.target.value as SortKey)}
+                className="w-full rounded-lg border border-border bg-background pl-8 pr-3 py-2 text-sm text-foreground appearance-none cursor-pointer"
+              >
+                <option value="date_desc">Più recenti</option>
+                <option value="date_asc">Meno recenti</option>
+                <option value="budget_desc">Budget alto</option>
+                <option value="budget_asc">Budget basso</option>
+              </select>
+            </div>
             {hasFilters && (
               <button
                 onClick={clearFilters}
@@ -231,12 +255,26 @@ export function ContactsClient({ contacts, isAdmin }: ContactsClientProps) {
         </div>
       ) : (
         <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
-          <div className="grid grid-cols-[1fr_90px_130px_130px_80px] gap-2 px-4 py-2.5 border-b border-border bg-muted/50">
+          <div className="grid grid-cols-[1fr_80px_120px_120px_80px_110px_110px] gap-2 px-4 py-2.5 border-b border-border bg-muted/50">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('contacts.col.name')}</p>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('contacts.col.type')}</p>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('contacts.col.phone')}</p>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('contacts.col.email')}</p>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('contacts.col.budget')}</p>
+            <button
+              onClick={() => setSortBy(s => s === 'budget_desc' ? 'budget_asc' : 'budget_desc')}
+              className="flex items-center gap-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
+            >
+              {t('contacts.col.budget')}
+              {sortBy === 'budget_desc' ? <ArrowDown className="h-3 w-3" /> : sortBy === 'budget_asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+            </button>
+            <button
+              onClick={() => setSortBy(s => s === 'date_desc' ? 'date_asc' : 'date_desc')}
+              className="flex items-center gap-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
+            >
+              Aggiunto
+              {sortBy === 'date_desc' ? <ArrowDown className="h-3 w-3" /> : sortBy === 'date_asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+            </button>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Da chi</p>
           </div>
           <div className="divide-y divide-border">
             {filtered.map((c) => (
@@ -387,7 +425,7 @@ function ContactRow({ contact: c, typeLabels }: { contact: Contact; typeLabels: 
   return (
     <div
       onClick={() => router.push(`/contacts/${c.id}`)}
-      className="grid grid-cols-[1fr_90px_130px_130px_80px] gap-2 items-center px-4 py-3 hover:bg-muted/40 transition-colors cursor-pointer group"
+      className="grid grid-cols-[1fr_80px_120px_120px_80px_110px_110px] gap-2 items-center px-4 py-3 hover:bg-muted/40 transition-colors cursor-pointer group"
     >
       <div className="min-w-0">
         <div className="flex items-center gap-1.5">
@@ -444,6 +482,12 @@ function ContactRow({ contact: c, typeLabels }: { contact: Contact; typeLabels: 
         {(c.budget_min || c.budget_max)
           ? `€${(c.budget_max ?? c.budget_min)!.toLocaleString('it-IT')}`
           : '—'}
+      </p>
+      <p className="text-xs text-muted-foreground">
+        {new Date(c.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+      </p>
+      <p className="text-xs text-muted-foreground truncate" title={c.agent_name ?? undefined}>
+        {c.agent_name ?? '—'}
       </p>
     </div>
   )

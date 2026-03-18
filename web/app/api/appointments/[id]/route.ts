@@ -29,7 +29,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'Corpo richiesta non valido' }, { status: 400 })
   }
 
-  const validTypes = ['viewing', 'meeting', 'signing', 'call', 'other']
+  const validTypes = ['viewing', 'meeting', 'signing', 'call', 'other', 'visita', 'riunione', 'atto', 'acquisizione', 'altro']
   const validStatuses = ['scheduled', 'completed', 'cancelled']
   const allowed: Record<string, unknown> = {}
 

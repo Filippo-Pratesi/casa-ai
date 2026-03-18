@@ -53,8 +53,8 @@ export default async function EditContactPage({
     notes: contact.notes ?? '',
     budget_min: contact.budget_min?.toString() ?? '',
     budget_max: contact.budget_max?.toString() ?? '',
-    preferred_cities: contact.preferred_cities.join(', '),
-    preferred_types: contact.preferred_types,
+    preferred_cities: (contact.preferred_cities ?? []).join(', '),
+    preferred_types: contact.preferred_types ?? [],
     min_sqm: contact.min_sqm?.toString() ?? '',
     min_rooms: contact.min_rooms?.toString() ?? '',
   }

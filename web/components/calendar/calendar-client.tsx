@@ -38,7 +38,7 @@ interface Agent {
 interface Appointment {
   id: string
   title: string
-  type: 'acquisizione' | 'riunione' | 'atto' | 'visita'
+  type: 'acquisizione' | 'riunione' | 'atto' | 'visita' | 'altro'
   status: 'scheduled' | 'completed' | 'cancelled'
   starts_at: string
   ends_at: string | null
@@ -70,6 +70,7 @@ const TYPE_COLORS: Record<string, string> = {
   riunione: 'bg-purple-100 text-purple-800 border-purple-200',
   atto: 'bg-green-100 text-green-800 border-green-200',
   acquisizione: 'bg-amber-100 text-amber-800 border-amber-200',
+  altro: 'bg-slate-100 text-slate-800 border-slate-200',
 }
 
 const TYPE_DOT: Record<string, string> = {
@@ -77,6 +78,7 @@ const TYPE_DOT: Record<string, string> = {
   riunione: 'bg-purple-500',
   atto: 'bg-green-500',
   acquisizione: 'bg-amber-500',
+  altro: 'bg-slate-500',
 }
 
 const AGENT_COLORS = [
@@ -158,6 +160,7 @@ function AppointmentModal({ listings, contacts, agents, currentUserId, initial, 
     riunione: t('calendar.type.riunione'),
     atto: t('calendar.type.atto'),
     visita: t('calendar.type.visita'),
+    altro: t('calendar.type.altro'),
   }
   const defaultDate = initial?.date ?? new Date()
   const pad = (n: number) => String(n).padStart(2, '0')
@@ -608,6 +611,7 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
             { type: 'riunione', label: 'Riunione', dot: 'bg-purple-500' },
             { type: 'atto', label: 'Atto', dot: 'bg-green-500' },
             { type: 'acquisizione', label: 'Acquisizione', dot: 'bg-amber-500' },
+            { type: 'altro', label: 'Altro', dot: 'bg-slate-500' },
           ].map(item => (
             <span key={item.type} className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <span className={`cal-legend-dot ${item.dot}`} />

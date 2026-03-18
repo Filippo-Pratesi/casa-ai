@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Receipt, Download, Send, CheckCircle, Trash2, ChevronRight, Copy, FileDown, MoreVertical, Pencil } from 'lucide-react'
+import { Receipt, Download, Send, CheckCircle, Trash2, ChevronRight, Copy, FileDown, MoreVertical, Pencil, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -62,6 +62,8 @@ export function InvoiceListClient({ invoices: initialInvoices }: InvoiceListClie
   const [invoices, setInvoices] = useState(initialInvoices)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<InvoiceStatus | 'all'>('all')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
   const filtered = invoices.filter(inv => {
@@ -69,7 +71,9 @@ export function InvoiceListClient({ invoices: initialInvoices }: InvoiceListClie
       inv.numero_fattura.toLowerCase().includes(search.toLowerCase()) ||
       inv.cliente_nome.toLowerCase().includes(search.toLowerCase())
     const matchesStatus = statusFilter === 'all' || inv.status === statusFilter
-    return matchesSearch && matchesStatus
+    const matchDateFrom = !dateFrom || inv.data_emissione >= dateFrom
+    const matchDateTo = !dateTo || inv.data_emissione <= dateTo
+    return matchesSearch && matchesStatus && matchDateFrom && matchDateTo
   })
 
   async function handleMarkPaid(id: string) {
@@ -189,9 +193,7 @@ export function InvoiceListClient({ invoices: initialInvoices }: InvoiceListClie
         </div>
         <h3 className="text-lg font-semibold">Nessuna fattura ancora</h3>
         <p className="mt-1 text-sm text-muted-foreground max-w-sm">Crea la tua prima fattura e gestisci la contabilità direttamente da CasaAI.</p>
-        <Button asChild className="btn-ai mt-6">
-          <Link href="/contabilita/nuova">Crea la prima fattura</Link>
-        </Button>
+        <Link href="/contabilita/nuova" className="btn-ai mt-6 inline-flex items-center justify-center rounded-lg px-2.5 h-8 text-sm font-medium">Crea la prima fattura</Link>
       </div>
     )
   }
@@ -202,31 +204,64 @@ export function InvoiceListClient({ invoices: initialInvoices }: InvoiceListClie
       <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
         <div className="flex flex-col sm:flex-row gap-3 flex-1">
           <Input
-            placeholder="Cerca per n. fattura o cliente..."
+            placeholder="Cerca per n. fattura o cliente…"
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="sm:max-w-xs"
           />
-          <div className="flex gap-2 flex-wrap">
-            {(['all', 'bozza', 'inviata', 'pagata', 'scaduta'] as const).map(s => (
+          {/* Date range filter */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-muted-foreground font-medium">Periodo:</span>
+            <div className="flex items-center gap-1.5">
+              <label className="text-xs text-muted-foreground">Dal</label>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={e => setDateFrom(e.target.value)}
+                className="h-7 rounded-lg border border-border bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <label className="text-xs text-muted-foreground">Al</label>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={e => setDateTo(e.target.value)}
+                className="h-7 rounded-lg border border-border bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+            </div>
+            {(dateFrom || dateTo) && (
               <button
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-                  statusFilter === s
-                    ? 'bg-[oklch(0.57_0.20_33)] text-white dark:bg-[oklch(0.73_0.18_36)]'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                }`}
+                onClick={() => { setDateFrom(''); setDateTo('') }}
+                className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600 hover:bg-red-100 dark:border-red-800 dark:bg-red-950 dark:text-red-400 transition-colors"
               >
-                {s === 'all' ? 'Tutte' : s.charAt(0).toUpperCase() + s.slice(1)}
+                <X className="h-3 w-3" />
+                Reset date
               </button>
-            ))}
+            )}
           </div>
         </div>
         <Button variant="outline" size="sm" onClick={handleExportCsv} className="shrink-0 gap-1.5">
           <FileDown className="h-4 w-4" />
           Esporta CSV
         </Button>
+      </div>
+
+      {/* Status filter pills */}
+      <div className="flex gap-2 flex-wrap">
+        {(['all', 'bozza', 'inviata', 'pagata', 'scaduta'] as const).map(s => (
+          <button
+            key={s}
+            onClick={() => setStatusFilter(s)}
+            className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+              statusFilter === s
+                ? 'bg-[oklch(0.57_0.20_33)] text-white dark:bg-[oklch(0.73_0.18_36)]'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+            }`}
+          >
+            {s === 'all' ? 'Tutte' : s.charAt(0).toUpperCase() + s.slice(1)}
+          </button>
+        ))}
       </div>
 
       {/* List */}
