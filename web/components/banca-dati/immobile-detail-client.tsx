@@ -49,6 +49,11 @@ const ROLE_LABELS: Record<string, string> = {
   altro: 'Altro',
 }
 
+const PROPERTY_TYPE_IT: Record<string, string> = {
+  apartment: 'Appartamento', house: 'Casa', villa: 'Villa',
+  commercial: 'Commerciale', land: 'Terreno', garage: 'Garage', other: 'Altro',
+}
+
 const STAGE_ADVANCES: Record<PropertyStage, PropertyStage | null> = {
   sconosciuto: 'ignoto',
   ignoto: 'conosciuto',
@@ -388,7 +393,7 @@ export function ImmobileDetailClient({
           <Card className="p-5 space-y-4">
             <h2 className="font-semibold text-sm">Dettagli immobile</h2>
             <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-              {property.property_type && <div><span className="text-muted-foreground">Tipo:</span> <span className="font-medium capitalize">{property.property_type}</span></div>}
+              {property.property_type && <div><span className="text-muted-foreground">Tipo:</span> <span className="font-medium">{PROPERTY_TYPE_IT[property.property_type] ?? property.property_type}</span></div>}
               {property.sqm && <div><span className="text-muted-foreground">Superficie:</span> <span className="font-medium">{property.sqm} mq</span></div>}
               {property.rooms && <div><span className="text-muted-foreground">Locali:</span> <span className="font-medium">{property.rooms}</span></div>}
               {property.bathrooms && <div><span className="text-muted-foreground">Bagni:</span> <span className="font-medium">{property.bathrooms}</span></div>}
@@ -444,14 +449,28 @@ export function ImmobileDetailClient({
               <div className="space-y-2">
                 {contacts.map((pc) => (
                   <div key={pc.id} className="flex items-center justify-between gap-2 rounded-lg border border-border/50 p-2.5">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-bold shrink-0">
-                        {pc.contact?.name?.charAt(0)?.toUpperCase() ?? '?'}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{pc.contact?.name ?? 'Sconosciuto'}</p>
-                        <p className="text-xs text-muted-foreground">{ROLE_LABELS[pc.role] ?? pc.role}</p>
-                      </div>
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      {pc.contact?.id ? (
+                        <Link href={`/contacts/${pc.contact.id}`} className="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity">
+                          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-bold shrink-0">
+                            {pc.contact.name?.charAt(0)?.toUpperCase() ?? '?'}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate underline-offset-2 hover:underline">{pc.contact.name ?? 'Sconosciuto'}</p>
+                            <p className="text-xs text-muted-foreground">{ROLE_LABELS[pc.role] ?? pc.role}</p>
+                          </div>
+                        </Link>
+                      ) : (
+                        <>
+                          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-bold shrink-0">
+                            {pc.contact?.name?.charAt(0)?.toUpperCase() ?? '?'}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{pc.contact?.name ?? 'Sconosciuto'}</p>
+                            <p className="text-xs text-muted-foreground">{ROLE_LABELS[pc.role] ?? pc.role}</p>
+                          </div>
+                        </>
+                      )}
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       {pc.contact?.phone && (

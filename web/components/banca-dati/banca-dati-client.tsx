@@ -22,6 +22,23 @@ import { DispositionIcon, DISPOSITION_CONFIG } from './disposition-icon'
 
 const STAGES: PropertyStage[] = ['sconosciuto', 'ignoto', 'conosciuto', 'incarico', 'venduto', 'locato', 'disponibile']
 
+const PROPERTY_TYPE_IT: Record<string, string> = {
+  apartment: 'Appartamento', house: 'Casa', villa: 'Villa',
+  commercial: 'Commerciale', land: 'Terreno', garage: 'Garage', other: 'Altro',
+}
+
+function splitAddress(address: string): { street: string; civic: string } {
+  const match = address.match(/^(.+?)\s+(\d+[a-zA-Z0-9\/]*)$/)
+  if (match) return { street: match[1], civic: match[2] }
+  return { street: address, civic: '' }
+}
+
+const DEFAULT_WIDTHS: Record<string, number> = {
+  city: 90, zone: 90, sub_zone: 70, street: 160, civic: 52,
+  agent: 90, price: 80, owner: 110, stage: 90, disposition: 32,
+  type: 70, last_event: 160, updated: 70,
+}
+
 interface BancaDatiClientProps {
   properties: PropertyCardData[]
   total: number
@@ -67,7 +84,24 @@ export function BancaDatiClient({
   const pathname = usePathname()
   const [searchText, setSearchText] = useState(initialFilters.q)
   const [showLegend, setShowLegend] = useState(false)
+  const [colWidths, setColWidths] = useState(DEFAULT_WIDTHS)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  function startResize(col: string, e: React.MouseEvent) {
+    e.preventDefault()
+    const startX = e.clientX
+    const startW = colWidths[col]
+    const onMove = (ev: MouseEvent) => {
+      const w = Math.max(36, startW + ev.clientX - startX)
+      setColWidths(prev => ({ ...prev, [col]: w }))
+    }
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }
 
   // Debounced search — auto-applies 400ms after typing
   const handleSearchChange = useCallback((value: string) => {
@@ -358,55 +392,78 @@ export function BancaDatiClient({
           )}
         </div>
       ) : initialFilters.viewMode !== 'grid' ? (
-        <div className="rounded-xl border border-border overflow-hidden bg-card">
-          {/* Column headers */}
-          <div className="hidden md:flex items-center gap-3 px-4 py-2 bg-muted/30 border-b border-border/60 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground select-none">
-            <span className="w-[86px] shrink-0">Stage</span>
-            <span className="w-5 shrink-0"></span>
-            <span className="flex-1 min-w-0">Via</span>
-            <span className="w-28 hidden lg:block">Città</span>
-            <span className="w-20 hidden xl:block">Zona</span>
-            <span className="w-24 hidden xl:block">Proprietario</span>
-            <span className="w-14 hidden sm:block text-center">Tipo</span>
-            <span className="w-20 hidden lg:block text-right">Valore</span>
-            <span className="w-36 hidden xl:block">Ultima nota</span>
-            <span className="w-14 hidden md:block text-right">Aggiornato</span>
-            <span className="w-4"></span>
+        <div className="rounded-xl border border-border overflow-hidden bg-card select-none">
+          {/* Headers */}
+          <div className="flex items-center bg-muted/40 border-b border-border/60 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground overflow-x-auto">
+            {[
+              { key: 'city', label: 'Città' },
+              { key: 'zone', label: 'Zona', hiddenBelow: 'lg' },
+              { key: 'sub_zone', label: 'SZ', hiddenBelow: 'xl' },
+              { key: 'street', label: 'Via' },
+              { key: 'civic', label: 'N.' },
+              { key: 'agent', label: 'Agente', hiddenBelow: 'xl' },
+              { key: 'price', label: 'Prezzo', hiddenBelow: 'lg' },
+              { key: 'owner', label: 'Proprietario', hiddenBelow: 'xl' },
+              { key: 'stage', label: 'Stage' },
+              { key: 'disposition', label: 'St.' },
+              { key: 'type', label: 'Tipo', hiddenBelow: 'xl' },
+              { key: 'last_event', label: 'Ultima nota', hiddenBelow: 'xl' },
+              { key: 'updated', label: 'Agg.', hiddenBelow: 'md' },
+            ].map(({ key, label, hiddenBelow }) => (
+              <div
+                key={key}
+                style={{ width: colWidths[key], minWidth: colWidths[key] }}
+                className={cn(
+                  'relative shrink-0 px-2 py-2 whitespace-nowrap',
+                  hiddenBelow === 'lg' && 'hidden lg:block',
+                  hiddenBelow === 'xl' && 'hidden xl:block',
+                  hiddenBelow === 'md' && 'hidden md:block',
+                )}
+              >
+                {label}
+                <div
+                  className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary/40 active:bg-primary/60 z-10"
+                  onMouseDown={(e) => startResize(key, e)}
+                />
+              </div>
+            ))}
+            <div className="w-8 shrink-0" />
           </div>
-          {properties.map((p) => (
-            <Link
-              key={p.id}
-              href={`/banca-dati/${p.id}`}
-              className="flex items-center gap-3 px-4 py-2 hover:bg-muted/50 border-b border-border/30 last:border-0 transition-colors"
-            >
-              <PropertyStageBadge stage={p.stage} className="w-[86px] shrink-0" />
-              <DispositionIcon disposition={p.owner_disposition} className="w-5 shrink-0" />
-              <p className="flex-1 min-w-0 text-sm font-medium truncate">{p.address}</p>
-              <p className="w-28 hidden lg:block text-xs text-muted-foreground truncate">{p.city}</p>
-              <p className="w-20 hidden xl:block text-xs text-muted-foreground truncate">{p.zone ?? <span className="text-border/50">—</span>}</p>
-              <p className="w-24 hidden xl:block text-xs text-muted-foreground truncate">{p.owner_name ?? '—'}</p>
-              {p.transaction_type ? (
-                <span className={cn(
-                  'w-14 hidden sm:block text-[10px] rounded px-1.5 py-0.5 font-medium text-center shrink-0',
-                  p.transaction_type === 'affitto'
-                    ? 'bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400'
-                    : 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400'
-                )}>
-                  {p.transaction_type === 'affitto' ? 'Affitto' : 'Vendita'}
-                </span>
-              ) : <span className="w-14 hidden sm:block shrink-0" />}
-              {p.estimated_value ? (
-                <p className="w-20 hidden lg:block text-xs font-semibold text-foreground text-right shrink-0">€{p.estimated_value.toLocaleString('it-IT')}</p>
-              ) : <span className="w-20 hidden lg:block shrink-0" />}
-              {(p as PropertyCardData & { last_event?: { title: string; event_date: string } | null }).last_event ? (
-                <p className="w-36 hidden xl:block text-xs text-muted-foreground truncate">
-                  {(p as PropertyCardData & { last_event?: { title: string; event_date: string } | null }).last_event!.title}
-                </p>
-              ) : <span className="w-36 hidden xl:block shrink-0" />}
-              <p className="w-14 hidden md:block text-xs text-muted-foreground text-right shrink-0">{formatDistanceToNow(new Date(p.updated_at), { addSuffix: false, locale: it })}</p>
-              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-            </Link>
-          ))}
+          {/* Rows */}
+          {properties.map((p) => {
+            const { street, civic } = splitAddress(p.address)
+            const lastEv = (p as PropertyCardData & { last_event?: { title: string; event_date: string } | null }).last_event
+            return (
+              <Link
+                key={p.id}
+                href={`/banca-dati/${p.id}`}
+                className="group flex items-center border-b border-border/20 last:border-0 hover:bg-primary/[0.04] dark:hover:bg-primary/[0.08] transition-colors cursor-pointer overflow-x-auto"
+              >
+                <div style={{ width: colWidths.city, minWidth: colWidths.city }} className="shrink-0 px-2 py-2 text-xs text-muted-foreground truncate">{p.city}</div>
+                <div style={{ width: colWidths.zone, minWidth: colWidths.zone }} className="hidden lg:block shrink-0 px-2 py-2 text-xs text-muted-foreground truncate">{p.zone ?? <span className="opacity-30">—</span>}</div>
+                <div style={{ width: colWidths.sub_zone, minWidth: colWidths.sub_zone }} className="hidden xl:block shrink-0 px-2 py-2 text-xs text-muted-foreground truncate">{(p as PropertyCardData & { sub_zone?: string | null }).sub_zone ?? <span className="opacity-30">—</span>}</div>
+                <div style={{ width: colWidths.street, minWidth: colWidths.street }} className="shrink-0 px-2 py-2 text-sm font-medium truncate">{street}</div>
+                <div style={{ width: colWidths.civic, minWidth: colWidths.civic }} className="shrink-0 px-2 py-2 text-xs text-muted-foreground tabular-nums">{civic}</div>
+                <div style={{ width: colWidths.agent, minWidth: colWidths.agent }} className="hidden xl:block shrink-0 px-2 py-2 text-xs text-muted-foreground truncate">{(p as PropertyCardData & { agent_name?: string | null }).agent_name ?? <span className="opacity-30">—</span>}</div>
+                <div style={{ width: colWidths.price, minWidth: colWidths.price }} className="hidden lg:block shrink-0 px-2 py-2 text-xs font-semibold tabular-nums">{p.estimated_value ? `€${p.estimated_value.toLocaleString('it-IT')}` : <span className="opacity-30">—</span>}</div>
+                <div style={{ width: colWidths.owner, minWidth: colWidths.owner }} className="hidden xl:block shrink-0 px-2 py-2 text-xs text-muted-foreground truncate">{p.owner_name ?? <span className="opacity-30">—</span>}</div>
+                <div style={{ width: colWidths.stage, minWidth: colWidths.stage }} className="shrink-0 px-2 py-1.5"><PropertyStageBadge stage={p.stage} /></div>
+                <div style={{ width: colWidths.disposition, minWidth: colWidths.disposition }} className="shrink-0 px-1 py-2 flex items-center justify-center"><DispositionIcon disposition={p.owner_disposition} /></div>
+                <div style={{ width: colWidths.type, minWidth: colWidths.type }} className="hidden xl:block shrink-0 px-2 py-2 text-xs text-muted-foreground truncate">{PROPERTY_TYPE_IT[p.transaction_type ?? ''] ?? p.transaction_type ?? <span className="opacity-30">—</span>}</div>
+                <div
+                  style={{ width: colWidths.last_event, minWidth: colWidths.last_event }}
+                  className="hidden xl:block shrink-0 px-2 py-2 text-xs text-muted-foreground truncate"
+                  title={lastEv?.title ?? undefined}
+                >
+                  {lastEv?.title ?? <span className="opacity-30">—</span>}
+                </div>
+                <div style={{ width: colWidths.updated, minWidth: colWidths.updated }} className="hidden md:block shrink-0 px-2 py-2 text-xs text-muted-foreground text-right">{formatDistanceToNow(new Date(p.updated_at), { addSuffix: false, locale: it })}</div>
+                <div className="w-8 shrink-0 flex items-center justify-center">
+                  <ChevronRight className="h-3.5 w-3.5 text-muted-foreground opacity-40 group-hover:opacity-100 transition-opacity" />
+                </div>
+              </Link>
+            )
+          })}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { FileText, Download, CheckCircle, XCircle, Trash2, ChevronRight, ArrowLeftRight } from 'lucide-react'
+import { FileText, Download, CheckCircle, XCircle, Trash2, ChevronRight, ArrowLeftRight, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -35,6 +35,8 @@ export function ProposalList({ proposals: initialProposals }: ProposalListProps)
   const [proposals, setProposals] = useState(initialProposals)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<ProposalStatus | 'all'>('all')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
   const [loading, setLoading] = useState<string | null>(null)
 
   const filtered = proposals.filter(p => {
@@ -43,7 +45,9 @@ export function ProposalList({ proposals: initialProposals }: ProposalListProps)
       p.proponente_nome.toLowerCase().includes(search.toLowerCase()) ||
       p.immobile_indirizzo.toLowerCase().includes(search.toLowerCase())
     const matchStatus = statusFilter === 'all' || p.status === statusFilter
-    return matchSearch && matchStatus
+    const matchDateFrom = !dateFrom || p.data_proposta >= dateFrom
+    const matchDateTo = !dateTo || p.data_proposta <= dateTo
+    return matchSearch && matchStatus && matchDateFrom && matchDateTo
   })
 
   async function handleRespond(id: string, action: 'accettata' | 'rifiutata') {
@@ -115,13 +119,46 @@ export function ProposalList({ proposals: initialProposals }: ProposalListProps)
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <Input
-          placeholder="Cerca per numero, acquirente o indirizzo…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="sm:max-w-xs"
-        />
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Input
+            placeholder="Cerca per numero, acquirente o indirizzo…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="sm:max-w-xs"
+          />
+          {/* Date range filter */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-muted-foreground font-medium">Periodo:</span>
+            <div className="flex items-center gap-1.5">
+              <label className="text-xs text-muted-foreground">Dal</label>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={e => setDateFrom(e.target.value)}
+                className="h-7 rounded-lg border border-border bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <label className="text-xs text-muted-foreground">Al</label>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={e => setDateTo(e.target.value)}
+                className="h-7 rounded-lg border border-border bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+            </div>
+            {(dateFrom || dateTo) && (
+              <button
+                onClick={() => { setDateFrom(''); setDateTo('') }}
+                className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600 hover:bg-red-100 dark:border-red-800 dark:bg-red-950 dark:text-red-400 transition-colors"
+              >
+                <X className="h-3 w-3" />
+                Reset date
+              </button>
+            )}
+          </div>
+        </div>
         <div className="flex gap-2 flex-wrap">
           {(['all', 'bozza', 'inviata', 'accettata', 'controproposta', 'rifiutata', 'scaduta'] as const).map(s => (
             <button
