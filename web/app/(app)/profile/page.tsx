@@ -3,17 +3,14 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { ProfileForm } from '@/components/profile/profile-form'
-
-const ROLE_LABELS: Record<string, string> = {
-  group_admin: 'Admin Gruppo',
-  admin: 'Admin',
-  agent: 'Agente',
-}
+import { getTranslations } from '@/lib/i18n/server'
 
 export default async function ProfilePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  const { t, locale } = await getTranslations()
 
   const admin = createAdminClient()
   const { data: profileData } = await admin
@@ -37,23 +34,27 @@ export default async function ProfilePage() {
     created_at: string
   }
 
-  const joinedDate = new Date(profile.created_at).toLocaleDateString('it-IT', {
+  const dateLocale = locale === 'en' ? 'en-GB' : 'it-IT'
+  const joinedDate = new Date(profile.created_at).toLocaleDateString(dateLocale, {
     day: '2-digit', month: 'long', year: 'numeric',
   })
 
+  const roleKey = `profile.role.${profile.role}` as Parameters<typeof t>[0]
+  const roleLabel = t(roleKey) ?? profile.role
+
   return (
     <div className="max-w-2xl mx-auto space-y-6 pb-12">
-      <div>
-        <h1 className="text-2xl font-bold">Il mio profilo</h1>
-        <p className="text-neutral-500 text-sm mt-1">
-          {ROLE_LABELS[profile.role] ?? profile.role} · Nel team dal {joinedDate}
+      <div className="animate-in-1">
+        <h1 className="text-2xl font-extrabold tracking-tight">{t('profile.title')}</h1>
+        <p className="text-muted-foreground text-sm mt-1">
+          {roleLabel} · {t('profile.joinedOn')} {joinedDate}
         </p>
       </div>
 
-      <Card>
+      <Card className="animate-in-2">
         <CardHeader>
-          <CardTitle>Dati personali</CardTitle>
-          <CardDescription>Modifica le tue informazioni personali e professionali</CardDescription>
+          <CardTitle>{t('profile.personalData')}</CardTitle>
+          <CardDescription>{t('profile.personalDataDesc')}</CardDescription>
         </CardHeader>
         <CardContent>
           <ProfileForm profile={profile} />

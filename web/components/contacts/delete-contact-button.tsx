@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Trash2, ChevronDown } from 'lucide-react'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
 
 interface Listing {
   id: string
@@ -78,15 +77,13 @@ export function DeleteContactButton({ contactId, name }: DeleteContactButtonProp
   // --- STEP: idle ---
   if (step === 'idle') {
     return (
-      <Button
-        variant="ghost"
-        size="sm"
+      <button
         onClick={() => setStep('confirm')}
-        className="h-8 gap-1.5 text-xs text-neutral-400 hover:text-red-600 hover:bg-red-50"
+        className="flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors"
       >
         <Trash2 className="h-3.5 w-3.5" />
         Elimina
-      </Button>
+      </button>
     )
   }
 
@@ -105,7 +102,7 @@ export function DeleteContactButton({ contactId, name }: DeleteContactButtonProp
         <button
           onClick={reset}
           disabled={loading}
-          className="rounded-md px-2.5 py-1 text-xs font-medium text-neutral-600 hover:bg-neutral-100 transition-colors"
+          className="rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
         >
           Annulla
         </button>
@@ -127,13 +124,13 @@ export function DeleteContactButton({ contactId, name }: DeleteContactButtonProp
         <button
           onClick={() => handleDelete(false)}
           disabled={loading}
-          className="rounded-md bg-neutral-800 px-2.5 py-1 text-xs font-medium text-white hover:bg-neutral-900 disabled:opacity-60 transition-colors"
+          className="rounded-md bg-[oklch(0.57_0.20_33)] px-2.5 py-1 text-xs font-medium text-white hover:opacity-90 disabled:opacity-60 transition-colors"
         >
           {loading ? 'Elimino…' : 'No, elimina'}
         </button>
         <button
           onClick={reset}
-          className="rounded-md px-2.5 py-1 text-xs font-medium text-neutral-600 hover:bg-neutral-100 transition-colors"
+          className="rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
         >
           Annulla
         </button>
@@ -147,7 +144,7 @@ export function DeleteContactButton({ contactId, name }: DeleteContactButtonProp
       <div className="flex flex-col gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 max-w-sm">
         <p className="text-xs text-amber-800 font-medium">Quale immobile ha acquistato?</p>
         {loadingListings ? (
-          <p className="text-xs text-neutral-500">Carico annunci…</p>
+          <p className="text-xs text-muted-foreground">Carico annunci…</p>
         ) : (
           <div className="relative">
             <select
@@ -156,7 +153,7 @@ export function DeleteContactButton({ contactId, name }: DeleteContactButtonProp
                 const l = listings.find((x) => x.id === e.target.value) ?? null
                 setSelectedListing(l)
               }}
-              className="w-full appearance-none rounded-lg border border-neutral-200 bg-white py-1.5 pl-3 pr-8 text-xs text-neutral-800 focus:outline-none focus:ring-1 focus:ring-neutral-400"
+              className="w-full appearance-none rounded-lg border border-border bg-background py-1.5 pl-3 pr-8 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[oklch(0.57_0.20_33/0.3)]"
             >
               <option value="">— Non è nel database —</option>
               {listings.map((l) => (
@@ -165,7 +162,7 @@ export function DeleteContactButton({ contactId, name }: DeleteContactButtonProp
                 </option>
               ))}
             </select>
-            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-neutral-400" />
+            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
           </div>
         )}
         <div className="flex items-center gap-2 mt-1">
@@ -177,7 +174,7 @@ export function DeleteContactButton({ contactId, name }: DeleteContactButtonProp
           </button>
           <button
             onClick={reset}
-            className="rounded-md px-2.5 py-1 text-xs font-medium text-neutral-600 hover:bg-neutral-100 transition-colors"
+            className="rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
           >
             Annulla
           </button>
@@ -212,7 +209,7 @@ export function DeleteContactButton({ contactId, name }: DeleteContactButtonProp
               <button
                 onClick={() => handleDelete(true, false)}
                 disabled={loading}
-                className="rounded-md bg-neutral-800 px-2.5 py-1 text-xs font-medium text-white hover:bg-neutral-900 disabled:opacity-60 transition-colors"
+                className="rounded-md bg-[oklch(0.57_0.20_33)] px-2.5 py-1 text-xs font-medium text-white hover:opacity-90 disabled:opacity-60 transition-colors"
               >
                 {loading ? 'Archivio…' : 'No, tieni annuncio'}
               </button>
@@ -229,7 +226,7 @@ export function DeleteContactButton({ contactId, name }: DeleteContactButtonProp
           )}
           <button
             onClick={reset}
-            className="rounded-md px-2.5 py-1 text-xs font-medium text-neutral-600 hover:bg-neutral-100 transition-colors"
+            className="rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
           >
             Annulla
           </button>

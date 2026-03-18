@@ -51,31 +51,31 @@ export function PriceHistory({ listingId, currentPrice, history }: PriceHistoryP
       <div className="flex items-center justify-between">
         {editing ? (
           <div className="flex items-center gap-2">
-            <span className="text-sm text-neutral-500">€</span>
+            <span className="text-sm text-muted-foreground">€</span>
             <input
               type="number"
               value={newPrice}
               onChange={e => setNewPrice(e.target.value)}
-              className="w-36 rounded-lg border border-neutral-300 px-2 py-1 text-sm font-semibold text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+              className="w-36 rounded-lg border border-border px-2 py-1 text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-border"
               autoFocus
             />
-            <button onClick={handleSave} disabled={loading} className="rounded-lg p-1.5 bg-neutral-900 text-white hover:bg-neutral-700 transition-colors">
+            <button onClick={handleSave} disabled={loading} className="rounded-lg p-1.5 bg-[oklch(0.57_0.20_33)] text-white hover:bg-[oklch(0.52_0.20_33)] transition-colors">
               <Check className="h-3.5 w-3.5" />
             </button>
-            <button onClick={() => setEditing(false)} className="rounded-lg p-1.5 hover:bg-neutral-100 transition-colors">
-              <X className="h-3.5 w-3.5 text-neutral-500" />
+            <button onClick={() => setEditing(false)} className="rounded-lg p-1.5 hover:bg-muted transition-colors">
+              <X className="h-3.5 w-3.5 text-muted-foreground" />
             </button>
           </div>
         ) : (
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-neutral-600">Prezzo corrente:</span>
-            <span className="text-sm font-bold text-neutral-900">€{price.toLocaleString('it-IT')}</span>
+            <span className="text-sm font-medium text-muted-foreground">Prezzo corrente:</span>
+            <span className="text-sm font-bold text-foreground">€{price.toLocaleString('it-IT')}</span>
             <button
               onClick={() => setEditing(true)}
-              className="rounded-lg p-1 hover:bg-neutral-100 transition-colors"
+              className="rounded-lg p-1 hover:bg-muted transition-colors"
               title="Modifica prezzo"
             >
-              <Edit2 className="h-3 w-3 text-neutral-400" />
+              <Edit2 className="h-3 w-3 text-muted-foreground" />
             </button>
           </div>
         )}
@@ -95,7 +95,7 @@ export function PriceHistory({ listingId, currentPrice, history }: PriceHistoryP
                   €{e.old_price.toLocaleString('it-IT')} → €{e.new_price.toLocaleString('it-IT')}
                   <span className="ml-1 font-normal opacity-70">({isDown ? '-' : '+'}{pctChange}%)</span>
                 </span>
-                <span className="ml-auto text-neutral-400">
+                <span className="ml-auto text-muted-foreground">
                   {new Date(e.changed_at).toLocaleDateString('it-IT')}
                 </span>
               </div>
@@ -105,7 +105,7 @@ export function PriceHistory({ listingId, currentPrice, history }: PriceHistoryP
       )}
 
       {entries.length === 0 && (
-        <p className="text-xs text-neutral-400">Nessuna variazione di prezzo registrata</p>
+        <p className="text-xs text-muted-foreground">Nessuna variazione di prezzo registrata</p>
       )}
     </div>
   )

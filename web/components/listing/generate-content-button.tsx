@@ -30,11 +30,15 @@ export function GenerateContentButton({ listingId }: { listingId: string }) {
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <Button onClick={handleGenerate} disabled={loading} className="gap-2">
-        <Sparkles className="h-4 w-4" />
+      <button
+        onClick={handleGenerate}
+        disabled={loading}
+        className={`btn-ai inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed ${loading ? 'ai-glow-ring' : ''}`}
+      >
+        <Sparkles className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
         {loading ? 'Generazione in corso…' : 'Genera contenuto AI'}
-      </Button>
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      </button>
+      {error && <p className="text-sm text-red-500 mt-1">{error}</p>}
     </div>
   )
 }

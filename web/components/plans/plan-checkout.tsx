@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Check, Loader2, Zap, Building2, Globe } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { PLAN_PRICES } from '@/lib/plan-limits'
+import { useI18n } from '@/lib/i18n/context'
 
 const ICON_MAP: Record<string, LucideIcon> = {
   Zap,
@@ -33,6 +34,7 @@ interface PlanCheckoutProps {
 export function PlanCheckout({ plans, currentPlan, workspaceId, prices }: PlanCheckoutProps) {
   const [billing, setBilling] = useState<'monthly' | 'annual'>('monthly')
   const [loading, setLoading] = useState<string | null>(null)
+  const { t } = useI18n()
 
   async function handleUpgrade(planId: string) {
     setLoading(planId)
@@ -54,35 +56,24 @@ export function PlanCheckout({ plans, currentPlan, workspaceId, prices }: PlanCh
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Billing toggle */}
       <div className="flex justify-center">
-        <div className="flex rounded-xl border border-neutral-200 bg-white overflow-hidden p-0.5 gap-0.5">
-          <button
-            onClick={() => setBilling('monthly')}
-            className={`px-5 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-              billing === 'monthly' ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-50'
-            }`}
-          >
-            Mensile
+        <div className="bg-muted rounded-lg p-1 flex items-center gap-1">
+          <button onClick={() => setBilling('monthly')}
+            className={`rounded-md px-4 py-1.5 text-sm font-medium transition-all ${billing === 'monthly' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+            {t('plans.billing.monthly')}
           </button>
-          <button
-            onClick={() => setBilling('annual')}
-            className={`flex items-center gap-2 px-5 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-              billing === 'annual' ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-50'
-            }`}
-          >
-            Annuale
-            <span className={`text-xs font-semibold rounded-full px-1.5 py-0.5 ${
-              billing === 'annual' ? 'bg-white/20 text-white' : 'bg-green-100 text-green-700'
-            }`}>-5%</span>
+          <button onClick={() => setBilling('annual')}
+            className={`rounded-md px-4 py-1.5 text-sm font-medium transition-all ${billing === 'annual' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+            {t('plans.billing.annual')} <span className="text-xs text-green-600 font-medium ml-1">-17%</span>
           </button>
         </div>
       </div>
 
       {/* Plan cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {plans.map((plan) => {
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+        {plans.map((plan, idx) => {
           const price = prices[plan.id]
           const monthlyPrice = billing === 'annual' ? price.annual : price.monthly
           const isCurrent = currentPlan === plan.id
@@ -91,67 +82,76 @@ export function PlanCheckout({ plans, currentPlan, workspaceId, prices }: PlanCh
           return (
             <div
               key={plan.id}
-              className={`relative flex flex-col rounded-2xl border-2 p-6 ${
-                plan.highlight
-                  ? 'border-purple-300 shadow-lg shadow-purple-100'
-                  : 'border-neutral-200'
-              } bg-white`}
+              className={`animate-in-${idx + 2} relative flex flex-col rounded-2xl p-6 bg-card card-lift ${
+                isCurrent
+                  ? 'ring-2 ring-[oklch(0.57_0.20_33)] ring-offset-2 border-2 border-[oklch(0.57_0.20_33/0.3)]'
+                  : plan.highlight
+                    ? 'plan-popular-glow border-2 border-transparent shadow-xl shadow-[oklch(0.57_0.20_33/0.2)]'
+                    : 'border-2 border-border'
+              }`}
             >
-              {plan.highlight && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="rounded-full bg-purple-600 px-3 py-0.5 text-xs font-semibold text-white">
-                    Più popolare
+              {isCurrent && (
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
+                  <span className="rounded-full bg-[oklch(0.57_0.20_33)] px-4 py-1 text-[11px] font-bold text-white shadow-md uppercase tracking-wider">
+                    Piano attuale
+                  </span>
+                </div>
+              )}
+              {!isCurrent && plan.highlight && (
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
+                  <span className="rounded-full bg-gradient-to-r from-[oklch(0.57_0.20_33)] to-[oklch(0.66_0.15_188)] px-4 py-1 text-[11px] font-bold text-white shadow-md shadow-[oklch(0.57_0.20_33/0.3)] uppercase tracking-wider">
+                    {t('plans.mostPopular')}
                   </span>
                 </div>
               )}
 
-              <div className="flex items-center gap-3 mb-4">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${plan.bg}`}>
+              <div className="flex items-center gap-3 mb-5">
+                <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${plan.bg} shadow-sm`}>
                   <Icon className={`h-5 w-5 ${plan.color}`} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-neutral-900">{plan.name}</h3>
-                  <p className="text-xs text-neutral-500">{plan.description}</p>
+                  <h3 className="font-extrabold tracking-tight">{plan.name}</h3>
+                  <p className="text-xs text-muted-foreground">{plan.description}</p>
                 </div>
               </div>
 
-              <div className="mb-5">
+              <div className="mb-6">
                 <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-bold text-neutral-900">€{monthlyPrice}</span>
-                  <span className="text-sm text-neutral-500">/mese</span>
+                  <span className="text-4xl font-extrabold tracking-tight">€{monthlyPrice}</span>
+                  <span className="text-sm text-muted-foreground">{t('plans.perMonth')}</span>
                 </div>
                 {billing === 'annual' && (
-                  <p className="text-xs text-green-600 mt-0.5">
-                    Fatturato €{monthlyPrice * 12}/anno
+                  <p className="text-xs text-green-600 mt-1 font-medium">
+                    {t('plans.billedAnnual').replace('{amount}', String(monthlyPrice * 12))}
                   </p>
                 )}
               </div>
 
-              <ul className="space-y-2 flex-1 mb-6">
+              <ul className="space-y-2.5 flex-1 mb-7">
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm text-neutral-700">
-                    <Check className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                  <li key={f} className="flex items-start gap-2 text-sm">
+                    <Check className={`h-4 w-4 shrink-0 mt-0.5 ${plan.highlight ? 'text-[oklch(0.57_0.20_33)]' : 'text-green-500'}`} />
                     {f}
                   </li>
                 ))}
               </ul>
 
               {isCurrent ? (
-                <div className="flex items-center justify-center rounded-xl bg-neutral-100 px-4 py-2.5 text-sm font-medium text-neutral-500">
-                  Piano attuale
+                <div className="flex items-center justify-center rounded-xl bg-muted px-4 py-2.5 text-sm font-semibold text-muted-foreground">
+                  {t('plans.currentPlan')}
                 </div>
               ) : (
                 <button
                   onClick={() => handleUpgrade(plan.id)}
                   disabled={loading === plan.id}
-                  className={`flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors ${
+                  className={`flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all ${
                     plan.highlight
-                      ? 'bg-purple-600 text-white hover:bg-purple-700'
-                      : 'bg-neutral-900 text-white hover:bg-neutral-800'
+                      ? 'btn-ai'
+                      : 'bg-[oklch(0.57_0.20_33)] text-white hover:bg-[oklch(0.52_0.20_33)] hover:shadow-md'
                   } disabled:opacity-60`}
                 >
                   {loading === plan.id && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {loading === plan.id ? 'Reindirizzo…' : 'Attiva piano'}
+                  {loading === plan.id ? t('plans.redirecting') : t('plans.activate')}
                 </button>
               )}
             </div>

@@ -73,9 +73,9 @@ export default function LoginPage() {
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? 'Accesso in corso...' : 'Accedi'}
           </Button>
-          <p className="text-sm text-neutral-500 text-center">
+          <p className="text-sm text-muted-foreground text-center">
             Non hai un account?{' '}
-            <Link href="/register" className="text-neutral-900 font-medium hover:underline">
+            <Link href="/register" className="text-foreground font-medium hover:underline">
               Registrati
             </Link>
           </p>

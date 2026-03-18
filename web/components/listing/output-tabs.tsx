@@ -68,16 +68,16 @@ export function OutputTabs({ listingId, initialContent }: OutputTabsProps) {
 
       {TABS.map((t) => (
         <TabsContent key={t.key} value={t.key} className="mt-4">
-          <div className="rounded-xl border border-neutral-200 bg-white">
-            <div className="flex items-center justify-between border-b border-neutral-100 px-4 py-3">
-              <span className="text-sm font-medium text-neutral-700">{t.label}</span>
+          <div className="rounded-xl border border-border bg-card">
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+              <span className="text-sm font-medium">{t.label}</span>
               <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => regenerate(t.key)}
                   disabled={regenerating === t.key}
-                  className="h-7 gap-1.5 text-xs text-neutral-500"
+                  className="h-7 gap-1.5 text-xs text-muted-foreground"
                 >
                   <RefreshCw
                     className={`h-3 w-3 ${regenerating === t.key ? 'animate-spin' : ''}`}
@@ -100,9 +100,9 @@ export function OutputTabs({ listingId, initialContent }: OutputTabsProps) {
               </div>
             </div>
             <div className="p-4">
-              <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-neutral-800">
+              <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
                 {regenerating === t.key ? (
-                  <span className="text-neutral-400 italic">Rigenerazione in corso...</span>
+                  <span className="text-muted-foreground italic">Rigenerazione in corso...</span>
                 ) : (
                   content[t.key]
                 )}

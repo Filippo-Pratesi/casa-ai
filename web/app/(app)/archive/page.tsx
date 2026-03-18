@@ -2,7 +2,10 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Archive, Home, UserRound, CheckCircle2, Trash2, ChevronRight } from 'lucide-react'
+import { Archive, Home, UserRound, CheckCircle2, Trash2, ChevronRight, TrendingUp, Euro, BarChart2 } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { getTranslations } from '@/lib/i18n/server'
+import { ArchiveExportButtons } from '@/components/archive/archive-export-buttons'
 
 interface ArchivedListing {
   id: string
@@ -35,26 +38,32 @@ interface ArchivedContact {
   archived_at: string
 }
 
-const TYPE_LABELS: Record<string, string> = {
-  buyer: 'Acquirente', seller: 'Venditore', renter: 'Affittuario',
-  landlord: 'Proprietario', other: 'Altro',
-}
-
-const PROP_LABELS: Record<string, string> = {
-  apartment: 'Appartamento', house: 'Casa', villa: 'Villa',
-  commercial: 'Commerciale', land: 'Terreno', garage: 'Garage', other: 'Altro',
-}
-
-function fmt(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })
-}
-
 export default async function ArchivePage({
   searchParams,
 }: {
   searchParams: Promise<{ filter?: string }>
 }) {
   const { filter = 'all' } = await searchParams
+  const { t, locale } = await getTranslations()
+  const dateLocale = locale === 'en' ? 'en-GB' : 'it-IT'
+
+  const propLabels: Record<string, string> = {
+    apartment: t('property.apartment'),
+    house: t('property.house'),
+    villa: t('property.villa'),
+    commercial: t('property.commercial'),
+    land: t('property.land'),
+    garage: t('property.garage'),
+    other: t('property.other'),
+  }
+
+  const typeLabels: Record<string, string> = {
+    buyer: t('contacts.type.buyer'),
+    seller: t('contacts.type.seller'),
+    renter: t('contacts.type.renter'),
+    landlord: t('contacts.type.landlord'),
+    other: t('contacts.type.other'),
+  }
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -70,7 +79,6 @@ export default async function ArchivePage({
   const profile = profileData as { workspace_id: string } | null
   if (!profile) redirect('/dashboard')
 
-  // Fetch workspace agents for name lookup
   const { data: agentsData } = await admin
     .from('users')
     .select('id, name')
@@ -102,44 +110,124 @@ export default async function ArchivePage({
   const removedListings = allListings.filter(l => !l.sold)
   const displayListings = filter === 'sold' ? soldListings : filter === 'removed' ? removedListings : allListings
 
+  // Stats
+  const totalValue = soldListings.reduce((acc, l) => acc + l.price, 0)
+  const avgPrice = soldListings.length > 0 ? Math.round(totalValue / soldListings.length) : 0
+
+  // Group listings by month
+  function getMonthKey(dateStr: string) {
+    const d = new Date(dateStr)
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+  }
+  function getMonthLabel(key: string) {
+    const [y, m] = key.split('-')
+    return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString(dateLocale, { month: 'long', year: 'numeric' })
+  }
+  const listingsByMonth = new Map<string, typeof displayListings>()
+  for (const l of displayListings) {
+    const key = getMonthKey(l.archived_at)
+    if (!listingsByMonth.has(key)) listingsByMonth.set(key, [])
+    listingsByMonth.get(key)!.push(l)
+  }
+  const monthKeys = Array.from(listingsByMonth.keys()).sort((a, b) => b.localeCompare(a))
+
+  const fmt = (d: string) => new Date(d).toLocaleDateString(dateLocale, { day: '2-digit', month: 'short', year: 'numeric' })
+
+  const monthlyData = (() => {
+    const counts: Record<string, number> = {}
+    allListings.forEach(l => {
+      const month = new Date(l.archived_at || '').toLocaleDateString('it-IT', { month: 'short', year: '2-digit' })
+      counts[month] = (counts[month] || 0) + 1
+    })
+    const entries = Object.entries(counts).slice(-6)
+    const max = Math.max(...entries.map(([, v]) => v), 1)
+    return entries.map(([month, count]) => ({ month, count, max }))
+  })()
+
   const TABS = [
-    { id: 'all',     label: `Tutti (${allListings.length})` },
-    { id: 'sold',    label: `Venduti (${soldListings.length})` },
-    { id: 'removed', label: `Eliminati (${removedListings.length})` },
+    { id: 'all',     label: `${t('archive.filter.all')} (${allListings.length})` },
+    { id: 'sold',    label: `${t('archive.filter.sold')} (${soldListings.length})` },
+    { id: 'removed', label: `${t('archive.filter.removed')} (${removedListings.length})` },
   ]
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-10">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-neutral-900 text-white">
-          <Archive className="h-4 w-4" />
+      <div className="flex items-start justify-between gap-3 animate-in-1">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[oklch(0.57_0.20_33)] to-[oklch(0.48_0.18_20)] text-white shadow-md shadow-[oklch(0.57_0.20_33/0.3)]">
+            <Archive className="h-4 w-4" />
+          </div>
+          <div>
+            <h1 className="text-xl font-extrabold tracking-tight">{t('archive.title')}</h1>
+            <p className="text-sm text-muted-foreground">{t('archive.subtitle')}</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-xl font-semibold text-neutral-900">Archivio</h1>
-          <p className="text-sm text-neutral-500">Annunci e clienti rimossi dal database</p>
-        </div>
+        <ArchiveExportButtons />
       </div>
 
+      {/* Stats bar */}
+      {soldListings.length > 0 && (
+        <div className="animate-in-2 grid grid-cols-3 gap-3">
+          <div className="rounded-xl border border-border bg-card px-4 py-3">
+            <div className="flex items-center gap-2 mb-1">
+              <Home className="h-3.5 w-3.5 text-muted-foreground" />
+              <p className="text-xs text-muted-foreground">Immobili venduti</p>
+            </div>
+            <p className="text-xl font-bold">{soldListings.length}</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card px-4 py-3">
+            <div className="flex items-center gap-2 mb-1">
+              <Euro className="h-3.5 w-3.5 text-muted-foreground" />
+              <p className="text-xs text-muted-foreground">Valore totale</p>
+            </div>
+            <p className="text-xl font-bold">€{totalValue.toLocaleString(dateLocale)}</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card px-4 py-3">
+            <div className="flex items-center gap-2 mb-1">
+              <BarChart2 className="h-3.5 w-3.5 text-muted-foreground" />
+              <p className="text-xs text-muted-foreground">Prezzo medio</p>
+            </div>
+            <p className="text-xl font-bold">€{avgPrice.toLocaleString(dateLocale)}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Monthly sales bar chart */}
+      {monthlyData.length > 1 && (
+        <div className="rounded-xl border border-border bg-card p-4 animate-in-3">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3 font-medium">Vendite mensili</p>
+          <div className="flex items-end gap-2 h-20">
+            {monthlyData.map(({ month, count, max }) => (
+              <div key={month} className="flex flex-col items-center flex-1 gap-1 min-w-0">
+                <span className="text-[10px] text-muted-foreground">{count}</span>
+                <div className="w-full rounded-t-md bg-[oklch(0.57_0.20_33)]"
+                  style={{ height: `${Math.max((count / max) * 64, 4)}px` }} />
+                <span className="text-[10px] text-muted-foreground truncate w-full text-center">{month}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Archived Listings */}
-      <section className="space-y-4">
+      <section className="animate-in-3 space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-2">
-            <Home className="h-4 w-4 text-neutral-400" />
-            <h2 className="text-sm font-semibold text-neutral-700 uppercase tracking-wide">
-              Annunci archiviati
+            <Home className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              {t('archive.listings.title')}
             </h2>
           </div>
-          {/* Filter tabs */}
-          <div className="flex rounded-lg border border-neutral-200 bg-white overflow-hidden">
+          <div className="flex rounded-lg border border-border bg-card overflow-hidden">
             {TABS.map(tab => (
               <Link
                 key={tab.id}
                 href={`/archive?filter=${tab.id}`}
                 className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                   filter === tab.id
-                    ? 'bg-neutral-900 text-white'
-                    : 'text-neutral-600 hover:bg-neutral-50'
+                    ? 'bg-[oklch(0.57_0.20_33)] text-white'
+                    : 'text-muted-foreground hover:bg-muted'
                 }`}
               >
                 {tab.label}
@@ -149,66 +237,86 @@ export default async function ArchivePage({
         </div>
 
         {displayListings.length === 0 ? (
-          <p className="text-sm text-neutral-400 italic">Nessun annuncio in questa categoria.</p>
+          <p className="text-sm text-muted-foreground italic">{t('archive.empty')}</p>
         ) : (
-          <div className="divide-y divide-neutral-100 rounded-xl border border-neutral-200 bg-white overflow-hidden">
-            {displayListings.map((l) => {
-              const sellerAgent = agentMap.get(l.agent_id)
-              const soldByAgent = l.sold_by_agent_id ? agentMap.get(l.sold_by_agent_id) : null
-
+          <div className="space-y-6">
+            {monthKeys.map(monthKey => {
+              const monthListings = listingsByMonth.get(monthKey) ?? []
               return (
-                <Link
-                  key={l.id}
-                  href={`/archive/${l.id}`}
-                  className="flex items-start gap-4 px-4 py-3.5 hover:bg-neutral-50 transition-colors group"
-                >
-                  {/* Status icon */}
-                  <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
-                    l.sold ? 'bg-green-100' : 'bg-neutral-100'
-                  }`}>
-                    {l.sold
-                      ? <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
-                      : <Trash2 className="h-3.5 w-3.5 text-neutral-400" />
-                    }
+                <div key={monthKey}>
+                  {/* Sticky month header */}
+                  <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm py-2 mb-2">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider capitalize">
+                      {getMonthLabel(monthKey)}
+                      <span className="ml-2 text-muted-foreground/50 normal-case">({monthListings.length})</span>
+                    </p>
                   </div>
+                  <div className="divide-y divide-border rounded-xl border border-border bg-card overflow-hidden">
+                    {monthListings.map((l, rowIdx) => {
+                      const sellerAgent = agentMap.get(l.agent_id)
+                      const soldByAgent = l.sold_by_agent_id ? agentMap.get(l.sold_by_agent_id) : null
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium text-neutral-900 truncate">
-                        {l.address}, {l.city}
-                      </span>
-                      {l.sold ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-green-50 border border-green-200 px-2 py-0.5 text-[11px] font-medium text-green-700">
-                          <CheckCircle2 className="h-3 w-3" />
-                          Venduto
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 border border-neutral-200 px-2 py-0.5 text-[11px] font-medium text-neutral-500">
-                          <Trash2 className="h-3 w-3" />
-                          Eliminato
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3 mt-0.5 text-xs text-neutral-500 flex-wrap">
-                      <span>{PROP_LABELS[l.property_type] ?? l.property_type}</span>
-                      <span>€{l.price.toLocaleString('it-IT')}</span>
-                      <span>{l.sqm} m²</span>
-                      <span>{l.rooms} loc.</span>
-                      {sellerAgent && <span className="text-neutral-400">Agente: {sellerAgent}</span>}
-                      {l.sold && l.sold_to_name && (
-                        <span className="text-green-600 font-medium">→ {l.sold_to_name}</span>
-                      )}
-                      {l.sold && soldByAgent && (
-                        <span className="text-green-600">venduto da {soldByAgent}</span>
-                      )}
-                    </div>
-                  </div>
+                      return (
+                        <Link
+                          key={l.id}
+                          href={`/archive/${l.id}`}
+                          className={`flex items-start gap-4 px-4 py-3.5 hover:bg-muted/40 transition-colors group ${rowIdx % 2 === 1 ? 'even:bg-muted/30' : ''}`}
+                        >
+                          <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+                            l.sold ? 'bg-green-100' : 'bg-muted'
+                          }`}>
+                            {l.sold
+                              ? <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                              : <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                            }
+                          </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-xs text-neutral-400 whitespace-nowrap">{fmt(l.archived_at)}</span>
-                    <ChevronRight className="h-4 w-4 text-neutral-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-sm font-medium truncate group-hover:text-[oklch(0.57_0.20_33)] transition-colors">
+                                {l.address}, {l.city}
+                              </span>
+                              {l.sold ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-green-50 border border-green-200 px-2 py-0.5 text-[11px] font-medium text-green-700">
+                                  <CheckCircle2 className="h-3 w-3" />
+                                  {t('archive.badge.sold')}
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-muted border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                                  <Trash2 className="h-3 w-3" />
+                                  {t('archive.badge.removed')}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground flex-wrap">
+                              <span>{propLabels[l.property_type] ?? l.property_type}</span>
+                              <span>€{l.price.toLocaleString(dateLocale)}</span>
+                              <span>{l.sqm} m²</span>
+                              <span>{l.rooms} {locale === 'en' ? 'rooms' : 'loc.'}</span>
+                              {sellerAgent && <span>{t('archive.agent')}: {sellerAgent}</span>}
+                              {l.sold && l.sold_to_name && (
+                                <span className="font-medium">→ {l.sold_to_name}</span>
+                              )}
+                              {l.sold && soldByAgent && (
+                                <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/50 px-2 py-0.5 text-xs font-medium text-foreground">
+                                  <span className="h-4 w-4 rounded-full bg-[oklch(0.57_0.20_33)] text-white text-[9px] flex items-center justify-center font-bold shrink-0">
+                                    {soldByAgent[0].toUpperCase()}
+                                  </span>
+                                  {soldByAgent}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">{fmt(l.archived_at)}</span>
+                            <ChevronRight className="h-4 w-4 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        </Link>
+                      )
+                    })}
                   </div>
-                </Link>
+                </div>
               )
             })}
           </div>
@@ -216,32 +324,32 @@ export default async function ArchivePage({
       </section>
 
       {/* Archived Contacts */}
-      <section className="space-y-4">
+      <section className="animate-in-3 space-y-4">
         <div className="flex items-center gap-2">
-          <UserRound className="h-4 w-4 text-neutral-400" />
-          <h2 className="text-sm font-semibold text-neutral-700 uppercase tracking-wide">
-            Clienti archiviati ({contacts.length})
+          <UserRound className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            {t('archive.contacts.title')} ({contacts.length})
           </h2>
         </div>
 
         {contacts.length === 0 ? (
-          <p className="text-sm text-neutral-400 italic">Nessun cliente archiviato.</p>
+          <p className="text-sm text-muted-foreground italic">{t('archive.emptyContacts')}</p>
         ) : (
-          <div className="divide-y divide-neutral-100 rounded-xl border border-neutral-200 bg-white overflow-hidden">
+          <div className="divide-y divide-border rounded-xl border border-border bg-card overflow-hidden">
             {contacts.map((c) => (
               <div key={c.id} className="flex items-start gap-4 px-4 py-3.5">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-medium text-neutral-900">{c.name}</span>
+                    <span className="text-sm font-medium">{c.name}</span>
                     {c.bought_listing && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2 py-0.5 text-[11px] font-medium text-blue-700">
                         <CheckCircle2 className="h-3 w-3" />
-                        Ha acquistato
+                        {t('archive.badge.bought')}
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-3 mt-0.5 text-xs text-neutral-500 flex-wrap">
-                    <span>{TYPE_LABELS[c.type] ?? c.type}</span>
+                  <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground flex-wrap">
+                    <span>{typeLabels[c.type] ?? c.type}</span>
                     {c.phone && <span>{c.phone}</span>}
                     {c.email && <span>{c.email}</span>}
                     {c.bought_listing && c.bought_listing_address && (
@@ -249,7 +357,7 @@ export default async function ArchivePage({
                     )}
                   </div>
                 </div>
-                <span className="text-xs text-neutral-400 whitespace-nowrap shrink-0">{fmt(c.archived_at)}</span>
+                <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">{fmt(c.archived_at)}</span>
               </div>
             ))}
           </div>

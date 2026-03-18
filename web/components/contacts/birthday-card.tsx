@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { Cake, Copy, Check, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
 
 interface BirthdayCardProps {
   contactId: string
@@ -59,30 +58,28 @@ export function BirthdayCard({ contactId, contactName, daysLeft }: BirthdayCardP
           </div>
         </div>
         {!message && (
-          <Button
-            size="sm"
-            variant="outline"
+          <button
             onClick={handleGenerate}
             disabled={loading}
-            className="shrink-0 border-pink-200 text-pink-700 hover:bg-pink-100 hover:border-pink-300 h-8 text-xs"
+            className="shrink-0 flex items-center gap-1.5 rounded-xl border border-pink-200 bg-card px-3 py-1.5 text-xs font-medium text-pink-700 hover:bg-pink-100 hover:border-pink-300 h-8 disabled:opacity-60 transition-colors"
           >
             {loading ? (
               <><Loader2 className="h-3 w-3 mr-1.5 animate-spin" />Genero…</>
             ) : (
               'Genera messaggio'
             )}
-          </Button>
+          </button>
         )}
       </div>
 
       {message && (
-        <div className="rounded-xl bg-white border border-pink-100 px-4 py-3 space-y-2">
-          <p className="text-sm text-neutral-700 whitespace-pre-wrap leading-relaxed">{message}</p>
+        <div className="rounded-xl bg-card border border-pink-100 px-4 py-3 space-y-2">
+          <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{message}</p>
           <div className="flex items-center justify-between pt-1">
-            <p className="text-xs text-neutral-400">Copia e invia via email, WhatsApp o di persona</p>
+            <p className="text-xs text-muted-foreground">Copia e invia via email, WhatsApp o di persona</p>
             <button
               onClick={handleCopy}
-              className="flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-700 transition-colors"
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
               {copied ? 'Copiato' : 'Copia'}

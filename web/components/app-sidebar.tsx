@@ -1,9 +1,11 @@
 'use client'
 
 import React from 'react'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, PlusSquare, Settings, LogOut, Users, UserRound, Archive, UserIcon, CreditCard, Mail, Bell, CalendarDays, Building2 } from 'lucide-react'
+import { usePathname } from 'next/navigation'
+import { useTheme } from 'next-themes'
+import { LayoutDashboard, Settings, Users, UserRound, Archive, CreditCard, Mail, Bell, CalendarDays, Building2, CheckSquare, Sun, Moon, Search } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -16,17 +18,15 @@ import {
   SidebarGroupLabel,
   SidebarGroupContent,
 } from '@/components/ui/sidebar'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { WorkspaceSwitcher } from '@/components/workspace-switcher'
-import { createClient } from '@/lib/supabase/client'
+import { LanguageSwitcher } from '@/components/ui/language-switcher'
+import { useI18n } from '@/lib/i18n/context'
 import type { User, Workspace } from '@/lib/supabase/types'
+
+const SidebarUserMenu = dynamic(
+  () => import('@/components/sidebar-user-menu').then(m => m.SidebarUserMenu),
+  { ssr: false, loading: () => <div className="h-[52px]" /> }
+)
 
 interface AppSidebarProps {
   user: User
@@ -38,19 +38,8 @@ interface AppSidebarProps {
   unreadNotifications: number
   birthdayCount: number
   hasGroup?: boolean
+  pendingTodos?: number
 }
-
-const agentNav = [
-  { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { label: 'Nuovo annuncio', href: '/listing/new', icon: PlusSquare },
-  { label: 'Clienti', href: '/contacts', icon: UserRound },
-]
-
-const teamNav = [
-  { label: 'Team', href: '/admin', icon: Users },
-  { label: 'Archivio', href: '/archive', icon: Archive },
-  { label: 'Campagne', href: '/campaigns', icon: Mail, adminOnly: true },
-]
 
 export function AppSidebar({
   user,
@@ -62,18 +51,13 @@ export function AppSidebar({
   unreadNotifications,
   birthdayCount,
   hasGroup = false,
+  pendingTodos = 0,
 }: AppSidebarProps) {
   const pathname = usePathname()
-  const router = useRouter()
+  const { t } = useI18n()
+  const { theme, setTheme } = useTheme()
   const isAdmin = user.role === 'admin' || user.role === 'group_admin'
   const isGroupAdmin = user.role === 'group_admin'
-
-  async function handleLogout() {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push('/login')
-    router.refresh()
-  }
 
   const initials = user.name
     .split(' ')
@@ -105,93 +89,115 @@ export function AppSidebar({
   }
 
   return (
-    <Sidebar className="border-r border-neutral-200/80">
+    <Sidebar className="border-r border-sidebar-border">
       <SidebarHeader className="pb-2">
         {isGroupAdmin && groupWorkspaces.length > 0 ? (
           <WorkspaceSwitcher
             workspaces={groupWorkspaces}
             activeWorkspaceId={activeWorkspaceId}
-            groupName={groupName ?? 'Gruppo'}
+            groupName={groupName ?? t('sidebar.group')}
           />
         ) : (
           <div className="flex items-center gap-3 px-3 py-2.5">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-neutral-800 to-neutral-950 text-white text-xs font-bold shadow-sm">
-              CA
+            {/* Refined logo mark with animated gradient ring */}
+            <div className="relative shrink-0">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[oklch(0.62_0.22_33)] via-[oklch(0.57_0.20_33)] to-[oklch(0.48_0.18_20)] text-white text-xs font-extrabold shadow-lg shadow-[oklch(0.57_0.20_33/0.40)]">
+                CA
+              </div>
+              {/* Subtle ambient glow behind logo */}
+              <div className="absolute inset-0 -z-10 rounded-xl blur-md bg-[oklch(0.57_0.20_33/0.3)] scale-110" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-bold text-neutral-900 leading-tight">CasaAI</p>
-              <p className="text-[11px] text-neutral-400 truncate leading-tight">{workspace.name}</p>
+              <p
+                className="text-sm font-extrabold leading-tight tracking-tight"
+                style={{
+                  background: 'linear-gradient(135deg, oklch(0.30 0.12 33), oklch(0.57 0.20 33), oklch(0.45 0.15 20))',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                }}
+              >
+                CasaAI
+              </p>
+              <p className="text-[11px] text-muted-foreground truncate leading-tight">{workspace.name}</p>
             </div>
           </div>
         )}
       </SidebarHeader>
 
       <SidebarContent className="px-2">
+        {/* Cmd+K search button */}
+        <div className="px-2 pt-2 pb-1">
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
+            className="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted/50 transition-colors"
+          >
+            <Search className="h-4 w-4" />
+            <span>Cerca...</span>
+            <kbd className="ml-auto text-[10px] font-mono border border-border/50 rounded px-1.5 py-0.5">Ctrl+K</kbd>
+          </button>
+        </div>
+
         <SidebarGroup className="py-1">
-          <SidebarGroupLabel className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
-            Lavoro
+          <SidebarGroupLabel className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
+            {t('nav.work')}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-0.5">
-              <NavItem href="/dashboard" icon={LayoutDashboard} label="Dashboard" />
-              <NavItem href="/listing/new" icon={PlusSquare} label="Nuovo annuncio" />
-              <NavItem href="/contacts" icon={UserRound} label="Clienti" badge={birthdayCount} />
-              <NavItem href="/notifications" icon={Bell} label="Notifiche" badge={unreadNotifications} />
-              <NavItem href="/calendar" icon={CalendarDays} label="Calendario" exact={false} />
-              {hasGroup && <NavItem href="/mls" icon={Building2} label="MLS" exact={false} />}
+              <NavItem href="/dashboard" icon={LayoutDashboard} label={t('nav.listings')} />
+              <NavItem href="/contacts" icon={UserRound} label={t('nav.contacts')} badge={birthdayCount} />
+              <NavItem href="/calendar" icon={CalendarDays} label={t('nav.calendar')} exact={false} />
+              <NavItem href="/todos" icon={CheckSquare} label={t('nav.todos')} badge={pendingTodos} />
+              <NavItem href="/notifications" icon={Bell} label={t('nav.notifications')} badge={unreadNotifications} />
+              {hasGroup && <NavItem href="/mls" icon={Building2} label={t('nav.mls')} exact={false} />}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
         <SidebarGroup className="py-1">
-          <SidebarGroupLabel className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
-            {isAdmin ? 'Gestione' : 'Team'}
+          <SidebarGroupLabel className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
+            {isAdmin ? t('nav.manage') : t('nav.team')}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-0.5">
-              <NavItem href="/admin" icon={Users} label="Team" />
-              <NavItem href="/archive" icon={Archive} label="Archivio" />
-              {isAdmin && <NavItem href="/campaigns" icon={Mail} label="Campagne" />}
-              <NavItem href="/settings" icon={Settings} label="Impostazioni" />
-              {isAdmin && <NavItem href="/plans" icon={CreditCard} label="Piano" />}
+              <NavItem href="/admin" icon={Users} label={t('nav.team')} />
+              <NavItem href="/archive" icon={Archive} label={t('nav.archive')} />
+              {isAdmin && <NavItem href="/campaigns" icon={Mail} label={t('nav.campaigns')} />}
+              <NavItem href="/settings" icon={Settings} label={t('nav.settings')} />
+              {isAdmin && <NavItem href="/plans" icon={CreditCard} label={t('nav.plan')} />}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
 
       {trialDaysLeft !== null && isAdmin && (
-        <div className="mx-3 mb-2 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 px-3 py-2.5">
-          <p className="text-xs font-semibold text-amber-800">Trial — {trialDaysLeft} giorni rimasti</p>
-          <Link href="/plans" className="text-xs text-amber-600 hover:text-amber-700 hover:underline transition-colors">
-            Scegli un piano →
+        <div className="mx-3 mb-2 rounded-xl bg-gradient-to-br from-[oklch(0.95_0.055_33)] to-[oklch(0.95_0.04_45)] border border-[oklch(0.57_0.20_33/0.2)] px-3 py-2.5">
+          <p className="text-xs font-semibold text-[oklch(0.40_0.16_33)]">Trial — {trialDaysLeft} {t('trial.message')}</p>
+          <Link href="/plans" className="text-xs text-[oklch(0.50_0.18_33)] hover:text-[oklch(0.57_0.20_33)] hover:underline transition-colors">
+            {t('trial.cta')}
           </Link>
         </div>
       )}
 
       <SidebarFooter className="px-2 pb-3">
-        <DropdownMenu>
-          <DropdownMenuTrigger className="flex items-center gap-3 w-full rounded-xl px-3 py-2.5 hover:bg-neutral-100 transition-all duration-150 text-left group/footer">
-            <Avatar className="h-8 w-8 ring-2 ring-neutral-200 group-hover/footer:ring-neutral-300 transition-all">
-              {user.avatar_url && <AvatarImage src={user.avatar_url} alt={user.name} />}
-              <AvatarFallback className="text-xs bg-neutral-200 font-semibold">{initials}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-neutral-900 truncate leading-tight">{user.name}</p>
-              <p className="text-[11px] text-neutral-400 truncate leading-tight">{user.email}</p>
-            </div>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={() => router.push('/profile')}>
-              <UserIcon className="mr-2 h-4 w-4" />
-              Il mio profilo
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout} variant="destructive">
-              <LogOut className="mr-2 h-4 w-4" />
-              Esci
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="px-2 pb-2 flex items-center gap-2">
+          {/* Language switcher — IT / EN text button */}
+          <LanguageSwitcher />
+          {/* Dark mode toggle */}
+          <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            title={theme === 'dark' ? 'Passa alla modalità chiara' : 'Passa alla modalità scura'}
+            className="flex items-center justify-center rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          >
+            {theme === 'dark' ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+          </button>
+        </div>
+        <SidebarUserMenu
+          name={user.name}
+          email={user.email}
+          avatar_url={user.avatar_url}
+          initials={initials}
+        />
       </SidebarFooter>
     </Sidebar>
   )

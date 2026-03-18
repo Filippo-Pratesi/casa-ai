@@ -13,7 +13,8 @@ export async function PATCH(
   if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
   const admin = createAdminClient()
-  const { data: profileData } = await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: profileData } = await (admin as any)
     .from('users')
     .select('workspace_id')
     .eq('id', user.id)
@@ -24,8 +25,8 @@ export async function PATCH(
   let body: Record<string, unknown>
   try { body = await req.json() } catch { return NextResponse.json({ error: 'Corpo non valido' }, { status: 400 }) }
 
-  // Handle stat increment (share_count, view_count, portal_click_count)
-  const statFields = ['share_count', 'view_count', 'portal_click_count', 'shared_with_group']
+  // Handle stat/flag fields (share_count, view_count, portal_click_count, shared_with_group, tone)
+  const statFields = ['share_count', 'view_count', 'portal_click_count', 'shared_with_group', 'tone']
   const statUpdate: Record<string, unknown> = {}
   for (const field of statFields) {
     if (field in body) statUpdate[field] = body[field]
@@ -46,7 +47,8 @@ export async function PATCH(
   if (!newPrice || newPrice <= 0) return NextResponse.json({ error: 'Prezzo non valido' }, { status: 400 })
 
   // Fetch current price
-  const { data: current } = await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: current } = await (admin as any)
     .from('listings')
     .select('price')
     .eq('id', id)
@@ -66,7 +68,8 @@ export async function PATCH(
   }
 
   // Update listing
-  const { error } = await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (admin as any)
     .from('listings')
     .update({ price: newPrice })
     .eq('id', id)
@@ -87,7 +90,8 @@ export async function DELETE(
   if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
   const admin = createAdminClient()
-  const { data: profileData } = await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: profileData } = await (admin as any)
     .from('users')
     .select('workspace_id')
     .eq('id', user.id)
@@ -106,7 +110,8 @@ export async function DELETE(
   }
 
   // Fetch listing before deleting (for archive snapshot)
-  const { data: listingData, error: fetchError } = await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: listingData, error: fetchError } = await (admin as any)
     .from('listings')
     .select('*')
     .eq('id', id)
@@ -153,7 +158,8 @@ export async function DELETE(
   }
 
   // Delete the listing
-  const { error } = await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (admin as any)
     .from('listings')
     .delete()
     .eq('id', id)

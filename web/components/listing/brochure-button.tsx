@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { FileDown } from 'lucide-react'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
 
 export function BrochureButton({ listingId }: { listingId: string }) {
   const [loading, setLoading] = useState(false)
@@ -31,15 +30,13 @@ export function BrochureButton({ listingId }: { listingId: string }) {
   }
 
   return (
-    <Button
-      variant="ghost"
-      size="sm"
+    <button
       onClick={handleDownload}
       disabled={loading}
-      className="h-8 gap-1.5 text-xs text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100"
+      className="flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-60"
     >
       <FileDown className="h-3.5 w-3.5" />
       {loading ? 'Generando…' : 'Brochure PDF'}
-    </Button>
+    </button>
   )
 }

@@ -1,9 +1,7 @@
 'use client'
 
 import { CheckCircle2, Calendar, AlertCircle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
-// Button is used for the Disconnect button only
 
 interface GoogleCalendarConnectProps {
   isConnected: boolean
@@ -41,33 +39,31 @@ export function GoogleCalendarConnect({ isConnected, flashMessage }: GoogleCalen
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-green-500" />
-            <span className="text-sm text-neutral-700">Google Calendar connesso</span>
+            <span className="text-sm text-foreground">Google Calendar connesso</span>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 text-xs text-red-600 border-red-200 hover:bg-red-50"
+          <button
+            className="flex items-center gap-1.5 h-8 text-xs text-red-600 border border-red-200 rounded-lg px-3 hover:bg-red-50 transition-colors"
             onClick={handleDisconnect}
           >
             Disconnetti
-          </Button>
+          </button>
         </div>
       ) : (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-neutral-400" />
-            <span className="text-sm text-neutral-500">Non connesso</span>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Non connesso</span>
           </div>
           <a
             href="/api/auth/google-calendar"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-900 text-white text-xs font-medium h-8 px-3 hover:bg-neutral-700 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[oklch(0.57_0.20_33)] text-white text-xs font-medium h-8 px-3 hover:opacity-90 transition-colors"
           >
             <Calendar className="h-3.5 w-3.5" />
             Connetti Google Calendar
           </a>
         </div>
       )}
-      <p className="text-xs text-neutral-400">
+      <p className="text-xs text-muted-foreground">
         Dopo la connessione, ogni appuntamento creato su CasaAI verrà sincronizzato automaticamente con il tuo Google Calendar.
       </p>
     </div>

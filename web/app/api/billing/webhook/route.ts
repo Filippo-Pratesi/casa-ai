@@ -36,7 +36,8 @@ export async function POST(req: NextRequest) {
     const plan = session.metadata?.plan
 
     if (workspaceId && plan && PLAN_MAP[plan]) {
-      await admin
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (admin as any)
         .from('workspaces')
         .update({ plan: PLAN_MAP[plan] as 'starter' | 'agenzia' | 'network' })
         .eq('id', workspaceId)
@@ -47,7 +48,8 @@ export async function POST(req: NextRequest) {
     const sub = event.data.object as Stripe.Subscription
     const workspaceId = sub.metadata?.workspace_id
     if (workspaceId) {
-      await admin
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (admin as any)
         .from('workspaces')
         .update({ plan: 'trial' })
         .eq('id', workspaceId)
@@ -59,7 +61,8 @@ export async function POST(req: NextRequest) {
     const workspaceId = sub.metadata?.workspace_id
     const plan = sub.metadata?.plan
     if (workspaceId && plan && PLAN_MAP[plan]) {
-      await admin
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (admin as any)
         .from('workspaces')
         .update({ plan: PLAN_MAP[plan] as 'starter' | 'agenzia' | 'network' })
         .eq('id', workspaceId)

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { generateListingContent } from '@/lib/deepseek'
 import type { Listing } from '@/lib/supabase/types'
 
@@ -13,8 +14,10 @@ export async function POST(
 
   if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
-  // Fetch user's workspace for ownership enforcement
-  const { data: profileData } = await supabase
+  // Use admin client to bypass RLS for profile lookup
+  const admin = createAdminClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: profileData } = await (admin as any)
     .from('users')
     .select('workspace_id')
     .eq('id', user.id)
@@ -23,8 +26,8 @@ export async function POST(
   const profile = profileData as { workspace_id: string } | null
   if (!profile) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 404 })
 
-  // Belt-and-suspenders: filter by both id AND workspace_id alongside RLS
-  const { data: rawListing, error: listingError } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: rawListing, error: listingError } = await (admin as any)
     .from('listings')
     .select('*')
     .eq('id', id)

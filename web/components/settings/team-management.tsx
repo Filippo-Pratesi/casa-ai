@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
 import {
   Dialog,
 
@@ -42,7 +41,7 @@ const ROLE_LABELS: Record<string, string> = {
 const ROLE_COLORS: Record<string, string> = {
   group_admin: 'bg-blue-50 text-blue-700 border-blue-200',
   admin: 'bg-purple-50 text-purple-700 border-purple-200',
-  agent: 'bg-neutral-50 text-neutral-600 border-neutral-200',
+  agent: 'bg-muted text-muted-foreground border-border',
 }
 
 export function TeamManagement({ members, currentUserId, currentRole }: Props) {
@@ -108,45 +107,44 @@ export function TeamManagement({ members, currentUserId, currentRole }: Props) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-neutral-500">{members.length} membri nel workspace</p>
-        <Button
-          size="sm"
-          className="gap-2 h-8 text-xs"
+        <p className="text-sm text-muted-foreground">{members.length} membri nel workspace</p>
+        <button
+          className="btn-ai gap-1.5 !px-3 !py-1.5 !text-xs !rounded-lg"
           onClick={() => setInviteOpen(true)}
         >
           <UserPlus className="h-3.5 w-3.5" />
           Aggiungi membro
-        </Button>
+        </button>
       </div>
 
-      <div className="divide-y divide-neutral-100 rounded-xl border border-neutral-200 overflow-hidden">
+      <div className="divide-y divide-border rounded-xl border border-border overflow-hidden">
         {members.map((member) => (
-          <div key={member.id} className="flex items-center gap-3 px-4 py-3 bg-white">
+          <div key={member.id} className="flex items-center gap-3 px-4 py-3 bg-card">
             {/* Avatar */}
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-white text-xs font-semibold">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[oklch(0.57_0.20_33)] text-white text-xs font-semibold">
               {member.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()}
             </div>
 
             {/* Info */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm font-medium text-neutral-900 truncate">
+                <span className="text-sm font-medium truncate">
                   {member.name}
                   {member.id === currentUserId && (
-                    <span className="ml-1.5 text-neutral-400 font-normal">(tu)</span>
+                    <span className="ml-1.5 text-muted-foreground font-normal">(tu)</span>
                   )}
                 </span>
                 <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${ROLE_COLORS[member.role]}`}>
                   {ROLE_LABELS[member.role] ?? member.role}
                 </span>
               </div>
-              <p className="text-xs text-neutral-400 truncate mt-0.5">{member.email}</p>
+              <p className="text-xs text-muted-foreground truncate mt-0.5">{member.email}</p>
             </div>
 
             {/* Actions */}
             {canEdit(member) && (
               <DropdownMenu>
-                <DropdownMenuTrigger className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md hover:bg-neutral-100 transition-colors">
+                <DropdownMenuTrigger className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md hover:bg-muted transition-colors">
                   {actionLoading?.startsWith(member.id) ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   ) : (
@@ -162,7 +160,7 @@ export function TeamManagement({ members, currentUserId, currentRole }: Props) {
                   )}
                   {isGroupAdmin && member.role === 'admin' && (
                     <DropdownMenuItem onClick={() => handleRoleChange(member.id, 'agent')}>
-                      <ShieldOff className="h-3.5 w-3.5 mr-2 text-neutral-500" />
+                      <ShieldOff className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
                       Declassa ad Agente
                     </DropdownMenuItem>
                   )}
@@ -192,32 +190,32 @@ export function TeamManagement({ members, currentUserId, currentRole }: Props) {
 
           <div className="space-y-3 py-2">
             <div>
-              <label className="text-xs font-medium text-neutral-700 block mb-1">Nome completo</label>
+              <label className="text-xs font-medium text-muted-foreground block mb-1">Nome completo</label>
               <input
                 type="text"
                 value={inviteName}
                 onChange={e => setInviteName(e.target.value)}
                 placeholder="Mario Rossi"
-                className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.3)]"
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-neutral-700 block mb-1">Email</label>
+              <label className="text-xs font-medium text-muted-foreground block mb-1">Email</label>
               <input
                 type="email"
                 value={inviteEmail}
                 onChange={e => setInviteEmail(e.target.value)}
                 placeholder="mario@agenzia.it"
-                className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.3)]"
               />
             </div>
             {isGroupAdmin && (
               <div>
-                <label className="text-xs font-medium text-neutral-700 block mb-1">Ruolo</label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">Ruolo</label>
                 <select
                   value={inviteRole}
                   onChange={e => setInviteRole(e.target.value as 'agent' | 'admin')}
-                  className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 bg-white"
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.3)]"
                 >
                   <option value="agent">Agente</option>
                   <option value="admin">Admin</option>
@@ -230,16 +228,13 @@ export function TeamManagement({ members, currentUserId, currentRole }: Props) {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setInviteOpen(false)} disabled={inviteLoading}>
+            <button onClick={() => setInviteOpen(false)} disabled={inviteLoading} className="rounded-xl border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-60">
               Annulla
-            </Button>
-            <Button onClick={handleInvite} disabled={inviteLoading || !inviteEmail || !inviteName}>
-              {inviteLoading ? (
-                <><Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> Invio...</>
-              ) : (
-                'Invia invito'
-              )}
-            </Button>
+            </button>
+            <button onClick={handleInvite} disabled={inviteLoading || !inviteEmail || !inviteName} className="btn-ai gap-2 disabled:opacity-60">
+              {inviteLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              {inviteLoading ? 'Invio...' : 'Invia invito'}
+            </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

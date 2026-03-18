@@ -66,7 +66,7 @@ export function FloorPlanUploader({ listingId, initialUrl }: FloorPlanUploaderPr
   if (url) {
     return (
       <div className="space-y-2">
-        <div className="relative rounded-xl overflow-hidden border border-neutral-100">
+        <div className="relative rounded-xl overflow-hidden border border-border">
           <Image
             src={url}
             alt="Planimetria"
@@ -77,14 +77,14 @@ export function FloorPlanUploader({ listingId, initialUrl }: FloorPlanUploaderPr
           <button
             onClick={handleRemove}
             disabled={loading}
-            className="absolute top-2 right-2 rounded-full bg-white border border-neutral-200 p-1.5 hover:bg-red-50 hover:border-red-200 transition-colors"
+            className="absolute top-2 right-2 rounded-full bg-card border border-border p-1.5 hover:bg-red-50 hover:border-red-200 transition-colors"
           >
-            {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin text-neutral-500" /> : <X className="h-3.5 w-3.5 text-neutral-500" />}
+            {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" /> : <X className="h-3.5 w-3.5 text-muted-foreground" />}
           </button>
         </div>
         <button
           onClick={() => inputRef.current?.click()}
-          className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           Sostituisci planimetria
         </button>
@@ -107,20 +107,20 @@ export function FloorPlanUploader({ listingId, initialUrl }: FloorPlanUploaderPr
       onDrop={handleDrop}
       onDragOver={(e) => e.preventDefault()}
       onClick={() => !loading && inputRef.current?.click()}
-      className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-neutral-200 p-8 text-center cursor-pointer hover:border-neutral-300 hover:bg-neutral-50 transition-colors"
+      className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border p-8 text-center cursor-pointer hover:border-border hover:bg-muted/50 transition-colors"
     >
       {loading ? (
-        <Loader2 className="h-6 w-6 text-neutral-400 animate-spin" />
+        <Loader2 className="h-6 w-6 text-muted-foreground animate-spin" />
       ) : (
         <>
-          <div className="rounded-full bg-neutral-100 p-3">
-            <FileImage className="h-5 w-5 text-neutral-400" />
+          <div className="rounded-full bg-muted p-3">
+            <FileImage className="h-5 w-5 text-muted-foreground" />
           </div>
           <div>
-            <p className="text-sm text-neutral-600 font-medium">Carica planimetria</p>
-            <p className="text-xs text-neutral-400 mt-0.5">Trascina qui o clicca per selezionare</p>
+            <p className="text-sm text-muted-foreground font-medium">Carica planimetria</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Trascina qui o clicca per selezionare</p>
           </div>
-          <div className="flex items-center gap-1 text-xs text-neutral-400">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Upload className="h-3 w-3" />
             JPG, PNG, WEBP
           </div>

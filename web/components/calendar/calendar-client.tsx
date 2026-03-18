@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useI18n } from '@/lib/i18n/context'
 import {
   ChevronLeft,
   ChevronRight,
@@ -37,7 +38,7 @@ interface Agent {
 interface Appointment {
   id: string
   title: string
-  type: 'viewing' | 'meeting' | 'signing' | 'call' | 'other'
+  type: 'acquisizione' | 'riunione' | 'atto' | 'visita'
   status: 'scheduled' | 'completed' | 'cancelled'
   starts_at: string
   ends_at: string | null
@@ -62,28 +63,20 @@ type ViewMode = 'month' | 'week'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const TYPE_LABELS: Record<string, string> = {
-  viewing: 'Visita',
-  meeting: 'Riunione',
-  signing: 'Firma',
-  call: 'Telefonata',
-  other: 'Altro',
-}
+// TYPE_LABELS computed from i18n in each component
 
 const TYPE_COLORS: Record<string, string> = {
-  viewing: 'bg-blue-100 text-blue-800 border-blue-200',
-  meeting: 'bg-purple-100 text-purple-800 border-purple-200',
-  signing: 'bg-green-100 text-green-800 border-green-200',
-  call: 'bg-amber-100 text-amber-800 border-amber-200',
-  other: 'bg-neutral-100 text-neutral-700 border-neutral-200',
+  visita: 'bg-blue-100 text-blue-800 border-blue-200',
+  riunione: 'bg-purple-100 text-purple-800 border-purple-200',
+  atto: 'bg-green-100 text-green-800 border-green-200',
+  acquisizione: 'bg-amber-100 text-amber-800 border-amber-200',
 }
 
 const TYPE_DOT: Record<string, string> = {
-  viewing: 'bg-blue-500',
-  meeting: 'bg-purple-500',
-  signing: 'bg-green-500',
-  call: 'bg-amber-500',
-  other: 'bg-neutral-400',
+  visita: 'bg-blue-500',
+  riunione: 'bg-purple-500',
+  atto: 'bg-green-500',
+  acquisizione: 'bg-amber-500',
 }
 
 const AGENT_COLORS = [
@@ -105,12 +98,7 @@ function agentColorIndex(agentId: string): number {
   return h % AGENT_COLORS.length
 }
 
-const MONTH_NAMES = [
-  'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
-  'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre',
-]
-
-const DAY_NAMES = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
+// MONTH_NAMES / DAY_NAMES computed from i18n in CalendarClient
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -164,13 +152,20 @@ interface ModalProps {
 }
 
 function AppointmentModal({ listings, contacts, agents, currentUserId, initial, editing, onClose, onSaved }: ModalProps) {
+  const { t } = useI18n()
+  const typeLabels: Record<string, string> = {
+    acquisizione: t('calendar.type.acquisizione'),
+    riunione: t('calendar.type.riunione'),
+    atto: t('calendar.type.atto'),
+    visita: t('calendar.type.visita'),
+  }
   const defaultDate = initial?.date ?? new Date()
   const pad = (n: number) => String(n).padStart(2, '0')
   const toDateInput = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
   const toTimeInput = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}`
 
   const [title, setTitle] = useState(editing?.title ?? '')
-  const [type, setType] = useState<Appointment['type']>(editing?.type ?? 'viewing')
+  const [type, setType] = useState<Appointment['type']>(editing?.type ?? 'visita')
   const [date, setDate] = useState(editing ? toDateInput(new Date(editing.starts_at)) : toDateInput(defaultDate))
   const [startTime, setStartTime] = useState(editing ? toTimeInput(new Date(editing.starts_at)) : '09:00')
   const [endTime, setEndTime] = useState(editing?.ends_at ? toTimeInput(new Date(editing.ends_at)) : '')
@@ -218,92 +213,92 @@ function AppointmentModal({ listings, contacts, agents, currentUserId, initial, 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
-          <h2 className="text-sm font-semibold text-neutral-900">
-            {editing ? 'Modifica appuntamento' : 'Nuovo appuntamento'}
+      <div className="w-full max-w-md rounded-2xl border border-border bg-card shadow-xl">
+        <div className="flex items-center justify-between border-b border-border px-5 py-4">
+          <h2 className="text-sm font-semibold">
+            {editing ? t('calendar.modal.editAppt') : t('calendar.modal.newAppt')}
           </h2>
-          <button onClick={onClose} className="rounded-lg p-1 hover:bg-neutral-100 transition-colors">
-            <X className="h-4 w-4 text-neutral-500" />
+          <button onClick={onClose} className="rounded-lg p-1 hover:bg-muted transition-colors">
+            <X className="h-4 w-4 text-muted-foreground" />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Titolo *</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">{t('calendar.modal.title')}</label>
             <input
               value={title}
               onChange={e => setTitle(e.target.value)}
               required
-              placeholder="es. Visita appartamento Milano"
-              className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+              placeholder={t('calendar.modal.titlePlaceholder')}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder-muted-foreground"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1.5">Tipo</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">{t('calendar.modal.type')}</label>
             <div className="flex flex-wrap gap-2">
-              {(Object.keys(TYPE_LABELS) as Appointment['type'][]).map(t => (
+              {(Object.keys(typeLabels) as Array<Appointment['type']>).map(apptType => (
                 <button
-                  key={t}
+                  key={apptType}
                   type="button"
-                  onClick={() => setType(t)}
+                  onClick={() => setType(apptType)}
                   className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${
-                    type === t ? TYPE_COLORS[t] : 'border-neutral-200 text-neutral-500 hover:border-neutral-300'
+                    type === apptType ? TYPE_COLORS[apptType] : 'border-border text-muted-foreground hover:border-foreground/30'
                   }`}
                 >
-                  {TYPE_LABELS[t]}
+                  {typeLabels[apptType]}
                 </button>
               ))}
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2">
             <div className="col-span-1">
-              <label className="block text-xs font-medium text-neutral-600 mb-1">Data *</label>
-              <input type="date" value={date} onChange={e => setDate(e.target.value)} required className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300" />
+              <label className="block text-xs font-medium text-muted-foreground mb-1">{t('calendar.modal.date')}</label>
+              <input type="date" value={date} onChange={e => setDate(e.target.value)} required className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-neutral-600 mb-1">Inizio *</label>
-              <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} required className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300" />
+              <label className="block text-xs font-medium text-muted-foreground mb-1">{t('calendar.modal.start')}</label>
+              <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} required className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-neutral-600 mb-1">Fine</label>
-              <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300" />
+              <label className="block text-xs font-medium text-muted-foreground mb-1">{t('calendar.modal.end')}</label>
+              <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm" />
             </div>
           </div>
           {contacts.length > 0 && (
             <div>
-              <label className="block text-xs font-medium text-neutral-600 mb-1">Cliente</label>
-              <select value={contactId} onChange={e => setContactId(e.target.value)} className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300">
-                <option value="">— Nessuno —</option>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">{t('calendar.modal.client')}</label>
+              <select value={contactId} onChange={e => setContactId(e.target.value)} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm">
+                <option value="">{t('calendar.modal.none')}</option>
                 {contacts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
           )}
           {listings.length > 0 && (
             <div>
-              <label className="block text-xs font-medium text-neutral-600 mb-1">Immobile</label>
-              <select value={listingId} onChange={e => setListingId(e.target.value)} className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300">
-                <option value="">— Nessuno —</option>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">{t('calendar.modal.listing')}</label>
+              <select value={listingId} onChange={e => setListingId(e.target.value)} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm">
+                <option value="">{t('calendar.modal.none')}</option>
                 {listings.map(l => <option key={l.id} value={l.id}>{l.address}, {l.city}</option>)}
               </select>
             </div>
           )}
           {agents && agents.length > 1 && !editing && (
             <div>
-              <label className="block text-xs font-medium text-neutral-600 mb-1">Assegna a</label>
-              <select value={assignedAgentId} onChange={e => setAssignedAgentId(e.target.value)} className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300">
-                {agents.map(a => <option key={a.id} value={a.id}>{a.name}{a.id === currentUserId ? ' (tu)' : ''}</option>)}
+              <label className="block text-xs font-medium text-muted-foreground mb-1">{t('calendar.modal.assignTo')}</label>
+              <select value={assignedAgentId} onChange={e => setAssignedAgentId(e.target.value)} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm">
+                {agents.map(a => <option key={a.id} value={a.id}>{a.name}{a.id === currentUserId ? t('calendar.modal.you') : ''}</option>)}
               </select>
             </div>
           )}
           <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Note</label>
-            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Note opzionali…" className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-300 resize-none" />
+            <label className="block text-xs font-medium text-muted-foreground mb-1">{t('calendar.modal.notes')}</label>
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder={t('calendar.modal.notesPlaceholder')} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder-muted-foreground resize-none" />
           </div>
           <div className="flex gap-2 pt-1">
             <Button type="submit" disabled={loading} className="flex-1 h-9 text-sm">
-              {loading ? 'Salvo…' : editing ? 'Aggiorna' : 'Crea appuntamento'}
+              {loading ? t('calendar.modal.saving') : editing ? t('calendar.modal.update') : t('calendar.modal.create')}
             </Button>
-            <Button type="button" variant="ghost" onClick={onClose} className="h-9 text-sm px-4">Annulla</Button>
+            <Button type="button" variant="ghost" onClick={onClose} className="h-9 text-sm px-4">{t('calendar.modal.cancel')}</Button>
           </div>
         </form>
       </div>
@@ -323,18 +318,19 @@ interface CardProps {
 }
 
 function AppointmentCard({ appt, listings, agentColor, onStatusChange, onEdit, onDelete }: CardProps) {
+  const { t } = useI18n()
   const listing = appt.listing_id ? listings.find(l => l.id === appt.listing_id) : null
   const isCancelled = appt.status === 'cancelled'
   const isCompleted = appt.status === 'completed'
   const colorClass = agentColor ?? TYPE_COLORS[appt.type]
 
   return (
-    <div className={`rounded-xl border px-4 py-3 transition-all duration-150 hover:shadow-md ${isCancelled ? 'opacity-50' : ''} ${colorClass}`}>
+    <div className={`rounded-2xl border px-4 py-3.5 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 ${isCancelled ? 'opacity-50' : ''} ${colorClass}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 mb-0.5">
             <span className={`h-2 w-2 rounded-full shrink-0 ${TYPE_DOT[appt.type]}`} />
-            <span className="text-xs font-medium opacity-80">{TYPE_LABELS[appt.type]}</span>
+            <span className="text-xs font-medium opacity-80">{t(`calendar.type.${appt.type}`)}</span>
           </div>
           <p className={`text-sm font-semibold truncate ${isCancelled ? 'line-through' : ''}`}>{appt.title}</p>
           <div className="flex items-center gap-3 mt-1">
@@ -387,8 +383,19 @@ function AppointmentCard({ appt, listings, agentColor, onStatusChange, onEdit, o
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export function CalendarClient({ listings, contacts, agents, role, userId, filterAgentId, filterAgentName }: CalendarClientProps) {
+  const { t } = useI18n()
+  const MONTH_NAMES = useMemo(() => [
+    t('calendar.month.jan'), t('calendar.month.feb'), t('calendar.month.mar'),
+    t('calendar.month.apr'), t('calendar.month.may'), t('calendar.month.jun'),
+    t('calendar.month.jul'), t('calendar.month.aug'), t('calendar.month.sep'),
+    t('calendar.month.oct'), t('calendar.month.nov'), t('calendar.month.dec'),
+  ], [t])
+  const DAY_NAMES = useMemo(() => [
+    t('calendar.day.mon'), t('calendar.day.tue'), t('calendar.day.wed'),
+    t('calendar.day.thu'), t('calendar.day.fri'), t('calendar.day.sat'), t('calendar.day.sun'),
+  ], [t])
   const today = new Date()
-  const [view, setView] = useState<ViewMode>('month')
+  const [view, setView] = useState<ViewMode>('week')
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
   const [selectedDay, setSelectedDay] = useState<Date>(today)
@@ -403,15 +410,21 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
   const isAdmin = role === 'admin' || role === 'group_admin'
   const showAgentBar = isAdmin && !!agents && agents.length > 1
 
-  // Restore preferences from localStorage
+  // Restore preferences from localStorage — defaults: week view, hide other agents
   useEffect(() => {
     try {
       const savedView = localStorage.getItem('calendar-view') as ViewMode | null
       if (savedView === 'month' || savedView === 'week') setView(savedView)
       const savedHidden = localStorage.getItem('calendar-hidden-agents')
-      if (savedHidden) setHiddenAgents(new Set(JSON.parse(savedHidden)))
+      if (savedHidden) {
+        setHiddenAgents(new Set(JSON.parse(savedHidden)))
+      }
+      // If no saved agent preference and admin: hide all others by default
+      else if (isAdmin && agents?.length) {
+        setHiddenAgents(new Set(agents.map(a => a.id).filter(id => id !== userId)))
+      }
     } catch { /* ignore */ }
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   function setViewAndSave(v: ViewMode) {
     setView(v)
@@ -426,6 +439,18 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
       try { localStorage.setItem('calendar-hidden-agents', JSON.stringify([...next])) } catch { /* ignore */ }
       return next
     })
+  }
+
+  function hideAllAgents() {
+    if (!agents) return
+    const all = new Set(agents.map(a => a.id))
+    setHiddenAgents(all)
+    try { localStorage.setItem('calendar-hidden-agents', JSON.stringify([...all])) } catch { /* ignore */ }
+  }
+
+  function showAllAgents() {
+    setHiddenAgents(new Set())
+    try { localStorage.setItem('calendar-hidden-agents', JSON.stringify([])) } catch { /* ignore */ }
   }
 
   const fetchAppointments = useCallback(async () => {
@@ -544,40 +569,58 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
       {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-xl font-bold text-neutral-900">
+          <h1 className="text-xl font-extrabold tracking-tight">
             Calendario
-            {filterAgentName && <span className="ml-2 text-neutral-400 font-normal">— {filterAgentName}</span>}
+            {filterAgentName && <span className="ml-2 text-muted-foreground font-normal">— {filterAgentName}</span>}
           </h1>
-          <p className="text-sm text-neutral-500 mt-0.5">
+          <p className="text-sm text-muted-foreground mt-0.5">
             {showAgentBar ? 'Tutti gli agenti del workspace' : 'I tuoi appuntamenti'}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {/* View switcher */}
-          <div className="flex rounded-xl border border-neutral-200 bg-neutral-50 p-0.5 text-xs">
+          <div className="flex rounded-xl border border-border bg-muted/50 p-0.5 text-xs">
             {(['month', 'week'] as ViewMode[]).map(v => (
               <button
                 key={v}
                 onClick={() => setViewAndSave(v)}
                 className={`rounded-lg px-3 py-1.5 font-medium transition-all duration-150 capitalize ${
-                  view === v ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-500 hover:text-neutral-700'
+                  view === v ? 'bg-card shadow-sm' : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 {v === 'month' ? 'Mese' : 'Settimana'}
               </button>
             ))}
           </div>
-          <Button onClick={() => openNewModal(selectedDay)} size="sm" className="h-9 gap-1.5 shadow-sm">
+          <button onClick={() => openNewModal(selectedDay)} className="btn-ai inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold">
             <Plus className="h-4 w-4" />
             Nuovo
-          </Button>
+          </button>
         </div>
       </div>
+
+      {/* Color legend — appointment types */}
+      {!showAgentBar && (
+        <div className="flex items-center gap-4 flex-wrap rounded-xl border border-border/60 bg-muted/30 px-4 py-2.5">
+          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Legenda:</span>
+          {[
+            { type: 'visita', label: 'Visita', dot: 'bg-blue-500' },
+            { type: 'riunione', label: 'Riunione', dot: 'bg-purple-500' },
+            { type: 'atto', label: 'Atto', dot: 'bg-green-500' },
+            { type: 'acquisizione', label: 'Acquisizione', dot: 'bg-amber-500' },
+          ].map(item => (
+            <span key={item.type} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span className={`cal-legend-dot ${item.dot}`} />
+              {item.label}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Agent filter bar (admin only) */}
       {showAgentBar && agents && (
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs text-neutral-400 font-medium">Agenti:</span>
+          <span className="text-xs text-muted-foreground font-medium">Agenti:</span>
           {agents.map(agent => {
             const idx = agentColorIndex(agent.id)
             const colors = AGENT_COLORS[idx]
@@ -588,46 +631,60 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
                 onClick={() => toggleAgent(agent.id)}
                 className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-all duration-150 ${
                   hidden
-                    ? 'border-neutral-200 bg-white text-neutral-400 line-through'
+                    ? 'border-border bg-muted/40 text-muted-foreground/50'
                     : colors.pill
                 }`}
               >
-                <span className={`h-2 w-2 rounded-full ${hidden ? 'bg-neutral-300' : colors.dot}`} />
+                <span className={`h-2 w-2 rounded-full ${hidden ? 'bg-muted-foreground/20' : colors.dot}`} />
                 {agent.name}
               </button>
             )
           })}
+          <div className="ml-1 flex items-center gap-1">
+            <button
+              onClick={hideAllAgents}
+              className="rounded-full border border-border px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-muted transition-colors"
+            >
+              Nascondi tutti
+            </button>
+            <button
+              onClick={showAllAgents}
+              className="rounded-full border border-border px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-muted transition-colors"
+            >
+              Mostra tutti
+            </button>
+          </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6">
         {/* Calendar grid */}
-        <div className="lg:col-span-2">
-          <div className="rounded-2xl border border-neutral-100 bg-white shadow-sm overflow-hidden">
+        <div>
+          <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
             {/* Period nav */}
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-neutral-100">
-              <button onClick={prevPeriod} className="rounded-lg p-1.5 hover:bg-neutral-100 transition-colors">
-                <ChevronLeft className="h-4 w-4 text-neutral-600" />
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
+              <button onClick={prevPeriod} className="rounded-lg p-1.5 hover:bg-muted transition-colors">
+                <ChevronLeft className="h-4 w-4 text-muted-foreground" />
               </button>
-              <h2 className="text-sm font-semibold text-neutral-900">
+              <h2 className="text-sm font-semibold">
                 {view === 'week' ? weekLabel : `${MONTH_NAMES[month]} ${year}`}
               </h2>
-              <button onClick={nextPeriod} className="rounded-lg p-1.5 hover:bg-neutral-100 transition-colors">
-                <ChevronRight className="h-4 w-4 text-neutral-600" />
+              <button onClick={nextPeriod} className="rounded-lg p-1.5 hover:bg-muted transition-colors">
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </button>
             </div>
 
             {/* Month view */}
             {view === 'month' && (
               <>
-                <div className="grid grid-cols-7 border-b border-neutral-100">
+                <div className="grid grid-cols-7 border-b border-border">
                   {DAY_NAMES.map(d => (
-                    <div key={d} className="py-2 text-center text-xs font-semibold text-neutral-400 uppercase tracking-wide">{d}</div>
+                    <div key={d} className="py-2 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wide">{d}</div>
                   ))}
                 </div>
                 <div className="grid grid-cols-7">
                   {getMonthDays(year, month).map((day, i) => {
-                    if (!day) return <div key={`pad-${i}`} className="min-h-[72px] border-b border-r border-neutral-50 bg-neutral-50/50" />
+                    if (!day) return <div key={`pad-${i}`} className="min-h-[72px] border-b border-r border-border/40 bg-muted/20" />
                     const key = day.toDateString()
                     const dayAppts = apptsByDay.get(key) ?? []
                     const isToday = isSameDay(day, today)
@@ -640,40 +697,38 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
                         key={key}
                         onClick={() => setSelectedDay(day)}
                         title={tooltipText || undefined}
-                        className={`group/day min-h-[72px] border-b border-r border-neutral-50 p-2 text-left transition-all duration-150 cursor-pointer ${
+                        className={`group/day min-h-[72px] border-b border-r border-border/40 p-2 text-left transition-all duration-150 cursor-pointer ${
                           isSelected
-                            ? 'bg-neutral-900 hover:bg-neutral-800'
-                            : 'hover:bg-blue-50/60 hover:border-blue-100'
+                            ? 'bg-[oklch(0.57_0.20_33)] hover:bg-[oklch(0.52_0.20_33)]'
+                            : 'hover:bg-muted/50'
                         }`}
                       >
                         <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold transition-all duration-150 ${
                           isSelected
                             ? 'text-white'
                             : isToday
-                              ? 'bg-neutral-900 text-white'
-                              : 'text-neutral-700 group-hover/day:bg-blue-100 group-hover/day:text-blue-800'
+                              ? 'bg-[oklch(0.57_0.20_33)] text-white'
+                              : 'text-foreground group-hover/day:bg-muted'
                         }`}>
                           {day.getDate()}
                         </span>
                         <div className="mt-1 space-y-0.5">
                           {dayAppts.slice(0, 2).map(a => {
-                            const dotColor = (showAgentBar && a.agent_id)
-                              ? AGENT_COLORS[agentColorIndex(a.agent_id)].dot
-                              : TYPE_DOT[a.type]
+                            const typeDot = TYPE_DOT[a.type] ?? 'bg-muted-foreground/40'
                             return (
                               <div
                                 key={a.id}
                                 className={`flex items-center gap-1 rounded px-1 py-0.5 ${isSelected ? 'bg-white/20' : 'bg-black/[0.03]'}`}
                               >
-                                <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${isSelected ? 'bg-white' : dotColor}`} />
-                                <span className={`text-[10px] truncate leading-tight ${isSelected ? 'text-white' : 'text-neutral-600'}`}>
+                                <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${isSelected ? 'bg-white' : typeDot}`} />
+                                <span className={`text-[10px] truncate leading-tight ${isSelected ? 'text-white' : 'text-muted-foreground'}`}>
                                   {formatTime(a.starts_at)} {a.title}
                                 </span>
                               </div>
                             )
                           })}
                           {dayAppts.length > 2 && (
-                            <span className={`text-[10px] pl-1 ${isSelected ? 'text-white/60' : 'text-neutral-400'}`}>
+                            <span className={`text-[10px] pl-1 ${isSelected ? 'text-white/60' : 'text-muted-foreground'}`}>
                               +{dayAppts.length - 2} altri
                             </span>
                           )}
@@ -691,7 +746,7 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
             {/* Week view */}
             {view === 'week' && (
               <>
-                <div className="grid grid-cols-7 border-b border-neutral-100">
+                <div className="grid grid-cols-7 border-b border-border">
                   {weekDays.map(day => {
                     const isToday = isSameDay(day, today)
                     const isSel = isSameDay(day, selectedDay)
@@ -699,55 +754,56 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
                       <button
                         key={day.toDateString()}
                         onClick={() => setSelectedDay(day)}
-                        className={`py-3 text-center transition-all duration-150 ${isSel ? 'bg-neutral-900' : 'hover:bg-neutral-50'}`}
+                        className={`py-3 text-center transition-all duration-150 ${isSel ? 'bg-[oklch(0.57_0.20_33)]' : 'hover:bg-muted/50'}`}
                       >
-                        <p className={`text-[10px] font-semibold uppercase tracking-wide ${isSel ? 'text-white/60' : 'text-neutral-400'}`}>
+                        <p className={`text-[10px] font-semibold uppercase tracking-wide ${isSel ? 'text-white/60' : 'text-muted-foreground'}`}>
                           {DAY_NAMES[(day.getDay() + 6) % 7]}
                         </p>
-                        <p className={`mt-0.5 text-base font-bold ${isSel ? 'text-white' : isToday ? 'text-blue-600' : 'text-neutral-800'}`}>
+                        <p className={`mt-0.5 text-base font-bold ${isSel ? 'text-white' : isToday ? 'text-[oklch(0.57_0.20_33)]' : ''}`}>
                           {day.getDate()}
                         </p>
                       </button>
                     )
                   })}
                 </div>
-                <div className="grid grid-cols-7 min-h-[280px]">
+                <div className="grid grid-cols-7 min-h-[calc(100vh-220px)]">
                   {weekDays.map(day => {
                     const dayAppts = (apptsByDay.get(day.toDateString()) ?? []).sort((a, b) => a.starts_at.localeCompare(b.starts_at))
                     const isSel = isSameDay(day, selectedDay)
+                    function handleDayClick() {
+                      setSelectedDay(day)
+                      setModalInitialDate(day)
+                      setEditingAppt(undefined)
+                      setShowModal(true)
+                    }
                     return (
                       <div
                         key={day.toDateString()}
-                        onClick={() => setSelectedDay(day)}
-                        className={`border-r border-neutral-50 p-1.5 space-y-1 cursor-pointer transition-colors ${isSel ? 'bg-neutral-50' : 'hover:bg-blue-50/40'}`}
+                        onClick={handleDayClick}
+                        className={`border-r border-border/40 p-1.5 space-y-1 cursor-pointer transition-colors min-h-[300px] relative group ${isSel ? 'bg-muted/30' : 'hover:bg-muted/20'}`}
                       >
                         {dayAppts.map(a => {
-                          const dotColor = (showAgentBar && a.agent_id)
-                            ? AGENT_COLORS[agentColorIndex(a.agent_id)].dot
-                            : TYPE_DOT[a.type]
+                          const cardBg = (showAgentBar && a.agent_id)
+                            ? AGENT_COLORS[agentColorIndex(a.agent_id)].pill
+                            : (TYPE_COLORS[a.type] ?? 'bg-muted text-muted-foreground border-border')
+                          const typeDot = TYPE_DOT[a.type] ?? 'bg-muted-foreground/40'
                           return (
                             <div
                               key={a.id}
                               onClick={e => { e.stopPropagation(); openEditModal(a) }}
                               title={`${formatTime(a.starts_at)} ${a.title}`}
-                              className={`rounded-md border px-1.5 py-1 cursor-pointer hover:opacity-80 transition-opacity ${TYPE_COLORS[a.type]}`}
+                              className={`rounded-md border p-2 cursor-pointer hover:opacity-80 transition-opacity min-h-[40px] ${cardBg}`}
                             >
                               <div className="flex items-center gap-1">
-                                <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${dotColor}`} />
+                                <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${typeDot}`} />
                                 <span className="text-[10px] font-medium truncate">{formatTime(a.starts_at)}</span>
                               </div>
-                              <p className="text-[10px] truncate leading-tight mt-0.5">{a.title}</p>
+                              <p className="text-[10px] whitespace-normal line-clamp-2 leading-tight mt-0.5">{a.title}</p>
                             </div>
                           )
                         })}
                         {dayAppts.length === 0 && (
-                          <button
-                            onClick={e => { e.stopPropagation(); openNewModal(day) }}
-                            className="w-full h-8 flex items-center justify-center text-neutral-300 hover:text-neutral-400 transition-colors"
-                            title="Aggiungi appuntamento"
-                          >
-                            <Plus className="h-3 w-3" />
-                          </button>
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-30 pointer-events-none text-2xl text-muted-foreground">+</div>
                         )}
                       </div>
                     )
@@ -758,47 +814,59 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
           </div>
         </div>
 
-        {/* Day detail panel */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-neutral-900 capitalize">
-              {formatDate(selectedDay.toISOString())}
-            </h3>
+        {/* Day detail panel — more breathing room */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between pb-1 border-b border-border/60">
+            <div>
+              <h3 className="text-sm font-bold capitalize tracking-tight">
+                {formatDate(selectedDay.toISOString())}
+              </h3>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                {selectedDayAppts.length > 0 ? `${selectedDayAppts.length} appuntament${selectedDayAppts.length === 1 ? 'o' : 'i'}` : 'Nessun appuntamento'}
+              </p>
+            </div>
             <button
               onClick={() => openNewModal(selectedDay)}
-              className="rounded-lg p-1.5 hover:bg-neutral-100 transition-colors"
+              className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-[oklch(0.57_0.20_33)] hover:bg-[oklch(0.57_0.20_33/0.08)] transition-colors border border-[oklch(0.57_0.20_33/0.2)]"
               title="Aggiungi appuntamento"
             >
-              <Plus className="h-4 w-4 text-neutral-500" />
+              <Plus className="h-3.5 w-3.5" />
+              Nuovo
             </button>
           </div>
 
           {loading ? (
-            <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-6 text-center">
-              <p className="text-sm text-neutral-400">Carico…</p>
+            <div className="space-y-2">
+              {[1, 2, 3].map(n => (
+                <div key={n} className="skeleton h-16 rounded-xl" />
+              ))}
             </div>
           ) : selectedDayAppts.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-neutral-200 bg-neutral-50 p-6 text-center">
-              <p className="text-sm text-neutral-400">Nessun appuntamento</p>
+            <div className="rounded-2xl border border-dashed border-border bg-gradient-to-br from-muted/30 to-muted/10 p-8 text-center">
+              <div className="mb-3 mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-muted/50">
+                <Calendar className="h-5 w-5 text-muted-foreground/40" />
+              </div>
+              <p className="text-sm font-medium text-muted-foreground">Nessun appuntamento</p>
               <button
                 onClick={() => openNewModal(selectedDay)}
-                className="mt-2 text-xs text-neutral-500 hover:text-neutral-800 underline underline-offset-2 transition-colors"
+                className="mt-3 text-xs font-medium text-[oklch(0.57_0.20_33)] hover:underline underline-offset-2 transition-colors"
               >
-                Aggiungi uno
+                Aggiungi uno →
               </button>
             </div>
           ) : (
-            <div className="space-y-2">
-              {selectedDayAppts.map(a => (
-                <AppointmentCard
-                  key={a.id}
-                  appt={a}
-                  listings={listings}
-                  agentColor={getAgentColor(a.agent_id)}
-                  onStatusChange={handleStatusChange}
-                  onEdit={openEditModal}
-                  onDelete={handleDelete}
-                />
+            <div className="space-y-2.5">
+              {selectedDayAppts.map((a, idx) => (
+                <div key={a.id} className={`animate-in-${Math.min(idx + 1, 8)}`}>
+                  <AppointmentCard
+                    appt={a}
+                    listings={listings}
+                    agentColor={getAgentColor(a.agent_id)}
+                    onStatusChange={handleStatusChange}
+                    onEdit={openEditModal}
+                    onDelete={handleDelete}
+                  />
+                </div>
               ))}
             </div>
           )}
@@ -806,20 +874,29 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
           {/* Google Calendar events */}
           {selectedDayGoogleEvents.length > 0 && (
             <div className="mt-4 space-y-2">
-              <p className="text-xs font-medium text-neutral-400 uppercase tracking-wider flex items-center gap-1.5">
-                <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-neutral-200 text-[9px] font-bold text-neutral-500">G</span>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-muted text-[9px] font-bold text-muted-foreground">G</span>
                 Da Google Calendar
               </p>
               {selectedDayGoogleEvents.map(e => (
-                <div key={e.id} className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 hover:shadow-sm transition-shadow">
-                  <p className="text-sm font-medium text-neutral-700 truncate">{e.summary}</p>
-                  <p className="text-xs text-neutral-400 mt-0.5">
+                <div key={e.id} className="rounded-xl border border-border bg-muted/30 px-4 py-3 hover:shadow-sm transition-shadow">
+                  <p className="text-sm font-medium truncate">{e.summary}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {formatTime(e.start)}{e.end && ` – ${formatTime(e.end)}`}
                   </p>
                 </div>
               ))}
             </div>
           )}
+
+          {/* Add appointment CTA at bottom */}
+          <button
+            onClick={() => openNewModal(selectedDay)}
+            className="mt-4 w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[oklch(0.57_0.20_33/0.3)] bg-[oklch(0.57_0.20_33/0.04)] px-4 py-3 text-sm font-semibold text-[oklch(0.57_0.20_33)] hover:bg-[oklch(0.57_0.20_33/0.08)] hover:border-[oklch(0.57_0.20_33/0.5)] transition-all duration-200"
+          >
+            <Plus className="h-4 w-4" />
+            Aggiungi appuntamento
+          </button>
         </div>
       </div>
 

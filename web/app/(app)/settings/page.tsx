@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -9,15 +10,18 @@ import { UsageMeters } from '@/components/settings/usage-meters'
 import { BulkExportButton } from '@/components/settings/bulk-export-button'
 import { GoogleCalendarConnect } from '@/components/settings/google-calendar-connect'
 import { ImportContacts } from '@/components/settings/import-contacts'
+import { NotificationPreferences } from '@/components/settings/notification-preferences'
 import { getPlanConfig } from '@/lib/plan-limits'
+import { getTranslations } from '@/lib/i18n/server'
 import type { Workspace, Group } from '@/lib/supabase/types'
 
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ google?: string }>
+  searchParams: Promise<{ google?: string; tab?: string }>
 }) {
-  const { google } = await searchParams
+  const { google, tab = 'generale' } = await searchParams
+  const { t } = await getTranslations()
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -39,7 +43,6 @@ export default async function SettingsPage({
   const isAdmin = profile?.role === 'admin' || profile?.role === 'group_admin'
   const isGroupAdmin = profile?.role === 'group_admin'
 
-  // Load social connections
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: connectionsData } = await (admin as any)
     .from('social_connections')
@@ -50,7 +53,6 @@ export default async function SettingsPage({
     id: string; platform: string; page_name: string | null; page_id: string
   }[]
 
-  // Load group data for group_admin
   let group: Group | null = null
   if (isGroupAdmin && profile?.group_id) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -62,7 +64,6 @@ export default async function SettingsPage({
     group = groupData as Group | null
   }
 
-  // Load workspace members (admin and group_admin only)
   let members: { id: string; name: string; email: string; role: string }[] = []
   if (isAdmin && profile?.workspace_id) {
     const { data: membersData } = await admin
@@ -73,7 +74,6 @@ export default async function SettingsPage({
     members = (membersData ?? []) as { id: string; name: string; email: string; role: string }[]
   }
 
-  // Fetch usage stats for admin
   let agentCount = 0
   let listingsThisMonth = 0
   if (isAdmin && profile?.workspace_id) {
@@ -82,156 +82,196 @@ export default async function SettingsPage({
     startOfMonth.setHours(0, 0, 0, 0)
 
     const [agentsRes, listingsRes] = await Promise.all([
-      admin
-        .from('users')
-        .select('id', { count: 'exact', head: true })
-        .eq('workspace_id', profile.workspace_id),
-      admin
-        .from('listings')
-        .select('id', { count: 'exact', head: true })
-        .eq('workspace_id', profile.workspace_id)
-        .gte('created_at', startOfMonth.toISOString()),
+      admin.from('users').select('id', { count: 'exact', head: true }).eq('workspace_id', profile.workspace_id),
+      admin.from('listings').select('id', { count: 'exact', head: true }).eq('workspace_id', profile.workspace_id).gte('created_at', startOfMonth.toISOString()),
     ])
     agentCount = agentsRes.count ?? 0
     listingsThisMonth = listingsRes.count ?? 0
   }
 
-  const planConfig = profile?.workspaces
-    ? getPlanConfig(profile.workspaces.plan)
-    : null
+  const planConfig = profile?.workspaces ? getPlanConfig(profile.workspaces.plan) : null
+
+  const TABS = [
+    { id: 'generale', label: 'Generale' },
+    { id: 'team', label: 'Team' },
+    { id: 'integrazioni', label: 'Integrazioni' },
+    { id: 'fatturazione', label: 'Fatturazione' },
+  ]
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Impostazioni</h1>
-        <p className="text-neutral-500 text-sm mt-1">Gestisci workspace, team e account social</p>
+      <div className="animate-in-1">
+        <h1 className="text-2xl font-extrabold tracking-tight">{t('settings.title')}</h1>
+        <p className="text-muted-foreground text-sm mt-1">{t('settings.subtitle')}</p>
       </div>
 
-      {isAdmin && profile?.workspaces && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Agenzia</CardTitle>
-            <CardDescription>Nome e impostazioni predefinite per questo ufficio</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <WorkspaceForm workspace={profile.workspaces} />
-          </CardContent>
-        </Card>
+      {/* Tab navigation */}
+      <div className="flex gap-1 rounded-xl border border-border bg-muted/40 p-1">
+        {TABS.map(t2 => (
+          <Link
+            key={t2.id}
+            href={`/settings?tab=${t2.id}`}
+            className={`flex-1 rounded-lg px-3 py-1.5 text-sm font-medium text-center transition-all duration-150 ${
+              tab === t2.id
+                ? 'bg-card shadow-sm text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {t2.label}
+          </Link>
+        ))}
+      </div>
+
+      {/* Tab: Generale */}
+      {tab === 'generale' && (
+        <div className="space-y-6">
+          {isAdmin && profile?.workspaces && (
+            <Card className="animate-in-2">
+              <CardHeader>
+                <CardTitle>{t('settings.agency')}</CardTitle>
+                <CardDescription>{t('settings.agencyDesc')}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <WorkspaceForm workspace={profile.workspaces} />
+              </CardContent>
+            </Card>
+          )}
+          {isGroupAdmin && group && (
+            <Card className="border-blue-100">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white text-xs font-bold">G</div>
+                  <div>
+                    <CardTitle>{t('settings.group')}</CardTitle>
+                    <CardDescription>{t('settings.groupDesc')}</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <GroupForm group={group} />
+              </CardContent>
+            </Card>
+          )}
+          <Card>
+            <CardHeader>
+              <CardTitle>Preferenze notifiche</CardTitle>
+              <CardDescription>Scegli quali notifiche vuoi ricevere nell&apos;app.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <NotificationPreferences />
+            </CardContent>
+          </Card>
+        </div>
       )}
 
-      {isGroupAdmin && group && (
-        <Card className="border-blue-100">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white text-xs font-bold">G</div>
-              <div>
-                <CardTitle>Gruppo</CardTitle>
-                <CardDescription>Impostazioni globali per tutte le agenzie del gruppo</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <GroupForm group={group} />
-          </CardContent>
-        </Card>
+      {/* Tab: Team */}
+      {tab === 'team' && isAdmin && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('settings.team')}</CardTitle>
+              <CardDescription>
+                {isGroupAdmin ? t('settings.teamDescAdmin') : t('settings.teamDesc')}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TeamManagement
+                members={members}
+                currentUserId={user!.id}
+                currentRole={profile!.role}
+              />
+            </CardContent>
+          </Card>
+        </div>
       )}
 
-      {isAdmin && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Team</CardTitle>
-            <CardDescription>
-              {isGroupAdmin
-                ? 'Gestisci agenti e admin del workspace. Puoi promuovere agenti ad admin o rimuovere membri.'
-                : 'Aggiungi o rimuovi agenti dal workspace.'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <TeamManagement
-              members={members}
-              currentUserId={user!.id}
-              currentRole={profile!.role}
-            />
-          </CardContent>
-        </Card>
+      {/* Tab: Integrazioni */}
+      {tab === 'integrazioni' && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('settings.social')}</CardTitle>
+              <CardDescription>{t('settings.socialDesc')}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SocialConnections connections={connections} />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('settings.googleCalendar')}</CardTitle>
+              <CardDescription>{t('settings.googleCalendarDesc')}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <GoogleCalendarConnect
+                isConnected={!!profile?.google_access_token}
+                flashMessage={google}
+              />
+            </CardContent>
+          </Card>
+          {isAdmin && (
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('settings.importContacts')}</CardTitle>
+                <CardDescription>{t('settings.importContactsDesc')}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ImportContacts />
+              </CardContent>
+            </Card>
+          )}
+          {isAdmin && (
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('settings.export')}</CardTitle>
+                <CardDescription>{t('settings.exportDesc')}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <BulkExportButton />
+                <p className="text-xs text-muted-foreground">{t('settings.exportNote')}</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       )}
 
-      {isAdmin && planConfig && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Utilizzo piano</CardTitle>
-            <CardDescription>
-              Piano attuale: <strong>{planConfig.name}</strong>
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <UsageMeters
-              agentCount={agentCount}
-              maxAgents={planConfig.maxAgents}
-              listingsThisMonth={listingsThisMonth}
-              maxListingsPerMonth={planConfig.maxListingsPerMonth}
-              planName={planConfig.name}
-            />
-          </CardContent>
-        </Card>
-      )}
-
-      {isAdmin && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Export portali</CardTitle>
-            <CardDescription>
-              Esporta tutti gli annunci pubblicati in formato XML per Immobiliare.it, Casa.it, Idealista
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <BulkExportButton />
-            <p className="text-xs text-neutral-400">
-              Il file XML generato è compatibile con il formato standard di importazione dei principali portali immobiliari italiani.
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Account social</CardTitle>
-          <CardDescription>
-            Connetti i tuoi account per pubblicare annunci direttamente dall&apos;app
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <SocialConnections connections={connections} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Google Calendar</CardTitle>
-          <CardDescription>
-            Sincronizza gli appuntamenti di CasaAI con il tuo Google Calendar
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <GoogleCalendarConnect
-            isConnected={!!profile?.google_access_token}
-            flashMessage={google}
-          />
-        </CardContent>
-      </Card>
-
-      {(profile?.role === 'admin' || profile?.role === 'group_admin') && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Importa contatti</CardTitle>
-            <CardDescription>
-              Carica un file CSV per importare clienti in blocco nel workspace
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ImportContacts />
-          </CardContent>
-        </Card>
+      {/* Tab: Fatturazione */}
+      {tab === 'fatturazione' && isAdmin && (
+        <div className="space-y-6">
+          {planConfig && (
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('settings.usage')}</CardTitle>
+                <CardDescription>
+                  {t('settings.usageDesc')}<strong>{planConfig.name}</strong>
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <UsageMeters
+                  agentCount={agentCount}
+                  maxAgents={planConfig.maxAgents}
+                  listingsThisMonth={listingsThisMonth}
+                  maxListingsPerMonth={planConfig.maxListingsPerMonth}
+                  planName={planConfig.name}
+                />
+              </CardContent>
+            </Card>
+          )}
+          <Card>
+            <CardHeader>
+              <CardTitle>Piano</CardTitle>
+              <CardDescription>Gestisci il tuo piano e la fatturazione.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Link
+                href="/plans"
+                className="inline-flex items-center gap-2 rounded-xl bg-[oklch(0.57_0.20_33)] text-white px-4 py-2 text-sm font-semibold hover:bg-[oklch(0.52_0.20_33)] transition-colors"
+              >
+                Gestisci piano →
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   )

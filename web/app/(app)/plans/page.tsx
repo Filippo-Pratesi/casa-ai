@@ -3,11 +3,14 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { PlanCheckout } from '@/components/plans/plan-checkout'
 import { PLAN_PRICES, PLAN_CONFIG } from '@/lib/plan-limits'
+import { getTranslations } from '@/lib/i18n/server'
 
 export default async function PlansPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  const { t } = await getTranslations()
 
   const admin = createAdminClient()
   const { data: profileData } = await admin
@@ -29,7 +32,6 @@ export default async function PlansPage() {
     }
   }
 
-  // Only admin/group_admin can manage plans
   const isAdmin = profile.role === 'admin' || profile.role === 'group_admin'
   if (!isAdmin) redirect('/dashboard')
 
@@ -46,16 +48,16 @@ export default async function PlansPage() {
       color: 'text-blue-600',
       bg: 'bg-blue-50',
       border: 'border-blue-200',
-      description: 'Per agenti indipendenti e piccoli studi',
+      description: t('plans.starter.desc'),
       features: [
-        'Fino a 3 agenti',
-        'Annunci illimitati',
-        'Generazione AI di contenuti',
-        'Pubblicazione social (IG/FB)',
-        'PDF brochure',
-        'Export portali',
-        '1 GB di storage',
-        'Supporto email',
+        t('plans.feat.agents3'),
+        t('plans.feat.listingsUnlimited'),
+        t('plans.feat.aiContent'),
+        t('plans.feat.social'),
+        t('plans.feat.pdf'),
+        t('plans.feat.export'),
+        t('plans.feat.storage1'),
+        t('plans.feat.emailSupport'),
       ],
     },
     {
@@ -65,18 +67,18 @@ export default async function PlansPage() {
       color: 'text-purple-600',
       bg: 'bg-purple-50',
       border: 'border-purple-200',
-      description: 'Per filiali con team di agenti',
+      description: t('plans.agenzia.desc'),
       highlight: true,
       features: [
-        'Fino a 15 agenti',
-        'Annunci illimitati',
-        'Generazione AI di contenuti',
-        'Pubblicazione social (IG/FB)',
-        'PDF brochure',
-        'Export portali',
-        'Campagne email ai clienti',
-        '5 GB di storage',
-        'Supporto prioritario',
+        t('plans.feat.agents15'),
+        t('plans.feat.listingsUnlimited'),
+        t('plans.feat.aiContent'),
+        t('plans.feat.social'),
+        t('plans.feat.pdf'),
+        t('plans.feat.export'),
+        t('plans.feat.emailCampaigns'),
+        t('plans.feat.storage5'),
+        t('plans.feat.prioritySupport'),
       ],
     },
     {
@@ -86,35 +88,33 @@ export default async function PlansPage() {
       color: 'text-emerald-600',
       bg: 'bg-emerald-50',
       border: 'border-emerald-200',
-      description: 'Per gruppi multi-filiale',
+      description: t('plans.network.desc'),
       features: [
-        'Agenti illimitati',
-        'Workspace multipli',
-        'Annunci illimitati',
-        'Generazione AI di contenuti',
-        'Pubblicazione social (IG/FB)',
-        'PDF brochure',
-        'Export portali',
-        'Campagne email ai clienti',
-        '20 GB di storage',
-        'Supporto prioritario dedicato',
+        t('plans.feat.agentsUnlimited'),
+        t('plans.feat.multiWorkspace'),
+        t('plans.feat.listingsUnlimited'),
+        t('plans.feat.aiContent'),
+        t('plans.feat.social'),
+        t('plans.feat.pdf'),
+        t('plans.feat.export'),
+        t('plans.feat.emailCampaigns'),
+        t('plans.feat.storage20'),
+        t('plans.feat.dedicatedSupport'),
       ],
     },
   ]
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 pb-12">
-      {/* Header */}
-      <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Scegli il piano</h1>
-        <p className="text-neutral-500">
+      <div className="text-center space-y-2 animate-in-1">
+        <h1 className="text-4xl font-extrabold tracking-tight leading-none">{t('plans.title')}</h1>
+        <p className="text-muted-foreground">
           {currentPlan === 'trial'
-            ? `Sei in periodo di prova — ${daysLeft} giorni rimanenti`
-            : `Piano attuale: ${PLAN_CONFIG[currentPlan as keyof typeof PLAN_CONFIG]?.name ?? currentPlan}`}
+            ? t('plans.trial').replace('{days}', String(daysLeft))
+            : `${t('plans.current')}${PLAN_CONFIG[currentPlan as keyof typeof PLAN_CONFIG]?.name ?? currentPlan}`}
         </p>
       </div>
 
-      {/* Billing toggle + plans */}
       <PlanCheckout
         plans={plans}
         currentPlan={currentPlan}
@@ -122,11 +122,7 @@ export default async function PlansPage() {
         prices={PLAN_PRICES}
       />
 
-      {/* Footer note */}
-      <p className="text-center text-xs text-neutral-400">
-        IVA esclusa · Fatturazione mensile o annuale · Disdetta in qualsiasi momento
-        · Tutte le transazioni sono gestite in modo sicuro da Stripe
-      </p>
+      <p className="text-center text-xs text-muted-foreground">{t('plans.footer')}</p>
     </div>
   )
 }

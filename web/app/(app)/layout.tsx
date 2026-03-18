@@ -6,6 +6,8 @@ import { AppSidebar } from '@/components/app-sidebar'
 import { AppHeader } from '@/components/app-header'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { Toaster } from '@/components/ui/sonner'
+import { AiWidgetGate } from '@/components/ai-assistant/ai-widget-gate'
+import { CommandPalette } from '@/components/shared/command-palette'
 import type { User, Workspace, Group } from '@/lib/supabase/types'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -71,6 +73,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .eq('read', false)
   const unreadNotifications = (unreadNotificationsCount as number | null) ?? 0
 
+  // Pending todos assigned to me
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { count: pendingTodosCount } = await (admin as any)
+    .from('todos')
+    .select('id', { count: 'exact', head: true })
+    .eq('assigned_to', user.id)
+    .eq('completed', false)
+  const pendingTodos = (pendingTodosCount as number | null) ?? 0
+
   // Birthday contacts count for sidebar badge (contacts with birthday in next 7 days)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: birthdayContactsData } = await (admin as any)
@@ -107,14 +118,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         unreadNotifications={unreadNotifications}
         birthdayCount={birthdayCount}
         hasGroup={!!profile.group_id}
+        pendingTodos={pendingTodos}
       />
       <SidebarInset>
         <AppHeader />
-        <main className="flex-1 p-6 lg:p-8 bg-neutral-50/50 min-h-[calc(100vh-3.5rem)]">
+        <main className="flex-1 p-6 lg:p-8 bg-muted/20 min-h-[calc(100vh-3.5rem)]">
           {children}
         </main>
       </SidebarInset>
       <Toaster />
+      <AiWidgetGate plan={activeWorkspace.plan} />
+      <CommandPalette />
     </SidebarProvider>
   )
 }

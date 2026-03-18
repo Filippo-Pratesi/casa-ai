@@ -64,12 +64,12 @@ export default async function EditContactPage({
         <Button nativeButton={false} render={<Link href={`/contacts/${id}`} />} variant="ghost" size="icon" className="h-8 w-8 shrink-0">
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <span className="text-sm text-neutral-500">Dettaglio cliente</span>
+        <span className="text-sm text-muted-foreground">Dettaglio cliente</span>
       </div>
 
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Modifica cliente</h1>
-        <p className="text-neutral-500 text-sm mt-1">Aggiorna i dati e le preferenze di ricerca.</p>
+        <p className="text-muted-foreground text-sm mt-1">Aggiorna i dati e le preferenze di ricerca.</p>
       </div>
 
       <ContactForm mode="edit" contactId={id} defaultValues={defaultValues} />

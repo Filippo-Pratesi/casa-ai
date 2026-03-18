@@ -43,7 +43,8 @@ export async function POST(req: NextRequest) {
   // Append cache-buster to avoid stale avatar
   const avatarUrl = `${publicUrl}?t=${Date.now()}`
 
-  const { error: dbError } = await admin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: dbError } = await (admin as any)
     .from('users')
     .update({ avatar_url: avatarUrl })
     .eq('id', user.id)

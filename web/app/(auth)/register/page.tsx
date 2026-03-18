@@ -70,12 +70,12 @@ export default function RegisterPage() {
           </div>
           <div>
             <h2 className="text-lg font-semibold">Controlla la tua email</h2>
-            <p className="text-sm text-neutral-500 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               Abbiamo inviato un link di conferma a <strong>{email}</strong>.
               Clicca il link per attivare il tuo account e accedere.
             </p>
           </div>
-          <p className="text-xs text-neutral-400">
+          <p className="text-xs text-muted-foreground">
             Non trovi l&apos;email? Controlla la cartella spam.
           </p>
         </CardContent>
@@ -142,9 +142,9 @@ export default function RegisterPage() {
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? 'Creazione account...' : 'Crea account gratuito'}
           </Button>
-          <p className="text-sm text-neutral-500 text-center">
+          <p className="text-sm text-muted-foreground text-center">
             Hai già un account?{' '}
-            <Link href="/login" className="text-neutral-900 font-medium hover:underline">
+            <Link href="/login" className="text-foreground font-medium hover:underline">
               Accedi
             </Link>
           </p>
