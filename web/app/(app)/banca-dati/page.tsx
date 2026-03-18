@@ -14,6 +14,7 @@ interface Property {
   stage: string
   owner_disposition: string
   transaction_type: string | null
+  property_type: string | null
   sqm: number | null
   rooms: number | null
   estimated_value: number | null
@@ -68,7 +69,7 @@ export default async function BancaDatiPage({
   let query = (admin as any)
     .from('properties')
     .select(`
-      id, address, city, zone, sub_zone, stage, owner_disposition, transaction_type,
+      id, address, city, zone, sub_zone, stage, owner_disposition, transaction_type, property_type,
       sqm, rooms, estimated_value, updated_at,
       owner_contact:contacts!properties_owner_contact_id_fkey(name),
       agent:users!properties_agent_id_fkey(name)
@@ -82,7 +83,7 @@ export default async function BancaDatiPage({
   if (agent_id) query = query.eq('agent_id', agent_id)
   if (disposition) query = query.eq('owner_disposition', disposition)
   if (transaction_type) query = query.eq('transaction_type', transaction_type)
-  if (q) query = query.or(`address.ilike.%${q}%,city.ilike.%${q}%`)
+  if (q) query = query.or(`address.ilike.%${q}%,city.ilike.%${q}%,zone.ilike.%${q}%`)
 
   const { data, count } = await query
 

@@ -37,6 +37,7 @@ export interface PropertyEvent {
   contact_id: string | null
   agent_id: string
   agent_name?: string | null
+  event_date: string
   created_at: string
   metadata?: Record<string, unknown>
 }
@@ -240,9 +241,9 @@ export function EventTimeline({ propertyId, events, onEventAdded }: EventTimelin
                   <span className="text-muted-foreground/40 text-xs">·</span>
                   <time
                     className="text-xs text-muted-foreground"
-                    title={format(new Date(event.created_at), 'dd/MM/yyyy HH:mm')}
+                    title={format(new Date(event.event_date ?? event.created_at), 'dd/MM/yyyy HH:mm')}
                   >
-                    {formatDistanceToNow(new Date(event.created_at), { addSuffix: true, locale: it })}
+                    {formatDistanceToNow(new Date(event.event_date ?? event.created_at), { addSuffix: true, locale: it })}
                   </time>
                 </div>
               </div>

@@ -19,6 +19,7 @@ export interface PropertyCardData {
   stage: PropertyStage
   owner_disposition: OwnerDisposition
   transaction_type?: string | null
+  property_type?: string | null
   owner_name?: string | null
   agent_name?: string | null
   sqm?: number | null

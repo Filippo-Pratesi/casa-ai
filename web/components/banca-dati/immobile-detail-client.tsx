@@ -96,6 +96,16 @@ interface ImmobileDetailClientProps {
   isOwner: boolean
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeEvents(raw: any[]): PropertyEvent[] {
+  return raw.map((e) => ({
+    ...e,
+    agent_name: (e.agent as { name?: string } | null)?.name ?? e.agent_name ?? null,
+    event_date: e.event_date ?? e.created_at,
+    agent: undefined,
+  }))
+}
+
 export function ImmobileDetailClient({
   property: initialProperty,
   propertyContacts: initialContacts,
@@ -180,7 +190,7 @@ export function ImmobileDetailClient({
       const evRes = await fetch(`/api/properties/${property.id}/events`)
       if (evRes.ok) {
         const evData = await evRes.json()
-        setEvents(evData.events ?? [])
+        setEvents(normalizeEvents(evData.events ?? []))
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Errore')
@@ -337,7 +347,7 @@ export function ImmobileDetailClient({
     const res = await fetch(`/api/properties/${property.id}/events`)
     if (res.ok) {
       const data = await res.json()
-      setEvents(data.events ?? [])
+      setEvents(normalizeEvents(data.events ?? []))
     }
   }, [property.id])
 

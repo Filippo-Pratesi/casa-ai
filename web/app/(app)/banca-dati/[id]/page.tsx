@@ -50,9 +50,9 @@ export default async function ImmobileDetailPage({ params }: { params: Promise<{
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: eventsData } = await (admin as any)
     .from('property_events')
-    .select('id, event_type, title, description, sentiment, contact_id, agent_id, created_at, metadata, agent:users!property_events_agent_id_fkey(name)')
+    .select('id, event_type, title, description, sentiment, contact_id, agent_id, event_date, created_at, metadata, agent:users!property_events_agent_id_fkey(name)')
     .eq('property_id', id)
-    .order('created_at', { ascending: false })
+    .order('event_date', { ascending: false })
     .limit(20)
 
   // Load nearby

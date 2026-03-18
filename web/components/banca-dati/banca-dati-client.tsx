@@ -65,8 +65,8 @@ const SORT_OPTIONS = [
   { value: 'updated_at_asc',  label: 'Meno recenti' },
   { value: 'city_asc',        label: 'Città A→Z' },
   { value: 'city_desc',       label: 'Città Z→A' },
-  { value: 'value_desc',      label: 'Valore decrescente' },
-  { value: 'value_asc',       label: 'Valore crescente' },
+  { value: 'value_desc',      label: 'Prezzo decrescente' },
+  { value: 'value_asc',       label: 'Prezzo crescente' },
 ]
 
 export function BancaDatiClient({
@@ -213,7 +213,7 @@ export function BancaDatiClient({
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
           <Input
-            placeholder="Cerca via, città, proprietario…"
+            placeholder="Cerca via, città, zona…"
             value={searchText}
             onChange={(e) => handleSearchChange(e.target.value)}
             onKeyDown={(e) => {
@@ -406,7 +406,7 @@ export function BancaDatiClient({
               { key: 'owner', label: 'Proprietario', hiddenBelow: 'xl' },
               { key: 'stage', label: 'Stage' },
               { key: 'disposition', label: 'St.' },
-              { key: 'type', label: 'Tipo', hiddenBelow: 'xl' },
+              { key: 'type', label: 'Tipologia', hiddenBelow: 'xl' },
               { key: 'last_event', label: 'Ultima nota', hiddenBelow: 'xl' },
               { key: 'updated', label: 'Agg.', hiddenBelow: 'md' },
             ].map(({ key, label, hiddenBelow }) => (
@@ -449,7 +449,7 @@ export function BancaDatiClient({
                 <div style={{ width: colWidths.owner, minWidth: colWidths.owner }} className="hidden xl:block shrink-0 px-2 py-2 text-xs text-muted-foreground truncate">{p.owner_name ?? <span className="opacity-30">—</span>}</div>
                 <div style={{ width: colWidths.stage, minWidth: colWidths.stage }} className="shrink-0 px-2 py-1.5"><PropertyStageBadge stage={p.stage} /></div>
                 <div style={{ width: colWidths.disposition, minWidth: colWidths.disposition }} className="shrink-0 px-1 py-2 flex items-center justify-center"><DispositionIcon disposition={p.owner_disposition} /></div>
-                <div style={{ width: colWidths.type, minWidth: colWidths.type }} className="hidden xl:block shrink-0 px-2 py-2 text-xs text-muted-foreground truncate">{PROPERTY_TYPE_IT[p.transaction_type ?? ''] ?? p.transaction_type ?? <span className="opacity-30">—</span>}</div>
+                <div style={{ width: colWidths.type, minWidth: colWidths.type }} className="hidden xl:block shrink-0 px-2 py-2 text-xs text-muted-foreground truncate">{PROPERTY_TYPE_IT[(p as PropertyCardData & { property_type?: string | null }).property_type ?? ''] ?? <span className="opacity-30">—</span>}</div>
                 <div
                   style={{ width: colWidths.last_event, minWidth: colWidths.last_event }}
                   className="hidden xl:block shrink-0 px-2 py-2 text-xs text-muted-foreground truncate"

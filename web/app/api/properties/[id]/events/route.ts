@@ -37,7 +37,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
   let query = (supabase as any)
     .from('property_events')
     .select(
-      `*, agent:agent_id(id, full_name, email)`,
+      `*, agent:agent_id(id, name)`,
       { count: 'exact' }
     )
     .eq('property_id', id)
