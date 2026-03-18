@@ -15,6 +15,7 @@ interface Contact {
   min_rooms: number | null
   date_of_birth: string | null
   created_at: string
+  agent_name: string | null
 }
 
 export default async function ContactsPage() {
@@ -35,12 +36,17 @@ export default async function ContactsPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (admin as any)
     .from('contacts')
-    .select('id, name, email, phone, type, budget_min, budget_max, preferred_cities, min_rooms, date_of_birth, created_at')
+    .select('id, name, email, phone, type, budget_min, budget_max, preferred_cities, min_rooms, date_of_birth, created_at, agent:users!contacts_agent_id_fkey(name)')
     .eq('workspace_id', profile?.workspace_id)
     .order('created_at', { ascending: false })
     .limit(500)
 
-  const contacts = (data ?? []) as Contact[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const contacts: Contact[] = (data ?? []).map((c: any) => ({
+    ...c,
+    agent_name: c.agent?.name ?? null,
+    agent: undefined,
+  }))
 
   return <ContactsClient contacts={contacts} isAdmin={isAdmin} />
 }

@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
   }
 
   const property_type = formData.get('property_type') as string
+  const transaction_type = (formData.get('transaction_type') as string) || 'vendita'
   const floor = formData.get('floor') ? Number(formData.get('floor')) : null
   const total_floors = formData.get('total_floors') ? Number(formData.get('total_floors')) : null
   const address = formData.get('address') as string
@@ -112,6 +113,7 @@ export async function POST(req: NextRequest) {
       workspace_id: profile.workspace_id,
       agent_id: user.id,
       property_type: property_type as 'apartment' | 'house' | 'villa' | 'commercial' | 'land' | 'garage' | 'other',
+      transaction_type: transaction_type as 'vendita' | 'affitto',
       floor,
       total_floors,
       address,

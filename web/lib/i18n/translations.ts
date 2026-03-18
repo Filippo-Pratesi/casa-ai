@@ -162,6 +162,7 @@ export const translations = {
     'calendar.type.riunione': 'Riunione',
     'calendar.type.atto': 'Atto',
     'calendar.type.visita': 'Visita',
+    'calendar.type.altro': 'Altro',
     // Calendar modal
     'calendar.modal.newAppt': 'Nuovo appuntamento',
     'calendar.modal.editAppt': 'Modifica appuntamento',

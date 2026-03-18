@@ -3,7 +3,6 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Plus, Receipt } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { InvoiceListClient } from '@/components/contabilita/invoice-list-client'
 import { InvoiceSummaryCards } from '@/components/contabilita/invoice-summary-cards'
 
@@ -65,12 +64,10 @@ export default async function ContabilitaPage() {
             <p className="text-sm text-muted-foreground">Gestisci fatture e provvigioni</p>
           </div>
         </div>
-        <Button asChild className="btn-ai shrink-0">
-          <Link href="/contabilita/nuova">
-            <Plus className="h-4 w-4 mr-1.5" />
-            Nuova fattura
-          </Link>
-        </Button>
+        <Link href="/contabilita/nuova" className="btn-ai inline-flex items-center gap-2 shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold">
+          <Plus className="h-4 w-4" />
+          Nuova fattura
+        </Link>
       </div>
 
       {/* Summary cards — only when data exists */}

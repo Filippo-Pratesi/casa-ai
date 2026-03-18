@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Plus, Mail, Send, Clock, AlertCircle, Sparkles, BarChart2, TrendingUp } from 'lucide-react'
+import { Plus, Mail, Send, Clock, AlertCircle, Sparkles, BarChart2, TrendingUp, Info, MessageCircle } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { getTranslations } from '@/lib/i18n/server'
 
@@ -15,6 +15,7 @@ interface Campaign {
   created_at: string
   sent_at: string | null
   template: string
+  channel: 'email' | 'whatsapp'
 }
 
 export default async function CampaignsPage() {
@@ -36,7 +37,7 @@ export default async function CampaignsPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (admin as any)
     .from('campaigns')
-    .select('id, subject, status, sent_count, opened_count, created_at, sent_at, template')
+    .select('id, subject, status, sent_count, opened_count, created_at, sent_at, template, channel')
     .eq('workspace_id', profile.workspace_id)
     .order('created_at', { ascending: false })
 
@@ -75,15 +76,20 @@ export default async function CampaignsPage() {
       {campaigns.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-in-2">
           {[
-            { label: 'Totale', value: campaigns.length, icon: Mail },
-            { label: 'Inviate', value: totalSentCampaigns, icon: Send },
-            { label: 'Bozze', value: totalDrafts, icon: Clock },
-            { label: 'Tasso apertura', value: avgOpenRate !== null ? `${avgOpenRate}%` : '—', icon: BarChart2 },
+            { label: 'Totale', value: campaigns.length, icon: Mail, info: undefined },
+            { label: 'Inviate', value: totalSentCampaigns, icon: Send, info: undefined },
+            { label: 'Bozze', value: totalDrafts, icon: Clock, info: undefined },
+            { label: 'Tasso apertura', value: avgOpenRate !== null ? `${avgOpenRate}%` : '—', icon: BarChart2, info: 'Percentuale di destinatari che hanno aperto l\'email almeno una volta, sul totale degli invii.' },
           ].map(stat => (
             <div key={stat.label} className="rounded-xl border border-border bg-card px-4 py-3">
               <div className="flex items-center gap-2 mb-1">
                 <stat.icon className="h-3.5 w-3.5 text-muted-foreground" />
                 <p className="text-xs text-muted-foreground">{stat.label}</p>
+                {stat.info && (
+                  <span title={stat.info} className="cursor-help ml-auto">
+                    <Info className="h-3 w-3 text-muted-foreground/50 hover:text-muted-foreground transition-colors" />
+                  </span>
+                )}
               </div>
               <p className="text-xl font-bold">{stat.value}</p>
             </div>
@@ -139,8 +145,15 @@ export default async function CampaignsPage() {
 
             const cardContent = (
               <>
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[oklch(0.57_0.20_33/0.12)] to-[oklch(0.66_0.15_188/0.12)] ring-1 ring-[oklch(0.57_0.20_33/0.2)]">
-                  <Mail className="h-4.5 w-4.5 text-[oklch(0.57_0.20_33)]" />
+                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 ${
+                  c.channel === 'whatsapp'
+                    ? 'bg-gradient-to-br from-green-100 to-green-50 ring-green-300/40 dark:from-green-900/20 dark:to-green-900/10 dark:ring-green-700/30'
+                    : 'bg-gradient-to-br from-[oklch(0.57_0.20_33/0.12)] to-[oklch(0.66_0.15_188/0.12)] ring-[oklch(0.57_0.20_33/0.2)]'
+                }`}>
+                  {c.channel === 'whatsapp'
+                    ? <MessageCircle className="h-4.5 w-4.5 text-green-600 dark:text-green-400" />
+                    : <Mail className="h-4.5 w-4.5 text-[oklch(0.57_0.20_33)]" />
+                  }
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold tracking-tight truncate">{c.subject}</p>
@@ -154,8 +167,11 @@ export default async function CampaignsPage() {
                       <div className="h-full bg-green-500 rounded-full transition-all"
                         style={{ width: `${openRate ?? 0}%` }} />
                     </div>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
                       {openRate !== null ? `${openRate}% apertura` : 'N/A'}
+                      <span title="Percentuale di destinatari che hanno aperto l'email almeno una volta." className="cursor-help">
+                        <Info className="h-3 w-3 text-muted-foreground/40 hover:text-muted-foreground transition-colors" />
+                      </span>
                     </span>
                   </div>
                 </div>
@@ -170,7 +186,12 @@ export default async function CampaignsPage() {
                       {openRate !== null && (
                         <div className="text-right">
                           <p className="text-sm font-bold text-green-600">{openRate}%</p>
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Apertura</p>
+                          <p className="flex items-center gap-1 text-[10px] text-muted-foreground uppercase tracking-wide">
+                            Apertura
+                            <span title="Percentuale di destinatari che hanno aperto l'email almeno una volta." className="cursor-help">
+                              <Info className="h-2.5 w-2.5 text-muted-foreground/40 hover:text-muted-foreground transition-colors" />
+                            </span>
+                          </p>
                         </div>
                       )}
                     </div>
