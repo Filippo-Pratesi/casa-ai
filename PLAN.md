@@ -182,7 +182,19 @@ Italian real estate agents lose 2-3 hours per listing on admin: writing descript
 | **Fix AI generation bug** | Profilo non trovato su genera/rigenera — ora usa admin client | S | ✅ Done |
 | **Lead nurturing sequences** | Timed follow-up email/WhatsApp sequences per contact | XL | ❌ Not started |
 
-### Priority 3c — Sprint F (Mobile App)
+### Priority 3c — Sprint F ✅ COMPLETE (UX Redesign — March 2026)
+
+| Feature | Description | Effort | Status |
+|---------|-------------|--------|--------|
+| **Warm futurism design system** | Full redesign of all major pages with bento layouts, spring animations, glass effects | L | ✅ |
+| **AI assistant chat widget** | Floating AI widget accessible from all pages (`/components/ai-assistant/`) | M | ✅ |
+| **Listing edit page** | Dedicated edit route with per-tone regeneration (`listing/[id]/edit`) | M | ✅ |
+| **Archive export** | CSV/JSON export of archived properties (`/api/archive/export`) | S | ✅ |
+| **Global search API** | Search endpoint across listings, contacts, appointments (`/api/search`) | S | ✅ |
+| **Notification preferences** | Per-type notification settings component | S | ✅ |
+| **Custom 404 page** | Branded not-found page | S | ✅ |
+
+### Priority 3d — Sprint G (Mobile App)
 
 | Feature | Description | Effort | Status |
 |---------|-------------|--------|--------|
@@ -281,7 +293,18 @@ Italian real estate agents lose 2-3 hours per listing on admin: writing descript
 - [x] To Do system (priority, due dates, team assignment, sidebar badge)
 - [x] AI generation bug fix (admin client for profile lookup)
 
-### Sprint F — iOS App
+### ✅ Sprint F — COMPLETE (UX Redesign — March 2026)
+**Goal**: Warm futurism design overhaul + new power features
+
+- [x] Warm futurism design system (51 improvements across all pages)
+- [x] AI assistant chat widget (floating, all pages)
+- [x] Listing edit page with per-tone regeneration
+- [x] Archive export (CSV/JSON)
+- [x] Global search API
+- [x] Notification preferences component
+- [x] Custom 404 page
+
+### Sprint G — iOS App
 **Goal**: Field tool for agents
 
 - React Native + Expo
