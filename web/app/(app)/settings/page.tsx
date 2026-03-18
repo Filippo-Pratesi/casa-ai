@@ -12,6 +12,7 @@ import { BulkExportButton } from '@/components/settings/bulk-export-button'
 import { GoogleCalendarConnect } from '@/components/settings/google-calendar-connect'
 import { ImportContacts } from '@/components/settings/import-contacts'
 import { NotificationPreferences } from '@/components/settings/notification-preferences'
+import { InvoiceRemindersToggle } from '@/components/settings/invoice-reminders-toggle'
 import { getPlanConfig } from '@/lib/plan-limits'
 import { getTranslations } from '@/lib/i18n/server'
 import type { Workspace, Group } from '@/lib/supabase/types'
@@ -259,6 +260,17 @@ export default async function SettingsPage({
               </CardContent>
             </Card>
           )}
+          <Card>
+            <CardHeader>
+              <CardTitle>Solleciti di pagamento</CardTitle>
+              <CardDescription>Invia automaticamente promemoria e solleciti ai clienti con fatture in scadenza o scadute.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <InvoiceRemindersToggle
+                enabled={(profile?.workspaces as unknown as { reminder_automatici?: boolean })?.reminder_automatici ?? true}
+              />
+            </CardContent>
+          </Card>
           <Card>
             <CardHeader>
               <CardTitle>Piano</CardTitle>
