@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { UserPlus, Users, Phone, Mail, Euro, Home, Cake, LayoutGrid, List, Search, X } from 'lucide-react'
+import { UserPlus, Users, Phone, Mail, Euro, Home, Cake, LayoutGrid, List, Search, X, MapPin } from 'lucide-react'
 import { ExportContactsButton } from '@/components/contacts/export-contacts-button'
 import { useI18n } from '@/lib/i18n/context'
 
@@ -67,7 +67,6 @@ export function ContactsClient({ contacts, isAdmin }: ContactsClientProps) {
   const [activeTypes, setActiveTypes] = useState<Set<string>>(new Set())
   const [citySearch, setCitySearch] = useState('')
   const [budgetMax, setBudgetMax] = useState('')
-  const [minRooms, setMinRooms] = useState('')
 
   const TYPE_LABELS: Record<string, string> = useMemo(() => ({
     buyer: t('contacts.type.buyer'),
@@ -86,13 +85,12 @@ export function ContactsClient({ contacts, isAdmin }: ContactsClientProps) {
     })
   }
 
-  const hasFilters = activeTypes.size > 0 || citySearch.trim() || budgetMax || minRooms
+  const hasFilters = activeTypes.size > 0 || citySearch.trim() || budgetMax
 
   function clearFilters() {
     setActiveTypes(new Set())
     setCitySearch('')
     setBudgetMax('')
-    setMinRooms('')
   }
 
   const filtered = useMemo(() => {
@@ -105,23 +103,19 @@ export function ContactsClient({ contacts, isAdmin }: ContactsClientProps) {
       }
       if (budgetMax) {
         const max = Number(budgetMax)
-        if (!isNaN(max) && c.budget_min !== null && c.budget_min > max) return false
-      }
-      if (minRooms) {
-        const rooms = Number(minRooms)
-        if (!isNaN(rooms) && c.min_rooms !== null && c.min_rooms < rooms) return false
+        if (!isNaN(max) && c.budget_max !== null && c.budget_max > max) return false
       }
       return true
     })
-  }, [contacts, activeTypes, citySearch, budgetMax, minRooms])
+  }, [contacts, activeTypes, citySearch, budgetMax])
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between animate-in-1">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">{t('contacts.title')}</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
+          <h1 className="text-3xl font-extrabold tracking-tight leading-none">{t('contacts.title')}</h1>
+          <p className="text-muted-foreground text-sm mt-1">
             {filtered.length !== contacts.length
               ? `${filtered.length} di ${contacts.length} contatti`
               : contacts.length > 0 ? `${contacts.length} contatti` : t('contacts.empty.title')}
@@ -191,16 +185,6 @@ export function ContactsClient({ contacts, isAdmin }: ContactsClientProps) {
                 className="w-full rounded-lg border border-border bg-background pl-8 pr-3 py-2 text-sm placeholder-muted-foreground"
               />
             </div>
-            <div className="relative min-w-[120px]">
-              <Home className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-              <input
-                type="number"
-                value={minRooms}
-                onChange={e => setMinRooms(e.target.value)}
-                placeholder={t('contacts.filter.minRooms')}
-                className="w-full rounded-lg border border-border bg-background pl-8 pr-3 py-2 text-sm placeholder-muted-foreground"
-              />
-            </div>
             {hasFilters && (
               <button
                 onClick={clearFilters}
@@ -239,8 +223,10 @@ export function ContactsClient({ contacts, isAdmin }: ContactsClientProps) {
         </div>
       ) : viewMode === 'card' ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((c) => (
-            <ContactCard key={c.id} contact={c} typeLabels={TYPE_LABELS} />
+          {filtered.map((c, i) => (
+            <div key={c.id} className={`animate-in-${Math.min(i + 3, 8)}`}>
+              <ContactCard contact={c} typeLabels={TYPE_LABELS} />
+            </div>
           ))}
         </div>
       ) : (
@@ -263,89 +249,124 @@ export function ContactsClient({ contacts, isAdmin }: ContactsClientProps) {
   )
 }
 
+// Type-colored left border accents
+const TYPE_BORDER_CLASS: Record<string, string> = {
+  buyer: 'contact-card-buyer',
+  seller: 'contact-card-seller',
+  renter: 'contact-card-renter',
+  landlord: 'contact-card-landlord',
+  other: 'contact-card-other',
+}
+
+// Avatar gradient per type
+const TYPE_AVATAR_GRADIENT: Record<string, string> = {
+  buyer: 'from-blue-500/15 to-blue-400/10 text-blue-700 ring-blue-200',
+  seller: 'from-emerald-500/15 to-emerald-400/10 text-emerald-700 ring-emerald-200',
+  renter: 'from-purple-500/15 to-purple-400/10 text-purple-700 ring-purple-200',
+  landlord: 'from-amber-500/15 to-amber-400/10 text-amber-700 ring-amber-200',
+  other: 'from-[oklch(0.57_0.20_33/0.15)] to-[oklch(0.66_0.15_188/0.10)] text-[oklch(0.50_0.18_33)] ring-[oklch(0.57_0.20_33/0.2)]',
+}
+
 // ── Card component ─────────────────────────────────────────────────────────────
 
 function ContactCard({ contact: c, typeLabels }: { contact: Contact; typeLabels: Record<string, string> }) {
   const { t } = useI18n()
   const initials = c.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+  const borderClass = TYPE_BORDER_CLASS[c.type] ?? 'contact-card-other'
+  const avatarClass = TYPE_AVATAR_GRADIENT[c.type] ?? TYPE_AVATAR_GRADIENT.other
 
   return (
-    <div className="card-lift group relative rounded-2xl border border-border bg-card p-4 space-y-3">
-      <div className="flex items-start justify-between gap-2">
-        <Link href={`/contacts/${c.id}`} className="flex items-center gap-3 min-w-0 flex-1">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[oklch(0.57_0.20_33/0.15)] to-[oklch(0.66_0.15_188/0.15)] text-[oklch(0.57_0.20_33)] text-xs font-bold ring-1 ring-[oklch(0.57_0.20_33/0.2)]">
+    <div className={`card-lift group relative rounded-2xl border border-border bg-card overflow-hidden min-h-[200px] flex flex-col ${borderClass}`}>
+      {/* Top section — name is the dominant element */}
+      <div className="px-4 pt-4 pb-3">
+        <div className="flex items-start gap-3">
+          {/* Avatar */}
+          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${avatarClass} text-xs font-bold ring-1`}>
             {initials}
           </div>
-          <div className="min-w-0">
-            <h3 className="font-semibold truncate text-sm group-hover:text-[oklch(0.57_0.20_33)] transition-colors">{c.name}</h3>
-            {(c.preferred_cities ?? []).length > 0 && (
-              <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                {(c.preferred_cities ?? []).join(', ')}
-              </p>
-            )}
-          </div>
-        </Link>
-        <div className="flex items-center gap-1.5 shrink-0">
-          {(() => {
-            const days = birthdayDaysLeft(c.date_of_birth)
-            return days !== null ? (
-              <span className="flex items-center gap-1 rounded-full bg-pink-50 border border-pink-200 px-2 py-0.5 text-[10px] font-medium text-pink-700">
-                <Cake className="h-2.5 w-2.5" />
-                {days === 0 ? t('common.today') : `${t('common.inDays')} ${days}${t('common.days')}`}
+          <div className="min-w-0 flex-1">
+            <Link href={`/contacts/${c.id}`} className="block">
+              <h3 className="font-bold text-base leading-tight tracking-tight group-hover:text-[oklch(0.57_0.20_33)] transition-colors truncate">{c.name}</h3>
+            </Link>
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${TYPE_COLORS[c.type]}`}>
+                {typeLabels[c.type]}
               </span>
-            ) : null
-          })()}
-          <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-medium ${TYPE_COLORS[c.type]}`}>
-            {typeLabels[c.type]}
-          </span>
+              {(() => {
+                const days = birthdayDaysLeft(c.date_of_birth)
+                return days !== null ? (
+                  <span className="flex items-center gap-1 rounded-full bg-pink-50 border border-pink-200 px-2 py-0.5 text-[10px] font-medium text-pink-700">
+                    <Cake className="h-2.5 w-2.5" />
+                    {days === 0 ? t('common.today') : `${t('common.inDays')} ${days}${t('common.days')}`}
+                  </span>
+                ) : null
+              })()}
+            </div>
+          </div>
+        </div>
+
+        {/* Contact details + action buttons */}
+        <div className="mt-3 space-y-1.5">
+          {c.phone && (
+            <div className="flex items-center gap-1.5">
+              <Phone className="h-3 w-3 text-muted-foreground/50 shrink-0" />
+              <span className="text-xs text-muted-foreground/80 flex-1">{c.phone}</span>
+              <a
+                href={`https://wa.me/${c.phone.replace(/\D/g, '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={t('common.whatsapp')}
+                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-green-600 hover:bg-green-50 hover:text-green-700 transition-colors border border-transparent hover:border-green-200"
+              >
+                <WhatsAppIcon className="h-3 w-3" />
+                WhatsApp
+              </a>
+            </div>
+          )}
+          {c.email && (
+            <div className="flex items-center gap-1.5">
+              <Mail className="h-3 w-3 text-muted-foreground/50 shrink-0" />
+              <span className="text-xs text-muted-foreground/80 flex-1 truncate">{c.email}</span>
+              <a
+                href={`mailto:${c.email}`}
+                title={t('common.sendEmail')}
+                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-[oklch(0.57_0.20_33)] hover:bg-[oklch(0.57_0.20_33/0.08)] transition-colors border border-transparent hover:border-[oklch(0.57_0.20_33/0.2)]"
+              >
+                <Mail className="h-3 w-3" />
+                Email
+              </a>
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="space-y-1">
-        {c.phone && (
-          <div className="flex items-center gap-1.5">
-            <Phone className="h-3 w-3 text-muted-foreground/60 shrink-0" />
-            <span className="text-xs text-muted-foreground flex-1">{c.phone}</span>
-            <a
-              href={`https://wa.me/${c.phone.replace(/\D/g, '')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              title={t('common.whatsapp')}
-              className="text-green-600 hover:text-green-700 transition-colors"
-            >
-              <WhatsAppIcon className="h-3.5 w-3.5" />
-            </a>
-          </div>
-        )}
-        {c.email && (
-          <div className="flex items-center gap-1.5">
-            <Mail className="h-3 w-3 text-muted-foreground/60 shrink-0" />
-            <span className="text-xs text-muted-foreground flex-1 truncate">{c.email}</span>
-            <a
-              href={`mailto:${c.email}`}
-              title={t('common.sendEmail')}
-              className="text-[oklch(0.57_0.20_33)] hover:opacity-80 transition-opacity"
-            >
-              <Mail className="h-3.5 w-3.5" />
-            </a>
-          </div>
-        )}
-      </div>
-
-      {(c.budget_min || c.budget_max || c.min_rooms) && (
-        <div className="flex items-center gap-3 border-t border-border pt-3 text-xs text-muted-foreground">
+      {/* Bottom section — budget and location, lighter visual weight */}
+      {!c.budget_max && (!c.preferred_cities || c.preferred_cities.length === 0) && (
+        <div className="mt-auto px-4 pb-3 pt-1">
+          <p className="text-xs text-muted-foreground/40 italic">Nessuna preferenza impostata</p>
+        </div>
+      )}
+      {(c.budget_min || c.budget_max || c.min_rooms || (c.preferred_cities ?? []).length > 0) && (
+        <div className="mt-auto border-t border-border/60 bg-muted/20 px-4 py-2.5 flex items-center gap-3 flex-wrap">
+          {(c.preferred_cities ?? []).length > 0 && (
+            <span className="flex items-center gap-1 text-[11px] text-muted-foreground/70">
+              <MapPin className="h-3 w-3 text-muted-foreground/40" />
+              {(c.preferred_cities ?? []).slice(0, 2).join(', ')}
+              {(c.preferred_cities ?? []).length > 2 && ` +${(c.preferred_cities ?? []).length - 2}`}
+            </span>
+          )}
           {(c.budget_min || c.budget_max) && (
-            <span className="flex items-center gap-1">
-              <Euro className="h-3 w-3 text-muted-foreground/60" />
+            <span className="flex items-center gap-1 text-[11px] text-muted-foreground/70">
+              <Euro className="h-3 w-3 text-muted-foreground/40" />
               {c.budget_min ? c.budget_min.toLocaleString('it-IT') : '0'}
               {' — '}
               {c.budget_max ? c.budget_max.toLocaleString('it-IT') : '∞'}
             </span>
           )}
           {c.min_rooms && (
-            <span className="flex items-center gap-1">
-              <Home className="h-3 w-3 text-muted-foreground/60" />
-              {t('common.minRooms')} {c.min_rooms} {t('common.rooms')}
+            <span className="flex items-center gap-1 text-[11px] text-muted-foreground/70">
+              <Home className="h-3 w-3 text-muted-foreground/40" />
+              min {c.min_rooms} {t('common.rooms')}
             </span>
           )}
         </div>

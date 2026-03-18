@@ -114,6 +114,7 @@ export function CampaignEditClient({ campaign, cities, totalContacts }: Campaign
       } else {
         toast.success('Bozza aggiornata')
       }
+      router.refresh()
       router.push('/campaigns')
     } catch {
       toast.error('Errore di rete')

@@ -6,6 +6,8 @@ import { AppSidebar } from '@/components/app-sidebar'
 import { AppHeader } from '@/components/app-header'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { Toaster } from '@/components/ui/sonner'
+import { AiWidgetGate } from '@/components/ai-assistant/ai-widget-gate'
+import { CommandPalette } from '@/components/shared/command-palette'
 import type { User, Workspace, Group } from '@/lib/supabase/types'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -125,6 +127,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </main>
       </SidebarInset>
       <Toaster />
+      <AiWidgetGate plan={activeWorkspace.plan} />
+      <CommandPalette />
     </SidebarProvider>
   )
 }

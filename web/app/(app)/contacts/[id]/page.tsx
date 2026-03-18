@@ -112,6 +112,16 @@ export default async function ContactDetailPage({
 
   const isBuyerLike = contact.type === 'buyer' || contact.type === 'renter'
 
+  // Fetch appointments for activity timeline
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: appointmentsData } = await (admin as any)
+    .from('appointments')
+    .select('id, title, starts_at, type')
+    .eq('contact_id', id)
+    .order('starts_at', { ascending: false })
+    .limit(10)
+  const appointments = (appointmentsData ?? []) as { id: string; title: string; starts_at: string; type: string }[]
+
   // Find matching listings for buyer/renter contacts
   let matchingListings: MatchingListing[] = []
   if (isBuyerLike) {
@@ -163,56 +173,99 @@ export default async function ContactDetailPage({
           <span className="text-sm text-muted-foreground">Clienti</span>
         </div>
         <div className="flex items-center gap-2">
-          <Button nativeButton={false} render={<Link href={`/contacts/${id}/edit`} />} variant="outline" size="sm" className="h-8 text-xs">
+          <Link href={`/contacts/${id}/edit`} className="rounded-xl bg-[oklch(0.57_0.20_33)] text-white px-4 py-2 text-sm font-semibold hover:bg-[oklch(0.52_0.20_33)] transition-colors inline-flex items-center gap-1.5">
             Modifica
-          </Button>
+          </Link>
           <DeleteContactButton contactId={id} name={contact.name} />
         </div>
       </div>
 
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 animate-in-2">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">{contact.name}</h1>
-          <p className="mt-1 text-muted-foreground text-sm">
-            Aggiunto il {new Date(contact.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' })}
-            {agentName ? ` · da ${agentName}` : ''}
-          </p>
+      {/* Hero card */}
+      <div className="animate-in-2 rounded-2xl border border-border bg-card overflow-hidden">
+        {/* Gradient header by contact type */}
+        <div className={`px-6 pt-6 pb-5 ${
+          contact.type === 'buyer' ? 'bg-gradient-to-br from-blue-50 to-blue-100/50' :
+          contact.type === 'seller' ? 'bg-gradient-to-br from-green-50 to-green-100/50' :
+          contact.type === 'renter' ? 'bg-gradient-to-br from-amber-50 to-amber-100/50' :
+          contact.type === 'landlord' ? 'bg-gradient-to-br from-purple-50 to-purple-100/50' :
+          'bg-gradient-to-br from-muted/60 to-muted/30'
+        }`}>
+          <div className="flex items-start gap-4">
+            {/* 64px avatar */}
+            <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl text-xl font-extrabold shadow-md ${
+              contact.type === 'buyer' ? 'bg-blue-500 text-white' :
+              contact.type === 'seller' ? 'bg-green-500 text-white' :
+              contact.type === 'renter' ? 'bg-amber-500 text-white' :
+              contact.type === 'landlord' ? 'bg-purple-500 text-white' :
+              'bg-[oklch(0.57_0.20_33)] text-white'
+            }`}>
+              {contact.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
+            </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl font-bold tracking-tight text-foreground leading-tight">{contact.name}</h1>
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                <span className={`rounded-full border px-3 py-0.5 text-xs font-semibold ${TYPE_COLORS[contact.type]}`}>
+                  {TYPE_LABELS[contact.type]}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Aggiunto il {new Date(contact.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' })}
+                  {agentName ? ` · da ${agentName}` : ''}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
-        <span className={`shrink-0 rounded-full border px-3 py-1 text-xs font-medium ${TYPE_COLORS[contact.type]}`}>
-          {TYPE_LABELS[contact.type]}
-        </span>
-      </div>
 
-      {/* Contact info */}
-      <div className="animate-in-3 rounded-2xl border border-border bg-muted/30 px-5 py-4 space-y-2.5">
-        {contact.phone && (
-          <div className="flex items-center gap-3">
-            <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
-            <a href={`tel:${contact.phone}`} className="text-sm text-foreground hover:text-foreground transition-colors">
-              {contact.phone}
-            </a>
-          </div>
-        )}
-        {contact.email && (
-          <div className="flex items-center gap-3">
-            <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
-            <a href={`mailto:${contact.email}`} className="text-sm text-foreground hover:text-foreground transition-colors">
-              {contact.email}
-            </a>
-          </div>
-        )}
-        {(contact.city_of_residence || contact.address_of_residence) && (
-          <div className="flex items-center gap-3">
-            <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
-            <span className="text-sm text-foreground">
-              {[contact.address_of_residence, contact.city_of_residence].filter(Boolean).join(', ')}
-            </span>
-          </div>
-        )}
-        {!contact.phone && !contact.email && !contact.city_of_residence && (
-          <p className="text-sm text-muted-foreground">Nessun recapito inserito</p>
-        )}
+        {/* Contact info with inline action buttons */}
+        <div className="border-t border-border px-5 py-4 space-y-2.5">
+          {contact.phone && (
+            <div className="flex items-center gap-3">
+              <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
+              <a href={`tel:${contact.phone}`} className="text-sm text-foreground flex-1">
+                {contact.phone}
+              </a>
+              <a
+                href={`https://wa.me/${contact.phone.replace(/\D/g, '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium text-green-600 hover:bg-green-50 border border-green-200 transition-colors"
+              >
+                <svg className="h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+                WhatsApp
+              </a>
+              <a href={`tel:${contact.phone}`} className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted border border-border transition-colors">
+                <Phone className="h-3 w-3" />
+                Chiama
+              </a>
+            </div>
+          )}
+          {contact.email && (
+            <div className="flex items-center gap-3">
+              <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+              <a href={`mailto:${contact.email}`} className="text-sm text-foreground flex-1 truncate">
+                {contact.email}
+              </a>
+              <a
+                href={`mailto:${contact.email}`}
+                className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium text-[oklch(0.57_0.20_33)] hover:bg-[oklch(0.57_0.20_33/0.08)] border border-[oklch(0.57_0.20_33/0.25)] transition-colors"
+              >
+                <Mail className="h-3 w-3" />
+                Email
+              </a>
+            </div>
+          )}
+          {(contact.city_of_residence || contact.address_of_residence) && (
+            <div className="flex items-center gap-3">
+              <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="text-sm text-foreground">
+                {[contact.address_of_residence, contact.city_of_residence].filter(Boolean).join(', ')}
+              </span>
+            </div>
+          )}
+          {!contact.phone && !contact.email && !contact.city_of_residence && (
+            <p className="text-sm text-muted-foreground">Nessun recapito inserito</p>
+          )}
+        </div>
       </div>
 
       {/* Notes */}
@@ -335,6 +388,22 @@ export default async function ContactDetailPage({
         downloadBase={`/api/contacts/${id}/attachments/download`}
         label="Documenti allegati"
       />
+
+      {/* Activity timeline */}
+      {appointments && appointments.length > 0 && (
+        <div className="rounded-xl border border-border bg-muted/30 px-4 py-4">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-4">Attività recente</p>
+          <div className="border-l-2 border-border pl-4 space-y-4 relative">
+            {appointments.map((appt: { id: string; title: string; starts_at: string; type: string }) => (
+              <div key={appt.id} className="relative">
+                <div className="absolute -left-[21px] top-1 h-3.5 w-3.5 rounded-full border-2 border-background bg-blue-500" />
+                <p className="text-sm font-medium">{appt.title}</p>
+                <p className="text-xs text-muted-foreground">{new Date(appt.starts_at).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

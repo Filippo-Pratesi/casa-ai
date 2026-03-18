@@ -3,14 +3,14 @@ export type Locale = 'it' | 'en'
 export const translations = {
   it: {
     // Nav
-    'nav.listings': 'Annunci',
+    'nav.listings': 'Dashboard',
     'nav.newListing': 'Nuovo annuncio',
     'nav.contacts': 'Clienti',
     'nav.notifications': 'Notifiche',
     'nav.calendar': 'Calendario',
     'nav.mls': 'MLS',
     'nav.team': 'Team',
-    'nav.archive': 'Archivio',
+    'nav.archive': 'Vendite',
     'nav.campaigns': 'Campagne',
     'nav.settings': 'Impostazioni',
     'nav.plan': 'Piano',
@@ -258,14 +258,14 @@ export const translations = {
   },
   en: {
     // Nav
-    'nav.listings': 'Listings',
+    'nav.listings': 'Dashboard',
     'nav.newListing': 'New listing',
     'nav.contacts': 'Clients',
     'nav.notifications': 'Notifications',
     'nav.calendar': 'Calendar',
     'nav.mls': 'MLS',
     'nav.team': 'Team',
-    'nav.archive': 'Archive',
+    'nav.archive': 'Sales',
     'nav.campaigns': 'Campaigns',
     'nav.settings': 'Settings',
     'nav.plan': 'Plan',

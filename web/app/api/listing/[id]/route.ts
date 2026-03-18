@@ -25,8 +25,8 @@ export async function PATCH(
   let body: Record<string, unknown>
   try { body = await req.json() } catch { return NextResponse.json({ error: 'Corpo non valido' }, { status: 400 }) }
 
-  // Handle stat increment (share_count, view_count, portal_click_count)
-  const statFields = ['share_count', 'view_count', 'portal_click_count', 'shared_with_group']
+  // Handle stat/flag fields (share_count, view_count, portal_click_count, shared_with_group, tone)
+  const statFields = ['share_count', 'view_count', 'portal_click_count', 'shared_with_group', 'tone']
   const statUpdate: Record<string, unknown> = {}
   for (const field of statFields) {
     if (field in body) statUpdate[field] = body[field]

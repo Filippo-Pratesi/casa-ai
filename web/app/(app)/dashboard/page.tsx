@@ -33,7 +33,7 @@ export default async function DashboardPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [{ count: contactsCount }, { count: appointmentsCount }] = await Promise.all([
     (admin as any).from('contacts').select('id', { count: 'exact', head: true }).eq('workspace_id', profile?.workspace_id ?? ''),
-    (admin as any).from('appointments').select('id', { count: 'exact', head: true }).eq('workspace_id', profile?.workspace_id ?? '').gte('starts_at', new Date().toISOString().slice(0, 10)),
+    (admin as any).from('appointments').select('id', { count: 'exact', head: true }).eq('workspace_id', profile?.workspace_id ?? '').gte('starts_at', new Date().toISOString()).neq('status', 'cancelled'),
   ])
 
   const isAdmin = profile?.role === 'admin' || profile?.role === 'group_admin'

@@ -161,6 +161,8 @@ export function TodosClient({ initialTodos, currentUserId, members, memberMap }:
   const [todos, setTodos] = useState<Todo[]>(initialTodos)
   const [showAdd, setShowAdd] = useState(false)
   const [showCompleted, setShowCompleted] = useState(false)
+  const [priorityFilter, setPriorityFilter] = useState('Tutte')
+  const [sortBy, setSortBy] = useState('dueDate')
 
   const [newTitle, setNewTitle] = useState('')
   const [newNotes, setNewNotes] = useState('')
@@ -174,7 +176,16 @@ export function TodosClient({ initialTodos, currentUserId, members, memberMap }:
   const pending = todos.filter(t => !t.completed)
   const completed = todos.filter(t => t.completed)
 
-  const sortedPending = [...pending].sort((a, b) => {
+  const priorityMap: Record<string, string> = { 'Alta': 'high', 'Media': 'medium', 'Bassa': 'low' }
+  const filteredPending = pending.filter(t => priorityFilter === 'Tutte' || t.priority === (priorityMap[priorityFilter] ?? priorityFilter.toLowerCase()))
+
+  const sortedPending = [...filteredPending].sort((a, b) => {
+    if (sortBy === 'priority') {
+      const pOrder = { high: 0, medium: 1, low: 2 }
+      return pOrder[a.priority] - pOrder[b.priority]
+    }
+    if (sortBy === 'createdAt') return b.created_at.localeCompare(a.created_at)
+    // Default: dueDate
     const pOrder = { high: 0, medium: 1, low: 2 }
     if (pOrder[a.priority] !== pOrder[b.priority]) return pOrder[a.priority] - pOrder[b.priority]
     if (a.due_date && b.due_date) return a.due_date.localeCompare(b.due_date)
@@ -309,6 +320,22 @@ export function TodosClient({ initialTodos, currentUserId, members, memberMap }:
           Aggiungi
           <span className="ml-1 rounded bg-white/20 px-1 py-0.5 text-[10px] font-mono leading-none">N</span>
         </button>
+      </div>
+
+      {/* Filter bar */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {['Tutte', 'Alta', 'Media', 'Bassa'].map(p => (
+          <button key={p} onClick={() => setPriorityFilter(p)}
+            className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${
+              priorityFilter === p ? 'bg-foreground text-background border-foreground' : 'border-border text-muted-foreground hover:bg-muted'
+            }`}>{p}</button>
+        ))}
+        <select value={sortBy} onChange={e => setSortBy(e.target.value)}
+          className="ml-auto rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground">
+          <option value="dueDate">Per scadenza</option>
+          <option value="priority">Per priorità</option>
+          <option value="createdAt">Per data creazione</option>
+        </select>
       </div>
 
       {/* Add form */}
@@ -490,8 +517,19 @@ function TodoRow({
   const isSentByMe = todo.created_by === currentUserId && todo.assigned_to !== currentUserId
   const dateLabel = dueDateLabel(todo.due_date)
 
+  const isHighPriority = todo.priority === 'high' && !todo.completed
+  const isDueWithin24h = todo.due_date && !todo.completed && (() => {
+    const due = new Date(todo.due_date + 'T23:59:59')
+    const diff = due.getTime() - Date.now()
+    return diff > 0 && diff <= 24 * 60 * 60 * 1000
+  })()
+
   return (
-    <div className={`flex items-start gap-3 px-4 py-3 group transition-colors ${todo.completed ? 'bg-muted/20' : 'hover:bg-muted/40'}`}>
+    <div className={`flex items-start gap-3 px-4 py-3 group transition-colors ${
+      todo.completed ? 'bg-muted/20' :
+      isHighPriority ? 'border-l-4 border-l-red-500 bg-red-50/30 hover:bg-red-50/50' :
+      'hover:bg-muted/40'
+    }`}>
       {/* Checkbox */}
       <button
         onClick={() => onToggle(todo)}
@@ -514,22 +552,29 @@ function TodoRow({
         )}
         {!todo.completed && (
           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-            {/* Priority dot */}
-            <span className={`inline-flex items-center gap-1 text-[11px] font-medium ${pCfg.color}`}>
-              <span className={`h-1.5 w-1.5 rounded-full ${pCfg.dot}`} />
-              {pCfg.label}
-            </span>
+            {/* Priority badge */}
+            {todo.priority === 'high' ? (
+              <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold bg-red-500 text-white">
+                <Flag className="h-2.5 w-2.5" />
+                {pCfg.label}
+              </span>
+            ) : (
+              <span className={`inline-flex items-center gap-1 text-[11px] font-medium ${pCfg.color}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${pCfg.dot}`} />
+                {pCfg.label}
+              </span>
+            )}
             {/* Due date chip */}
             {dateLabel && (
               <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] font-medium border ${
                 overdue
                   ? 'bg-red-50 border-red-200 text-red-600'
-                  : today
+                  : today || isDueWithin24h
                     ? 'bg-amber-50 border-amber-200 text-amber-600'
                     : 'bg-muted border-border text-muted-foreground'
               }`}>
                 <Calendar className="h-2.5 w-2.5" />
-                {overdue ? `Scaduto · ${dateLabel}` : dateLabel}
+                {overdue ? `Scaduto · ${dateLabel}` : isDueWithin24h ? `⚡ ${dateLabel}` : dateLabel}
               </span>
             )}
             {/* From / To */}

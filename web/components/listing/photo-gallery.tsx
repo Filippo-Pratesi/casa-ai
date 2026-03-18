@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react'
 
 interface PhotoGalleryProps {
   urls: string[]
@@ -22,6 +22,19 @@ export function PhotoGallery({ urls, floorPlanUrl }: PhotoGalleryProps) {
   function next() {
     setLightboxIndex((i) => (i === null ? 0 : (i + 1) % urls.length))
   }
+
+  const allUrls = urls
+
+  useEffect(() => {
+    if (lightboxIndex === null) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') setLightboxIndex(i => i === null ? 0 : Math.max(0, i - 1))
+      if (e.key === 'ArrowRight') setLightboxIndex(i => i === null ? 0 : Math.min(allUrls.length - 1, i + 1))
+      if (e.key === 'Escape') setLightboxIndex(null)
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [lightboxIndex, allUrls.length])
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'ArrowLeft') prev()
@@ -64,10 +77,16 @@ export function PhotoGallery({ urls, floorPlanUrl }: PhotoGalleryProps) {
         </div>
       ) : (
       /* Gallery grid */
-      <div className="grid grid-cols-4 gap-1.5 rounded-2xl overflow-hidden h-56">
+      <div className="grid grid-cols-4 gap-1.5 rounded-2xl overflow-hidden h-56 relative">
+        {/* Photo count badge */}
+        <div className="absolute top-2 left-2 z-10 rounded-full bg-black/50 backdrop-blur-sm px-2.5 py-1 text-xs font-semibold text-white flex items-center gap-1 pointer-events-none">
+          <Maximize2 className="h-3 w-3" />
+          {urls.length} {urls.length === 1 ? 'foto' : 'foto'}
+        </div>
+
         {/* Main large photo */}
         <button
-          className="col-span-2 row-span-2 relative overflow-hidden focus:outline-none"
+          className="col-span-2 row-span-2 relative overflow-hidden focus:outline-none cursor-pointer group/main"
           onClick={() => setLightboxIndex(0)}
         >
           <Image
@@ -79,13 +98,16 @@ export function PhotoGallery({ urls, floorPlanUrl }: PhotoGalleryProps) {
             className="object-cover hover:scale-105 transition-transform duration-300"
             sizes="(max-width: 768px) 50vw, 400px"
           />
+          <div className="absolute inset-0 bg-black/0 group-hover/main:bg-black/20 transition-colors flex items-center justify-center">
+            <Maximize2 className="h-6 w-6 text-white opacity-0 group-hover/main:opacity-100 transition-opacity drop-shadow-lg" />
+          </div>
         </button>
 
         {/* Side thumbnails */}
         {rest.map((url, i) => (
           <button
             key={url}
-            className="relative overflow-hidden focus:outline-none"
+            className="relative overflow-hidden focus:outline-none group/thumb cursor-pointer"
             onClick={() => setLightboxIndex(i + 1)}
           >
             <Image
@@ -95,7 +117,8 @@ export function PhotoGallery({ urls, floorPlanUrl }: PhotoGalleryProps) {
               className="object-cover hover:scale-105 transition-transform duration-300"
               sizes="(max-width: 768px) 25vw, 200px"
             />
-            {/* "more" overlay on last visible thumb */}
+            <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/20 transition-colors" />
+            {/* "+N" overlay on last visible thumb */}
             {i === 3 && urls.length > 5 && (
               <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                 <span className="text-white font-semibold text-sm">+{urls.length - 5}</span>
@@ -142,8 +165,8 @@ export function PhotoGallery({ urls, floorPlanUrl }: PhotoGalleryProps) {
               alt={`Foto ${lightboxIndex + 1}`}
               className="max-h-[90vh] max-w-[90vw] rounded-lg object-contain"
             />
-            <span className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 text-xs text-white">
-              {lightboxIndex + 1} / {urls.length}
+            <span className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-black/60 backdrop-blur-sm px-4 py-1.5 text-xs font-semibold text-white">
+              {lightboxIndex + 1} / {urls.length} foto
             </span>
           </div>
 

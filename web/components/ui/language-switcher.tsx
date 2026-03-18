@@ -9,11 +9,12 @@ export function LanguageSwitcher() {
   return (
     <button
       onClick={() => setLocale(next)}
-      className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+      className="flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
       title={locale === 'it' ? 'Switch to English' : 'Passa all\'Italiano'}
     >
-      <span className="text-base leading-none">{locale === 'it' ? '🇬🇧' : '🇮🇹'}</span>
-      {locale === 'it' ? 'EN' : 'IT'}
+      <span className={`font-bold ${locale === 'it' ? 'text-foreground' : 'opacity-40'}`}>IT</span>
+      <span className="opacity-30">/</span>
+      <span className={`font-bold ${locale === 'en' ? 'text-foreground' : 'opacity-40'}`}>EN</span>
     </button>
   )
 }

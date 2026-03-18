@@ -325,7 +325,7 @@ function AppointmentCard({ appt, listings, agentColor, onStatusChange, onEdit, o
   const colorClass = agentColor ?? TYPE_COLORS[appt.type]
 
   return (
-    <div className={`rounded-xl border px-4 py-3 transition-all duration-150 hover:shadow-md ${isCancelled ? 'opacity-50' : ''} ${colorClass}`}>
+    <div className={`rounded-2xl border px-4 py-3.5 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 ${isCancelled ? 'opacity-50' : ''} ${colorClass}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 mb-0.5">
@@ -395,7 +395,7 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
     t('calendar.day.thu'), t('calendar.day.fri'), t('calendar.day.sat'), t('calendar.day.sun'),
   ], [t])
   const today = new Date()
-  const [view, setView] = useState<ViewMode>('month')
+  const [view, setView] = useState<ViewMode>('week')
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
   const [selectedDay, setSelectedDay] = useState<Date>(today)
@@ -410,15 +410,21 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
   const isAdmin = role === 'admin' || role === 'group_admin'
   const showAgentBar = isAdmin && !!agents && agents.length > 1
 
-  // Restore preferences from localStorage
+  // Restore preferences from localStorage — defaults: week view, hide other agents
   useEffect(() => {
     try {
       const savedView = localStorage.getItem('calendar-view') as ViewMode | null
       if (savedView === 'month' || savedView === 'week') setView(savedView)
       const savedHidden = localStorage.getItem('calendar-hidden-agents')
-      if (savedHidden) setHiddenAgents(new Set(JSON.parse(savedHidden)))
+      if (savedHidden) {
+        setHiddenAgents(new Set(JSON.parse(savedHidden)))
+      }
+      // If no saved agent preference and admin: hide all others by default
+      else if (isAdmin && agents?.length) {
+        setHiddenAgents(new Set(agents.map(a => a.id).filter(id => id !== userId)))
+      }
     } catch { /* ignore */ }
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   function setViewAndSave(v: ViewMode) {
     setView(v)
@@ -433,6 +439,18 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
       try { localStorage.setItem('calendar-hidden-agents', JSON.stringify([...next])) } catch { /* ignore */ }
       return next
     })
+  }
+
+  function hideAllAgents() {
+    if (!agents) return
+    const all = new Set(agents.map(a => a.id))
+    setHiddenAgents(all)
+    try { localStorage.setItem('calendar-hidden-agents', JSON.stringify([...all])) } catch { /* ignore */ }
+  }
+
+  function showAllAgents() {
+    setHiddenAgents(new Set())
+    try { localStorage.setItem('calendar-hidden-agents', JSON.stringify([])) } catch { /* ignore */ }
   }
 
   const fetchAppointments = useCallback(async () => {
@@ -581,6 +599,24 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
         </div>
       </div>
 
+      {/* Color legend — appointment types */}
+      {!showAgentBar && (
+        <div className="flex items-center gap-4 flex-wrap rounded-xl border border-border/60 bg-muted/30 px-4 py-2.5">
+          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Legenda:</span>
+          {[
+            { type: 'visita', label: 'Visita', dot: 'bg-blue-500' },
+            { type: 'riunione', label: 'Riunione', dot: 'bg-purple-500' },
+            { type: 'atto', label: 'Atto', dot: 'bg-green-500' },
+            { type: 'acquisizione', label: 'Acquisizione', dot: 'bg-amber-500' },
+          ].map(item => (
+            <span key={item.type} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span className={`cal-legend-dot ${item.dot}`} />
+              {item.label}
+            </span>
+          ))}
+        </div>
+      )}
+
       {/* Agent filter bar (admin only) */}
       {showAgentBar && agents && (
         <div className="flex items-center gap-2 flex-wrap">
@@ -595,21 +631,35 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
                 onClick={() => toggleAgent(agent.id)}
                 className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-all duration-150 ${
                   hidden
-                    ? 'border-border bg-muted text-muted-foreground line-through'
+                    ? 'border-border bg-muted/40 text-muted-foreground/50'
                     : colors.pill
                 }`}
               >
-                <span className={`h-2 w-2 rounded-full ${hidden ? 'bg-muted-foreground/30' : colors.dot}`} />
+                <span className={`h-2 w-2 rounded-full ${hidden ? 'bg-muted-foreground/20' : colors.dot}`} />
                 {agent.name}
               </button>
             )
           })}
+          <div className="ml-1 flex items-center gap-1">
+            <button
+              onClick={hideAllAgents}
+              className="rounded-full border border-border px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-muted transition-colors"
+            >
+              Nascondi tutti
+            </button>
+            <button
+              onClick={showAllAgents}
+              className="rounded-full border border-border px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-muted transition-colors"
+            >
+              Mostra tutti
+            </button>
+          </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6">
         {/* Calendar grid */}
-        <div className="lg:col-span-2">
+        <div>
           <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
             {/* Period nav */}
             <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
@@ -716,15 +766,21 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
                     )
                   })}
                 </div>
-                <div className="grid grid-cols-7 min-h-[280px]">
+                <div className="grid grid-cols-7 min-h-[calc(100vh-220px)]">
                   {weekDays.map(day => {
                     const dayAppts = (apptsByDay.get(day.toDateString()) ?? []).sort((a, b) => a.starts_at.localeCompare(b.starts_at))
                     const isSel = isSameDay(day, selectedDay)
+                    function handleDayClick() {
+                      setSelectedDay(day)
+                      setModalInitialDate(day)
+                      setEditingAppt(undefined)
+                      setShowModal(true)
+                    }
                     return (
                       <div
                         key={day.toDateString()}
-                        onClick={() => setSelectedDay(day)}
-                        className={`border-r border-border/40 p-1.5 space-y-1 cursor-pointer transition-colors ${isSel ? 'bg-muted/30' : 'hover:bg-muted/20'}`}
+                        onClick={handleDayClick}
+                        className={`border-r border-border/40 p-1.5 space-y-1 cursor-pointer transition-colors min-h-[300px] relative group ${isSel ? 'bg-muted/30' : 'hover:bg-muted/20'}`}
                       >
                         {dayAppts.map(a => {
                           const cardBg = (showAgentBar && a.agent_id)
@@ -736,24 +792,18 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
                               key={a.id}
                               onClick={e => { e.stopPropagation(); openEditModal(a) }}
                               title={`${formatTime(a.starts_at)} ${a.title}`}
-                              className={`rounded-md border px-1.5 py-1 cursor-pointer hover:opacity-80 transition-opacity ${cardBg}`}
+                              className={`rounded-md border p-2 cursor-pointer hover:opacity-80 transition-opacity min-h-[40px] ${cardBg}`}
                             >
                               <div className="flex items-center gap-1">
                                 <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${typeDot}`} />
                                 <span className="text-[10px] font-medium truncate">{formatTime(a.starts_at)}</span>
                               </div>
-                              <p className="text-[10px] truncate leading-tight mt-0.5">{a.title}</p>
+                              <p className="text-[10px] whitespace-normal line-clamp-2 leading-tight mt-0.5">{a.title}</p>
                             </div>
                           )
                         })}
                         {dayAppts.length === 0 && (
-                          <button
-                            onClick={e => { e.stopPropagation(); openNewModal(day) }}
-                            className="w-full h-8 flex items-center justify-center text-muted-foreground/30 hover:text-muted-foreground transition-colors"
-                            title="Aggiungi appuntamento"
-                          >
-                            <Plus className="h-3 w-3" />
-                          </button>
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-30 pointer-events-none text-2xl text-muted-foreground">+</div>
                         )}
                       </div>
                     )
@@ -764,47 +814,59 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
           </div>
         </div>
 
-        {/* Day detail panel */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold capitalize">
-              {formatDate(selectedDay.toISOString())}
-            </h3>
+        {/* Day detail panel — more breathing room */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between pb-1 border-b border-border/60">
+            <div>
+              <h3 className="text-sm font-bold capitalize tracking-tight">
+                {formatDate(selectedDay.toISOString())}
+              </h3>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                {selectedDayAppts.length > 0 ? `${selectedDayAppts.length} appuntament${selectedDayAppts.length === 1 ? 'o' : 'i'}` : 'Nessun appuntamento'}
+              </p>
+            </div>
             <button
               onClick={() => openNewModal(selectedDay)}
-              className="rounded-lg p-1.5 hover:bg-muted transition-colors"
+              className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-[oklch(0.57_0.20_33)] hover:bg-[oklch(0.57_0.20_33/0.08)] transition-colors border border-[oklch(0.57_0.20_33/0.2)]"
               title="Aggiungi appuntamento"
             >
-              <Plus className="h-4 w-4 text-muted-foreground" />
+              <Plus className="h-3.5 w-3.5" />
+              Nuovo
             </button>
           </div>
 
           {loading ? (
-            <div className="rounded-xl border border-border bg-muted/30 p-6 text-center">
-              <p className="text-sm text-muted-foreground">Carico…</p>
+            <div className="space-y-2">
+              {[1, 2, 3].map(n => (
+                <div key={n} className="skeleton h-16 rounded-xl" />
+              ))}
             </div>
           ) : selectedDayAppts.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border bg-muted/20 p-6 text-center">
-              <p className="text-sm text-muted-foreground">Nessun appuntamento</p>
+            <div className="rounded-2xl border border-dashed border-border bg-gradient-to-br from-muted/30 to-muted/10 p-8 text-center">
+              <div className="mb-3 mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-muted/50">
+                <Calendar className="h-5 w-5 text-muted-foreground/40" />
+              </div>
+              <p className="text-sm font-medium text-muted-foreground">Nessun appuntamento</p>
               <button
                 onClick={() => openNewModal(selectedDay)}
-                className="mt-2 text-xs text-muted-foreground hover:text-[oklch(0.57_0.20_33)] underline underline-offset-2 transition-colors"
+                className="mt-3 text-xs font-medium text-[oklch(0.57_0.20_33)] hover:underline underline-offset-2 transition-colors"
               >
-                Aggiungi uno
+                Aggiungi uno →
               </button>
             </div>
           ) : (
-            <div className="space-y-2">
-              {selectedDayAppts.map(a => (
-                <AppointmentCard
-                  key={a.id}
-                  appt={a}
-                  listings={listings}
-                  agentColor={getAgentColor(a.agent_id)}
-                  onStatusChange={handleStatusChange}
-                  onEdit={openEditModal}
-                  onDelete={handleDelete}
-                />
+            <div className="space-y-2.5">
+              {selectedDayAppts.map((a, idx) => (
+                <div key={a.id} className={`animate-in-${Math.min(idx + 1, 8)}`}>
+                  <AppointmentCard
+                    appt={a}
+                    listings={listings}
+                    agentColor={getAgentColor(a.agent_id)}
+                    onStatusChange={handleStatusChange}
+                    onEdit={openEditModal}
+                    onDelete={handleDelete}
+                  />
+                </div>
               ))}
             </div>
           )}
@@ -826,6 +888,15 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
               ))}
             </div>
           )}
+
+          {/* Add appointment CTA at bottom */}
+          <button
+            onClick={() => openNewModal(selectedDay)}
+            className="mt-4 w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[oklch(0.57_0.20_33/0.3)] bg-[oklch(0.57_0.20_33/0.04)] px-4 py-3 text-sm font-semibold text-[oklch(0.57_0.20_33)] hover:bg-[oklch(0.57_0.20_33/0.08)] hover:border-[oklch(0.57_0.20_33/0.5)] transition-all duration-200"
+          >
+            <Plus className="h-4 w-4" />
+            Aggiungi appuntamento
+          </button>
         </div>
       </div>
 

@@ -1,9 +1,11 @@
 'use client'
 
 import React from 'react'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, Settings, LogOut, Users, UserRound, Archive, UserIcon, CreditCard, Mail, Bell, CalendarDays, Building2, CheckSquare } from 'lucide-react'
+import { usePathname } from 'next/navigation'
+import { useTheme } from 'next-themes'
+import { LayoutDashboard, Settings, Users, UserRound, Archive, CreditCard, Mail, Bell, CalendarDays, Building2, CheckSquare, Sun, Moon, Search } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -16,19 +18,15 @@ import {
   SidebarGroupLabel,
   SidebarGroupContent,
 } from '@/components/ui/sidebar'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { WorkspaceSwitcher } from '@/components/workspace-switcher'
 import { LanguageSwitcher } from '@/components/ui/language-switcher'
-import { createClient } from '@/lib/supabase/client'
 import { useI18n } from '@/lib/i18n/context'
 import type { User, Workspace } from '@/lib/supabase/types'
+
+const SidebarUserMenu = dynamic(
+  () => import('@/components/sidebar-user-menu').then(m => m.SidebarUserMenu),
+  { ssr: false, loading: () => <div className="h-[52px]" /> }
+)
 
 interface AppSidebarProps {
   user: User
@@ -56,17 +54,10 @@ export function AppSidebar({
   pendingTodos = 0,
 }: AppSidebarProps) {
   const pathname = usePathname()
-  const router = useRouter()
   const { t } = useI18n()
+  const { theme, setTheme } = useTheme()
   const isAdmin = user.role === 'admin' || user.role === 'group_admin'
   const isGroupAdmin = user.role === 'group_admin'
-
-  async function handleLogout() {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push('/login')
-    router.refresh()
-  }
 
   const initials = user.name
     .split(' ')
@@ -108,11 +99,26 @@ export function AppSidebar({
           />
         ) : (
           <div className="flex items-center gap-3 px-3 py-2.5">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[oklch(0.57_0.20_33)] to-[oklch(0.48_0.18_20)] text-white text-xs font-extrabold shadow-md shadow-[oklch(0.57_0.20_33/0.35)]">
-              CA
+            {/* Refined logo mark with animated gradient ring */}
+            <div className="relative shrink-0">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[oklch(0.62_0.22_33)] via-[oklch(0.57_0.20_33)] to-[oklch(0.48_0.18_20)] text-white text-xs font-extrabold shadow-lg shadow-[oklch(0.57_0.20_33/0.40)]">
+                CA
+              </div>
+              {/* Subtle ambient glow behind logo */}
+              <div className="absolute inset-0 -z-10 rounded-xl blur-md bg-[oklch(0.57_0.20_33/0.3)] scale-110" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-bold leading-tight">CasaAI</p>
+              <p
+                className="text-sm font-extrabold leading-tight tracking-tight"
+                style={{
+                  background: 'linear-gradient(135deg, oklch(0.30 0.12 33), oklch(0.57 0.20 33), oklch(0.45 0.15 20))',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                }}
+              >
+                CasaAI
+              </p>
               <p className="text-[11px] text-muted-foreground truncate leading-tight">{workspace.name}</p>
             </div>
           </div>
@@ -120,6 +126,18 @@ export function AppSidebar({
       </SidebarHeader>
 
       <SidebarContent className="px-2">
+        {/* Cmd+K search button */}
+        <div className="px-2 pt-2 pb-1">
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
+            className="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted/50 transition-colors"
+          >
+            <Search className="h-4 w-4" />
+            <span>Cerca...</span>
+            <kbd className="ml-auto text-[10px] font-mono border border-border/50 rounded px-1.5 py-0.5">Ctrl+K</kbd>
+          </button>
+        </div>
+
         <SidebarGroup className="py-1">
           <SidebarGroupLabel className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
             {t('nav.work')}
@@ -128,9 +146,9 @@ export function AppSidebar({
             <SidebarMenu className="space-y-0.5">
               <NavItem href="/dashboard" icon={LayoutDashboard} label={t('nav.listings')} />
               <NavItem href="/contacts" icon={UserRound} label={t('nav.contacts')} badge={birthdayCount} />
+              <NavItem href="/calendar" icon={CalendarDays} label={t('nav.calendar')} exact={false} />
               <NavItem href="/todos" icon={CheckSquare} label={t('nav.todos')} badge={pendingTodos} />
               <NavItem href="/notifications" icon={Bell} label={t('nav.notifications')} badge={unreadNotifications} />
-              <NavItem href="/calendar" icon={CalendarDays} label={t('nav.calendar')} exact={false} />
               {hasGroup && <NavItem href="/mls" icon={Building2} label={t('nav.mls')} exact={false} />}
             </SidebarMenu>
           </SidebarGroupContent>
@@ -162,32 +180,24 @@ export function AppSidebar({
       )}
 
       <SidebarFooter className="px-2 pb-3">
-        <div className="px-2 pb-2">
+        <div className="px-2 pb-2 flex items-center gap-2">
+          {/* Language switcher — IT / EN text button */}
           <LanguageSwitcher />
+          {/* Dark mode toggle */}
+          <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            title={theme === 'dark' ? 'Passa alla modalità chiara' : 'Passa alla modalità scura'}
+            className="flex items-center justify-center rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          >
+            {theme === 'dark' ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+          </button>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger className="flex items-center gap-3 w-full rounded-xl px-3 py-2.5 hover:bg-sidebar-accent transition-all duration-200 text-left group/footer">
-            <Avatar className="h-8 w-8 ring-2 ring-sidebar-border group-hover/footer:ring-[oklch(0.57_0.20_33/0.4)] transition-all duration-200">
-              {user.avatar_url && <AvatarImage src={user.avatar_url} alt={user.name} />}
-              <AvatarFallback className="text-xs bg-[oklch(0.57_0.20_33)] text-white font-bold">{initials}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold truncate leading-tight">{user.name}</p>
-              <p className="text-[11px] text-muted-foreground truncate leading-tight">{user.email}</p>
-            </div>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={() => router.push('/profile')}>
-              <UserIcon className="mr-2 h-4 w-4" />
-              {t('sidebar.myProfile')}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout} variant="destructive">
-              <LogOut className="mr-2 h-4 w-4" />
-              {t('sidebar.logout')}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <SidebarUserMenu
+          name={user.name}
+          email={user.email}
+          avatar_url={user.avatar_url}
+          initials={initials}
+        />
       </SidebarFooter>
     </Sidebar>
   )

@@ -7,12 +7,20 @@ import { SidebarTrigger } from '@/components/ui/sidebar'
 
 const BREADCRUMB_MAP: Record<string, string> = {
   dashboard: 'Dashboard',
-  listing: 'Annunci',
+  listings: 'Annunci',
+  listing: 'Annuncio',
   contacts: 'Clienti',
+  calendar: 'Calendario',
+  campaigns: 'Campagne',
+  notifications: 'Notifiche',
+  plans: 'Piano',
+  todos: 'To Do',
+  archive: 'Vendite',
+  mls: 'MLS',
+  settings: 'Impostazioni',
+  admin: 'Team',
   new: 'Nuovo',
   edit: 'Modifica',
-  settings: 'Impostazioni',
-  admin: 'Panoramica team',
 }
 
 function getBreadcrumbs(pathname: string) {
@@ -24,7 +32,7 @@ function getBreadcrumbs(pathname: string) {
     path += `/${segment}`
     // Skip UUIDs — show them as "Dettaglio"
     const isUuid = /^[0-9a-f-]{36}$/.test(segment)
-    const label = isUuid ? 'Dettaglio' : (BREADCRUMB_MAP[segment] ?? segment)
+    const label = isUuid ? 'Dettaglio' : (BREADCRUMB_MAP[segment] ?? (segment.charAt(0).toUpperCase() + segment.slice(1)))
     crumbs.push({ label, href: path })
   }
   return crumbs

@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useId } from "react"
 import { Menu as MenuPrimitive } from "@base-ui/react/menu"
 
 import { cn } from "@/lib/utils"
@@ -14,8 +15,10 @@ function DropdownMenuPortal({ ...props }: MenuPrimitive.Portal.Props) {
   return <MenuPrimitive.Portal data-slot="dropdown-menu-portal" {...props} />
 }
 
-function DropdownMenuTrigger({ ...props }: MenuPrimitive.Trigger.Props) {
-  return <MenuPrimitive.Trigger data-slot="dropdown-menu-trigger" {...props} />
+function DropdownMenuTrigger({ id, ...props }: MenuPrimitive.Trigger.Props) {
+  // base-ui auto-generates IDs that differ between SSR and client — use React's useId() to stabilize
+  const generatedId = useId()
+  return <MenuPrimitive.Trigger id={id ?? generatedId} data-slot="dropdown-menu-trigger" {...props} />
 }
 
 function DropdownMenuContent({

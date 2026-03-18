@@ -85,13 +85,16 @@ export function SocialConnections({ connections: initialConnections }: SocialCon
                   <p className="font-medium">{meta.label}</p>
                   {connected.length > 0 ? (
                     <div className="flex items-center gap-1.5 mt-0.5">
-                      <CheckCircle className="h-3.5 w-3.5 text-green-600" />
+                      <span className="inline-block h-2 w-2 rounded-full bg-green-500 animate-pulse mr-1.5" />
                       <span className="text-xs text-muted-foreground">
                         {connected.map((c) => c.page_name ?? c.page_id).join(', ')}
                       </span>
                     </div>
                   ) : (
-                    <p className="text-xs text-muted-foreground mt-0.5">Non connesso</p>
+                    <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                      <span className="inline-block h-2 w-2 rounded-full bg-muted-foreground/30 mr-1.5" />
+                      Non connesso
+                    </p>
                   )}
                 </div>
               </div>
@@ -107,7 +110,7 @@ export function SocialConnections({ connections: initialConnections }: SocialCon
                         size="sm"
                         disabled={disconnecting === c.id}
                         onClick={() => disconnect(c.id, platform)}
-                        className="text-muted-foreground gap-1.5"
+                        className="text-muted-foreground gap-1.5 hover:bg-red-50 hover:text-red-600"
                       >
                         <Unlink className="h-3.5 w-3.5" />
                         Disconnetti

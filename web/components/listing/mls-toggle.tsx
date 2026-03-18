@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Share2, Check } from 'lucide-react'
+import { Share2, Check, Info } from 'lucide-react'
 import { toast } from 'sonner'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface MlsToggleProps {
   listingId: string
@@ -50,6 +51,16 @@ export function MlsToggle({ listingId, initialShared }: MlsToggleProps) {
         />
       </button>
       <span className="text-sm text-foreground">Condividi con la rete</span>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger>
+            <span className="cursor-help"><Info className="h-3.5 w-3.5 text-muted-foreground/60 hover:text-muted-foreground transition-colors" /></span>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs text-sm">
+            Attiva per condividere questo annuncio con le altre agenzie del tuo gruppo nella rete MLS. L&apos;annuncio sarà visibile nella sezione MLS delle altre filiali.
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       {shared && (
         <span className="flex items-center gap-1 rounded-full bg-blue-50 border border-blue-100 px-2 py-0.5 text-xs text-blue-600 font-medium">
           <Check className="h-3 w-3" />

@@ -2,9 +2,8 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
+import { PlusSquare, FileText, Euro, Maximize2, Home, User, Users, CalendarDays, TrendingUp, LayoutGrid, List, Search, X, Download, ChevronUp, ChevronDown, ChevronsUpDown, Sparkles, ArrowUpRight, Pencil, ExternalLink } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { PlusSquare, FileText, Euro, Maximize2, Home, User, Users, CalendarDays, TrendingUp, LayoutGrid, List, Search, X, Download, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
 import { useI18n } from '@/lib/i18n/context'
 
 const TONE_LABELS: Record<string, string> = {
@@ -208,7 +207,20 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
       {/* Header */}
       <div className="flex items-center justify-between animate-in-1">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">{t('listings.title')}</h1>
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-3xl font-extrabold tracking-tight leading-none">{t('listings.title')}</h1>
+            <span
+              className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] tracking-widest uppercase font-bold text-white overflow-hidden"
+              style={{
+                background: 'linear-gradient(90deg, oklch(0.57 0.20 33), oklch(0.76 0.14 75))',
+                backgroundSize: '200% auto',
+                animation: 'shimmer 2.5s linear infinite',
+              }}
+            >
+              <Sparkles className="h-2.5 w-2.5" />
+              AI Powered
+            </span>
+          </div>
           <p className="text-muted-foreground text-sm mt-0.5">
             {filtered.length !== listings.length
               ? `${filtered.length} ${t('listings.subtitleFiltered')} ${listings.length} ${t('listings.subtitle')}`
@@ -253,24 +265,58 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
         </div>
       </div>
 
-      {/* Stats bento */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {statCards.map((s, i) => (
-          <div
-            key={s.label}
-            className={`animate-in-${i + 2} relative overflow-hidden rounded-2xl border border-border bg-card p-4 card-lift`}
-          >
-            {/* Subtle gradient background */}
-            <div className={`absolute inset-0 bg-gradient-to-br ${s.bg} opacity-60`} />
-            <div className="relative">
-              <div className={`mb-3 inline-flex rounded-xl bg-gradient-to-br ${s.gradient} p-2 shadow-md ${s.glow}`}>
-                <s.icon className="h-4 w-4 text-white" />
+      {/* Stats — 4 equal cards in a single row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {statCards.map((s, i) => {
+          const isAI = s.label === 'Contenuto AI'
+          const isMain = false
+          return (
+            <div
+              key={s.label}
+              className={`animate-in-${i + 2} relative overflow-hidden rounded-2xl border border-border bg-card card-lift min-h-[120px]`}
+              style={{ padding: '1rem' }}
+            >
+              {/* Subtle gradient background */}
+              <div className={`absolute inset-0 bg-gradient-to-br ${s.bg} opacity-70`} />
+              {/* AI card shimmer overlay */}
+              {isAI && (
+                <div
+                  className="absolute inset-0 opacity-30"
+                  style={{
+                    background: 'linear-gradient(105deg, transparent 30%, oklch(0.76 0.14 75 / 0.35) 50%, transparent 70%)',
+                    backgroundSize: '200% auto',
+                    animation: 'shimmer 2.5s linear infinite',
+                  }}
+                />
+              )}
+              <div className="relative">
+                <div className="flex items-start justify-between mb-3">
+                  <div className={`inline-flex rounded-xl bg-gradient-to-br ${s.gradient} p-2 shadow-md ${s.glow}`}>
+                    {isAI ? <Sparkles className="h-4 w-4 text-white" /> : <s.icon className="h-4 w-4 text-white" />}
+                  </div>
+                  {/* Mini trend arrow */}
+                  <ArrowUpRight className={`h-3.5 w-3.5 ${s.iconColor} opacity-50`} />
+                </div>
+                <p className={`font-extrabold leading-none ${isMain ? 'text-4xl' : 'text-2xl'}`}>{s.value}</p>
+                <p className={`mt-1 font-medium text-muted-foreground ${isMain ? 'text-sm' : 'text-xs'}`}>{s.label}</p>
+                {s.label === 'App. imminenti' ? (
+                  <p className="text-xs text-muted-foreground/70 mt-0.5">Prossimi 30 giorni</p>
+                ) : (
+                  <div className="flex items-center gap-1 mt-1 text-xs text-green-600">
+                    <TrendingUp className="h-3 w-3" />
+                    <span>questo mese</span>
+                  </div>
+                )}
+                {isAI && (
+                  <span className="mt-2 inline-flex items-center gap-1 text-[10px] font-semibold text-[oklch(0.55_0.14_68)] uppercase tracking-wide">
+                    <Sparkles className="h-2.5 w-2.5" />
+                    AI Generato
+                  </span>
+                )}
               </div>
-              <p className="text-2xl font-extrabold leading-none">{s.value}</p>
-              <p className="mt-1 text-xs font-medium text-muted-foreground">{s.label}</p>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* Filter bar */}
@@ -364,14 +410,16 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
       ) : viewMode === 'card' ? (
         /* Card grid */
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 animate-in-4">
-          {filtered.map((l) => (
-            <ListingCard key={l.id} listing={l} typeLabels={TYPE_LABELS} />
+          {filtered.map((l, i) => (
+            <div key={l.id} className={`animate-in-${Math.min(i + 4, 8)}`}>
+              <ListingCard listing={l} typeLabels={TYPE_LABELS} />
+            </div>
           ))}
         </div>
       ) : (
         /* List view */
         <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden animate-in-4">
-          <div className="grid grid-cols-[1fr_100px_90px_90px_70px_90px] gap-2 px-4 py-2 border-b border-border bg-muted/50">
+          <div className="grid grid-cols-[1fr_100px_90px_90px_70px_90px_80px_50px] gap-2 px-4 py-2 border-b border-border bg-muted/50">
             <button onClick={() => handleSort('address')} className="flex items-center gap-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors">
               {t('listings.col.property')}<SortIcon col="address" />
             </button>
@@ -386,6 +434,8 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
             <button onClick={() => handleSort('date')} className="flex items-center gap-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors">
               {t('listings.col.date')}<SortIcon col="date" />
             </button>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Agente</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider"></p>
           </div>
           <div className="divide-y divide-border/50">
             {filtered.map((l) => (
@@ -400,29 +450,60 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
 
 // ── Card ──────────────────────────────────────────────────────────────────────
 
+// Gradient placeholder colors per property type
+const PLACEHOLDER_GRADIENTS: Record<string, string> = {
+  apartment: 'from-[oklch(0.57_0.20_33/0.15)] via-[oklch(0.60_0.18_28/0.10)] to-[oklch(0.55_0.16_40/0.20)]',
+  house: 'from-[oklch(0.55_0.14_145/0.18)] via-[oklch(0.60_0.12_160/0.10)] to-[oklch(0.57_0.14_130/0.20)]',
+  villa: 'from-[oklch(0.55_0.17_290/0.18)] via-[oklch(0.57_0.16_300/0.10)] to-[oklch(0.52_0.18_280/0.20)]',
+  commercial: 'from-[oklch(0.60_0.18_50/0.18)] via-[oklch(0.62_0.16_40/0.10)] to-[oklch(0.57_0.18_60/0.20)]',
+  land: 'from-[oklch(0.70_0.14_75/0.18)] via-[oklch(0.72_0.12_80/0.10)] to-[oklch(0.66_0.14_70/0.20)]',
+  garage: 'from-[oklch(0.57_0.20_33/0.10)] via-[oklch(0.55_0.16_40/0.06)] to-[oklch(0.55_0.14_45/0.14)]',
+  other: 'from-[oklch(0.57_0.20_33/0.10)] via-[oklch(0.55_0.16_40/0.06)] to-[oklch(0.55_0.14_45/0.14)]',
+}
+
 function ListingCard({ listing: l, typeLabels }: { listing: Listing; typeLabels: Record<string, string> }) {
   const { t } = useI18n()
   const thumb = Array.isArray(l.photos_urls) && l.photos_urls.length > 0 ? l.photos_urls[0] : null
+  const placeholderGradient = PLACEHOLDER_GRADIENTS[l.property_type] ?? PLACEHOLDER_GRADIENTS.other
 
   return (
-    <Link href={`/listing/${l.id}`} className="group block">
+    <Link href={`/listing/${l.id}`} className="group block hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer hover:border-[oklch(0.57_0.20_33/0.3)] rounded-2xl">
       <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm card-lift">
-        {/* Image area */}
-        <div className="relative h-48 w-full bg-muted overflow-hidden">
+        {/* Image area — taller for premium feel */}
+        <div className="relative h-56 w-full overflow-hidden">
           {thumb ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={thumb} alt={l.address} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+            <img src={thumb} alt={l.address} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
           ) : (
-            <div className="flex h-full items-center justify-center mesh-bg">
-              <Home className="h-10 w-10 text-muted-foreground/30" />
+            /* Type-specific gradient placeholder */
+            <div className={`flex h-full w-full bg-gradient-to-br ${placeholderGradient} relative overflow-hidden`}
+              style={{ background: `linear-gradient(135deg, oklch(0.94 0.06 33), oklch(0.92 0.04 45), oklch(0.95 0.05 55))` }}
+            >
+              {/* Subtle pattern overlay */}
+              <div
+                className="absolute inset-0 opacity-20"
+                style={{
+                  backgroundImage: 'radial-gradient(circle at 25% 25%, oklch(0.57 0.20 33 / 0.3) 0%, transparent 50%), radial-gradient(circle at 75% 75%, oklch(0.66 0.15 188 / 0.2) 0%, transparent 50%)',
+                }}
+              />
+              {/* Small corner icon badge */}
+              <div className="absolute top-2.5 left-2.5 flex items-center justify-center rounded-lg bg-white/70 backdrop-blur-sm p-1.5 shadow-sm">
+                <Home className="h-6 w-6 text-[oklch(0.57_0.20_33/0.7)]" />
+              </div>
+              {/* Property type badge top-left below icon */}
+              <div className="absolute top-12 left-2.5">
+                <Badge variant="secondary" className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-white/70 text-foreground border-0 backdrop-blur-sm">
+                  {typeLabels[l.property_type]}
+                </Badge>
+              </div>
             </div>
           )}
-          {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+          {/* Gradient overlay — stronger for text contrast */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
 
-          {/* Floating price badge */}
+          {/* Glass price badge */}
           <div className="absolute bottom-3 left-3">
-            <span className="inline-flex items-center gap-1 rounded-xl bg-black/50 backdrop-blur-md px-3 py-1.5 text-sm font-bold text-white border border-white/10">
+            <span className="inline-flex items-center gap-1 rounded-xl bg-black/40 backdrop-blur-xl px-3 py-1.5 text-sm font-bold text-white border border-white/15 shadow-lg">
               €{l.price.toLocaleString('it-IT')}
             </span>
           </div>
@@ -430,8 +511,9 @@ function ListingCard({ listing: l, typeLabels }: { listing: Listing; typeLabels:
           {/* AI / Draft badge */}
           <div className="absolute top-2.5 right-2.5">
             {l.generated_content ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-[oklch(0.57_0.20_33)] to-[oklch(0.66_0.15_188)] px-2.5 py-0.5 text-[10px] font-bold text-white shadow-lg">
-                ✦ AI
+              <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-[oklch(0.57_0.20_33)] to-[oklch(0.66_0.15_188)] px-2.5 py-0.5 text-[10px] font-bold text-white shadow-lg shadow-[oklch(0.57_0.20_33/0.4)]">
+                <Sparkles className="h-2.5 w-2.5" />
+                AI
               </span>
             ) : (
               <span className="inline-flex items-center rounded-full bg-black/40 backdrop-blur-sm px-2 py-0.5 text-[10px] font-medium text-white/80 border border-white/10">
@@ -443,7 +525,7 @@ function ListingCard({ listing: l, typeLabels }: { listing: Listing; typeLabels:
 
         <div className="p-4 space-y-2.5">
           <div>
-            <h3 className="font-bold truncate text-sm leading-snug">{l.address}</h3>
+            <h3 className="font-bold truncate text-sm leading-snug tracking-tight">{l.address}</h3>
             <p className="text-xs text-muted-foreground mt-0.5">
               {typeLabels[l.property_type]} · {l.city}
               {l.property_type === 'apartment' && l.floor != null ? ` · Piano ${l.floor}` : ''}
@@ -464,7 +546,14 @@ function ListingCard({ listing: l, typeLabels }: { listing: Listing; typeLabels:
               <User className="h-3 w-3" />
               {l.agent?.name ?? '—'}
             </span>
-            <span className="text-[11px] text-muted-foreground">{formatDate(l.created_at)}</span>
+            {l.generated_content ? (
+              <span className="ai-badge">
+                <Sparkles className="h-2 w-2" />
+                CasaAI
+              </span>
+            ) : (
+              <span className="text-[11px] text-muted-foreground">{formatDate(l.created_at)}</span>
+            )}
           </div>
         </div>
       </div>
@@ -476,14 +565,11 @@ function ListingCard({ listing: l, typeLabels }: { listing: Listing; typeLabels:
 
 function ListingRow({ listing: l, typeLabels, draftLabel }: { listing: Listing; typeLabels: Record<string, string>; draftLabel: string }) {
   return (
-    <Link
-      href={`/listing/${l.id}`}
-      className="grid grid-cols-[1fr_100px_90px_90px_70px_90px] gap-2 items-center px-4 py-3 hover:bg-muted/40 transition-all duration-150 group"
-    >
-      <div className="min-w-0">
+    <div className="grid grid-cols-[1fr_100px_90px_90px_70px_90px_80px_50px] gap-2 items-center px-4 py-3 hover:bg-muted/40 transition-all duration-150 group">
+      <Link href={`/listing/${l.id}`} className="min-w-0">
         <p className="text-sm font-semibold truncate group-hover:text-[oklch(0.57_0.20_33)] transition-colors">{l.address}</p>
         <p className="text-xs text-muted-foreground truncate">{l.city}</p>
-      </div>
+      </Link>
       <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium w-fit ${TYPE_COLORS[l.property_type] ?? 'bg-muted text-muted-foreground border-border'}`}>
         {typeLabels[l.property_type]}
       </span>
@@ -496,6 +582,11 @@ function ListingRow({ listing: l, typeLabels, draftLabel }: { listing: Listing; 
         }
       </span>
       <p className="text-xs text-muted-foreground">{formatDate(l.created_at)}</p>
-    </Link>
+      <p className="text-xs text-muted-foreground truncate">{l.agent?.name ?? '—'}</p>
+      <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
+        <Link href={`/listing/${l.id}/edit`}><Pencil className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" /></Link>
+        <Link href={`/listing/${l.id}`}><ExternalLink className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" /></Link>
+      </div>
+    </div>
   )
 }

@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Plus, Mail, Send, Clock, AlertCircle } from 'lucide-react'
+import { Plus, Mail, Send, Clock, AlertCircle, Sparkles, BarChart2, TrendingUp } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { getTranslations } from '@/lib/i18n/server'
 
@@ -51,11 +51,18 @@ export default async function CampaignsPage() {
 
   const dateLocale = locale === 'en' ? 'en-GB' : 'it-IT'
 
+  const totalSent = campaigns.reduce((acc, c) => acc + (c.sent_count ?? 0), 0)
+  const totalDrafts = campaigns.filter(c => c.status === 'draft').length
+  const totalSentCampaigns = campaigns.filter(c => c.status === 'sent').length
+  const avgOpenRate = totalSentCampaigns > 0
+    ? Math.round(campaigns.filter(c => c.status === 'sent' && c.sent_count > 0).reduce((acc, c) => acc + (c.opened_count / c.sent_count) * 100, 0) / Math.max(totalSentCampaigns, 1))
+    : null
+
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-12">
       <div className="flex items-center justify-between animate-in-1">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">{t('campaigns.title')}</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight leading-none">{t('campaigns.title')}</h1>
           <p className="text-sm text-muted-foreground mt-1">{t('campaigns.subtitle')}</p>
         </div>
         <Link href="/campaigns/new" className="btn-ai inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold">
@@ -64,42 +71,108 @@ export default async function CampaignsPage() {
         </Link>
       </div>
 
+      {/* Stats bar — only when there are campaigns */}
+      {campaigns.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-in-2">
+          {[
+            { label: 'Totale', value: campaigns.length, icon: Mail },
+            { label: 'Inviate', value: totalSentCampaigns, icon: Send },
+            { label: 'Bozze', value: totalDrafts, icon: Clock },
+            { label: 'Tasso apertura', value: avgOpenRate !== null ? `${avgOpenRate}%` : '—', icon: BarChart2 },
+          ].map(stat => (
+            <div key={stat.label} className="rounded-xl border border-border bg-card px-4 py-3">
+              <div className="flex items-center gap-2 mb-1">
+                <stat.icon className="h-3.5 w-3.5 text-muted-foreground" />
+                <p className="text-xs text-muted-foreground">{stat.label}</p>
+              </div>
+              <p className="text-xl font-bold">{stat.value}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
       {campaigns.length === 0 ? (
-        <div className="mesh-bg flex flex-col items-center justify-center rounded-2xl border border-dashed border-border py-16 text-center">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[oklch(0.57_0.20_33)] to-[oklch(0.66_0.15_188)] shadow-lg shadow-[oklch(0.57_0.20_33/0.3)]">
-            <Mail className="h-7 w-7 text-white" />
+        /* Compelling empty state */
+        <div className="animate-in-2 relative overflow-hidden rounded-3xl border border-[oklch(0.57_0.20_33/0.25)] bg-gradient-to-br from-[oklch(0.97_0.04_33)] via-[oklch(0.975_0.025_45)] to-[oklch(0.97_0.03_188)] p-10 text-center">
+          {/* Ambient radial glows */}
+          <div className="absolute top-0 left-1/4 h-48 w-48 rounded-full bg-[oklch(0.57_0.20_33/0.10)] blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 right-1/4 h-48 w-48 rounded-full bg-[oklch(0.66_0.15_188/0.08)] blur-3xl pointer-events-none" />
+
+          <div className="relative">
+            {/* Icon */}
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[oklch(0.57_0.20_33)] to-[oklch(0.66_0.15_188)] shadow-xl shadow-[oklch(0.57_0.20_33/0.35)]">
+              <Sparkles className="h-8 w-8 text-white" />
+            </div>
+
+            <h2 className="text-xl font-extrabold tracking-tight">Lancia la tua prima campagna AI</h2>
+            <p className="mt-2 text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
+              Raggiungi i tuoi contatti con email personalizzate generate dall&apos;intelligenza artificiale di CasaAI.
+            </p>
+
+            {/* Feature highlights */}
+            <div className="mt-6 flex items-center justify-center gap-6 flex-wrap">
+              {[
+                { icon: Mail, label: 'Email personalizzate' },
+                { icon: TrendingUp, label: 'Tasso apertura tracciato' },
+                { icon: BarChart2, label: 'Analytics integrati' },
+              ].map(item => (
+                <div key={item.label} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <item.icon className="h-3.5 w-3.5 text-[oklch(0.57_0.20_33)]" />
+                  {item.label}
+                </div>
+              ))}
+            </div>
+
+            <Link href="/campaigns/new" className="btn-ai mt-7 inline-flex items-center gap-2 rounded-xl px-7 py-3 text-sm font-semibold">
+              <Sparkles className="h-4 w-4" />
+              Crea la prima campagna
+            </Link>
           </div>
-          <p className="font-semibold">{t('campaigns.empty.title')}</p>
-          <p className="text-sm text-muted-foreground mt-1 mb-5">{t('campaigns.empty.body')}</p>
-          <Link href="/campaigns/new" className="btn-ai inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold">
-            <Plus className="h-4 w-4" />
-            {t('campaigns.new')}
-          </Link>
         </div>
       ) : (
         <div className="animate-in-2 space-y-3">
-          {campaigns.map((c) => {
+          {campaigns.map((c, idx) => {
             const cfg = statusConfig[c.status] ?? statusConfig.draft
             const StatusIcon = cfg.icon
             const isDraft = c.status === 'draft'
+            const openRate = c.sent_count > 0 ? Math.round((c.opened_count / c.sent_count) * 100) : null
+
             const cardContent = (
               <>
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[oklch(0.57_0.20_33/0.12)] to-[oklch(0.66_0.15_188/0.12)] ring-1 ring-[oklch(0.57_0.20_33/0.2)]">
-                  <Mail className="h-4 w-4 text-[oklch(0.57_0.20_33)]" />
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[oklch(0.57_0.20_33/0.12)] to-[oklch(0.66_0.15_188/0.12)] ring-1 ring-[oklch(0.57_0.20_33/0.2)]">
+                  <Mail className="h-4.5 w-4.5 text-[oklch(0.57_0.20_33)]" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{c.subject}</p>
+                  <p className="font-semibold tracking-tight truncate">{c.subject}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {c.sent_at
                       ? `${t('campaigns.sentOn')} ${new Date(c.sent_at).toLocaleDateString(dateLocale)}`
                       : `${t('campaigns.createdOn')} ${new Date(c.created_at).toLocaleDateString(dateLocale)}`}
                   </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="h-1.5 w-24 rounded-full bg-muted overflow-hidden">
+                      <div className="h-full bg-green-500 rounded-full transition-all"
+                        style={{ width: `${openRate ?? 0}%` }} />
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {openRate !== null ? `${openRate}% apertura` : 'N/A'}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
+                  {/* Inline analytics preview */}
                   {c.status === 'sent' && (
-                    <div className="text-right">
-                      <p className="text-sm font-semibold">{c.sent_count}</p>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{t('campaigns.sentCount')}</p>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <p className="text-sm font-bold">{c.sent_count}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{t('campaigns.sentCount')}</p>
+                      </div>
+                      {openRate !== null && (
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-green-600">{openRate}%</p>
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Apertura</p>
+                        </div>
+                      )}
                     </div>
                   )}
                   <Badge className={`flex items-center gap-1 text-xs font-medium border-0 ${cfg.color}`}>
@@ -113,12 +186,12 @@ export default async function CampaignsPage() {
               <Link
                 key={c.id}
                 href={`/campaigns/${c.id}/edit`}
-                className="card-lift flex items-center gap-4 rounded-2xl border border-border bg-card px-5 py-4 transition-colors hover:bg-muted/40"
+                className={`animate-in-${Math.min(idx + 3, 8)} card-lift flex items-center gap-4 rounded-2xl border border-border bg-card px-5 py-4 transition-colors hover:bg-muted/40`}
               >
                 {cardContent}
               </Link>
             ) : (
-              <div key={c.id} className="card-lift flex items-center gap-4 rounded-2xl border border-border bg-card px-5 py-4">
+              <div key={c.id} className={`animate-in-${Math.min(idx + 3, 8)} card-lift flex items-center gap-4 rounded-2xl border border-border bg-card px-5 py-4`}>
                 {cardContent}
               </div>
             )

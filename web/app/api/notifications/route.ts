@@ -33,20 +33,32 @@ export async function GET(_req: NextRequest) {
   return NextResponse.json({ notifications: (data ?? []) as Notification[] })
 }
 
-// PATCH /api/notifications — mark all as read
-export async function PATCH(_req: NextRequest) {
+// PATCH /api/notifications — mark all as read, or single if body { id }
+export async function PATCH(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
+  let notificationId: string | undefined
+  try {
+    const body = await req.json()
+    if (typeof body.id === 'string') notificationId = body.id
+  } catch { /* no body — mark all */ }
+
   const admin = createAdminClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (admin as any)
+  let query = (admin as any)
     .from('notifications')
     .update({ read: true })
     .eq('agent_id', user.id)
-    .eq('read', false)
 
+  if (notificationId) {
+    query = query.eq('id', notificationId)
+  } else {
+    query = query.eq('read', false)
+  }
+
+  const { error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   return NextResponse.json({ ok: true })
