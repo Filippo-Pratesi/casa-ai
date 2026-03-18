@@ -20,12 +20,32 @@ Real estate AI SaaS for Italian agencies. The app lives in `./web/`.
 web/
 ├── app/
 │   ├── (app)/          # Protected routes (dashboard, listings, contacts, etc.)
+│   │   ├── listing/[id]/edit/  # Listing edit page with tone regeneration
+│   │   └── ...         # archive, campaigns, calendar, contacts, notifications,
+│   │                   #   plans, settings, team, todos
 │   ├── (auth)/         # Login/signup flows
-│   ├── api/            # API routes (ai-assistant, appointments, auth, billing,
-│   │                   #   calendar, campaigns, contacts, group, listing,
-│   │                   #   notifications, profile, search, social, todos, track, workspace)
+│   ├── api/            # API routes:
+│   │   ├── ai-assistant/       # AI chat widget endpoint
+│   │   ├── archive/export/     # Archive CSV/JSON export
+│   │   ├── appointments/
+│   │   ├── auth/
+│   │   ├── billing/
+│   │   ├── calendar/
+│   │   ├── campaigns/
+│   │   ├── contacts/
+│   │   ├── group/
+│   │   ├── listing/[id]/update/  # Listing update + tone regeneration
+│   │   ├── notifications/
+│   │   ├── profile/
+│   │   ├── search/             # Global search endpoint
+│   │   ├── social/
+│   │   ├── todos/
+│   │   ├── track/
+│   │   └── workspace/
+│   ├── not-found.tsx   # Custom 404 page
 │   └── p/              # Public property pages
 ├── components/         # React components organized by feature
+│   ├── ai-assistant/   # AI widget (ai-widget.tsx, ai-widget-gate.tsx)
 │   ├── shared/         # Reusable UI components
 │   └── ui/             # shadcn/ui primitives
 ├── hooks/              # Custom React hooks (use-mobile.ts)
@@ -96,13 +116,14 @@ See `web/.env.local.example` for required vars:
 
 ## Recent Changes (March 2026)
 
-**Sprint F — UX Redesign:** Completed warm futurism design system overhaul with 51 improvements:
-- Redesigned all major pages (dashboard, listings, contacts, calendar, campaigns, archive, settings)
-- New components: command palette (Cmd+K), AI assistant widget, archive export, notification preferences
-- Global improvements: custom animations (spring easing), gradient treatments, glass effects, dark mode
-- See `web/UX CHANGES IMPLEMENTED.md` for complete documentation
-
-**Commit history:** `83eba84` (UX redesign + new features, March 17-18)
+**Sprint F — UX Redesign (complete, commit `83eba84`, March 17-18):**
+- "Warm futurism" design system overhaul — 51 improvements across all major pages
+- Redesigned: dashboard (bento stat cards), listings, contacts, calendar, campaigns, archive, settings, notifications, todos
+- New components: AI assistant chat widget (`/components/ai-assistant/`), archive export, notification preferences
+- New pages: `listing/[id]/edit` (edit + per-tone regeneration), custom 404
+- New API routes: `ai-assistant`, `archive/export`, `search`, `listing/[id]/update`
+- Global: spring animations, gradient treatments, glass/blur effects, dark mode refinements
+- See `web/UX CHANGES IMPLEMENTED.md` for full details (51 items)
 
 ## Known Issues
 

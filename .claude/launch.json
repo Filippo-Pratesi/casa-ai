@@ -1,10 +1,11 @@
 {
   "version": "0.0.1",
+  "autoPort": false,
   "configurations": [
     {
       "name": "casaai-web",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "cd web && npm run dev"],
       "port": 3000
     }
   ]
