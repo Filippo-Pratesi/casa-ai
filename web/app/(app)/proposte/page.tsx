@@ -3,7 +3,6 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Plus, FileText } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { ProposalList } from '@/components/proposals/proposal-list'
 
 export default async function PropostePage() {
@@ -58,12 +57,10 @@ export default async function PropostePage() {
             <p className="text-sm text-muted-foreground">Gestisci proposte e controproposte</p>
           </div>
         </div>
-        <Button asChild className="btn-ai shrink-0">
-          <Link href="/proposte/nuova">
-            <Plus className="h-4 w-4 mr-1.5" />
-            Nuova proposta
-          </Link>
-        </Button>
+        <Link href="/proposte/nuova" className="btn-ai inline-flex items-center gap-2 shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold">
+          <Plus className="h-4 w-4" />
+          Nuova proposta
+        </Link>
       </div>
 
       {/* Summary stats */}

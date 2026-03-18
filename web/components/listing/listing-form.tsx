@@ -77,6 +77,7 @@ function calcValoreCatastale(rendita: string, categoria: string): string | null 
 
 interface FormState {
   property_type: string
+  transaction_type: string
   floor: string
   total_floors: string
   address: string
@@ -99,6 +100,7 @@ interface FormState {
 
 const INITIAL_FORM: FormState = {
   property_type: 'apartment',
+  transaction_type: 'vendita',
   floor: '',
   total_floors: '',
   address: '',
@@ -143,6 +145,7 @@ export function ListingForm() {
 
     const fd = new FormData()
     fd.append('property_type', form.property_type)
+    fd.append('transaction_type', form.transaction_type)
     if (form.property_type === 'apartment') {
       if (form.floor) fd.append('floor', form.floor)
       if (form.total_floors) fd.append('total_floors', form.total_floors)
@@ -185,6 +188,28 @@ export function ListingForm() {
       {/* Section 1 — Tipo immobile */}
       <section className="pt-0 pb-6 space-y-3">
         <h2 className="text-base font-semibold">Tipo di immobile</h2>
+
+        {/* Transaction type */}
+        <div>
+          <p className="text-xs font-medium text-muted-foreground mb-2">Tipologia annuncio</p>
+          <div className="flex gap-2">
+            {[{ value: 'vendita', label: 'Vendita' }, { value: 'affitto', label: 'Affitto' }].map((tt) => (
+              <button
+                key={tt.value}
+                type="button"
+                onClick={() => update('transaction_type', tt.value)}
+                className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-all ${
+                  form.transaction_type === tt.value
+                    ? 'border-[oklch(0.57_0.20_33)] bg-[oklch(0.57_0.20_33)] text-white'
+                    : 'border-border bg-card text-foreground hover:border-muted-foreground/50 hover:bg-muted'
+                }`}
+              >
+                {tt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="flex flex-wrap gap-2">
           {PROPERTY_TYPES.map((pt) => (
             <button

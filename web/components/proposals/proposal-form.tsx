@@ -67,6 +67,7 @@ export function ProposalForm({
   // Listing & contact
   const [selectedListingId, setSelectedListingId] = useState((initialData?.listing_id as string) ?? '')
   const [selectedContactId, setSelectedContactId] = useState((initialData?.buyer_contact_id as string) ?? '')
+  const [selectedSellerContactId, setSelectedSellerContactId] = useState((initialData?.seller_contact_id as string) ?? '')
 
   // Snapshot fields (auto-filled + editable)
   const [immobileIndirizzo, setImmobileIndirizzo] = useState((initialData?.immobile_indirizzo as string) ?? '')
@@ -106,7 +107,7 @@ export function ProposalForm({
     }
   }, [listings])
 
-  // Auto-fill from contact
+  // Auto-fill from buyer contact
   const handleContactChange = useCallback((contactId: string) => {
     setSelectedContactId(contactId)
     const c = contacts.find(x => x.id === contactId)
@@ -114,6 +115,15 @@ export function ProposalForm({
       setProponenteNome(c.name)
       if (c.email) setProponenteEmail(c.email)
       if (c.phone) setProponenteTel(c.phone)
+    }
+  }, [contacts])
+
+  // Auto-fill seller from contact
+  const handleSellerContactChange = useCallback((contactId: string) => {
+    setSelectedSellerContactId(contactId)
+    const c = contacts.find(x => x.id === contactId)
+    if (c) {
+      setProprietarioNome(c.name)
     }
   }, [contacts])
 
@@ -267,6 +277,22 @@ export function ProposalForm({
         {/* Venditore */}
         <section className="rounded-2xl border border-border bg-card p-5 space-y-4">
           <h2 className="text-sm font-semibold text-foreground">Venditore <span className="text-muted-foreground font-normal">(opzionale)</span></h2>
+          <div className="space-y-1.5">
+            <Label>Seleziona venditore dal database</Label>
+            <div className="relative">
+              <select
+                value={selectedSellerContactId}
+                onChange={e => handleSellerContactChange(e.target.value)}
+                className="w-full appearance-none rounded-lg border border-input bg-background px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-ring/50"
+              >
+                <option value="">— Seleziona venditore (opzionale) —</option>
+                {contacts.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
+            </div>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Nome venditore / proprietario</Label>

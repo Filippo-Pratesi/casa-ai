@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { PlusSquare, FileText, Euro, Maximize2, Home, User, Users, CalendarDays, TrendingUp, LayoutGrid, List, Search, X, Download, ChevronUp, ChevronDown, ChevronsUpDown, Sparkles, ArrowUpRight, Pencil, ExternalLink } from 'lucide-react'
+import { PlusSquare, FileText, Euro, Maximize2, Home, User, Users, CalendarDays, TrendingUp, LayoutGrid, List, Search, X, Download, ChevronUp, ChevronDown, ChevronsUpDown, Sparkles, ArrowUpRight, Pencil, ExternalLink, Building2, BedDouble } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { useI18n } from '@/lib/i18n/context'
 
@@ -54,6 +54,7 @@ interface Stats {
   contacts: number
   appointments: number
   aiContent: number
+  bancaDati: number
 }
 
 interface DashboardClientProps {
@@ -75,6 +76,8 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
   const [contentFilter, setContentFilter] = useState<'all' | 'generated' | 'draft'>('all')
   const [sortKey, setSortKey] = useState<'address' | 'price' | 'sqm' | 'date' | null>(null)
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  const [toneFilter, setToneFilter] = useState<string | null>(null)
+  const [minRooms, setMinRooms] = useState<number | null>(null)
 
   const TYPE_LABELS: Record<string, string> = useMemo(() => ({
     apartment: t('property.apartment'),
@@ -118,13 +121,15 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
     })
   }
 
-  const hasFilters = activeTypes.size > 0 || citySearch.trim() || priceMax || contentFilter !== 'all'
+  const hasFilters = activeTypes.size > 0 || citySearch.trim() || priceMax || contentFilter !== 'all' || toneFilter !== null || minRooms !== null
 
   function clearFilters() {
     setActiveTypes(new Set())
     setCitySearch('')
     setPriceMax('')
     setContentFilter('all')
+    setToneFilter(null)
+    setMinRooms(null)
   }
 
   const filtered = useMemo(() => {
@@ -140,6 +145,8 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
       }
       if (contentFilter === 'generated' && !l.generated_content) return false
       if (contentFilter === 'draft' && l.generated_content) return false
+      if (toneFilter && l.tone !== toneFilter) return false
+      if (minRooms !== null && l.rooms < minRooms) return false
       return true
     })
     if (!sortKey) return base
@@ -199,6 +206,17 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
       glow: 'shadow-[oklch(0.76_0.14_75/0.25)]',
       bg: 'from-[oklch(0.96_0.055_75)] to-[oklch(0.97_0.025_65)]',
       iconColor: 'text-[oklch(0.60_0.14_68)]',
+      href: undefined,
+    },
+    {
+      label: 'Banca dati',
+      value: stats.bancaDati,
+      icon: Building2,
+      gradient: 'from-[oklch(0.52_0.17_250)] to-[oklch(0.43_0.16_265)]',
+      glow: 'shadow-[oklch(0.52_0.17_250/0.25)]',
+      bg: 'from-[oklch(0.94_0.055_250)] to-[oklch(0.96_0.025_260)]',
+      iconColor: 'text-[oklch(0.50_0.17_250)]',
+      href: '/banca-dati',
     },
   ]
 
@@ -265,16 +283,18 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
         </div>
       </div>
 
-      {/* Stats — 4 equal cards in a single row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stats — 5 equal cards in a single row */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {statCards.map((s, i) => {
           const isAI = s.label === 'Contenuto AI'
-          const isMain = false
+          const CardTag = s.href ? Link : 'div'
           return (
-            <div
+            <CardTag
               key={s.label}
-              className={`animate-in-${i + 2} relative overflow-hidden rounded-2xl border border-border bg-card card-lift min-h-[120px]`}
-              style={{ padding: '1rem' }}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              {...(s.href ? { href: s.href } as any : {})}
+              className={`animate-in-${i + 2} relative overflow-hidden rounded-xl border border-border bg-card card-lift${s.href ? ' cursor-pointer' : ''}`}
+              style={{ padding: '0.75rem' }}
             >
               {/* Subtle gradient background */}
               <div className={`absolute inset-0 bg-gradient-to-br ${s.bg} opacity-70`} />
@@ -290,31 +310,24 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
                 />
               )}
               <div className="relative">
-                <div className="flex items-start justify-between mb-3">
-                  <div className={`inline-flex rounded-xl bg-gradient-to-br ${s.gradient} p-2 shadow-md ${s.glow}`}>
-                    {isAI ? <Sparkles className="h-4 w-4 text-white" /> : <s.icon className="h-4 w-4 text-white" />}
+                <div className="flex items-start justify-between mb-2">
+                  <div className={`inline-flex rounded-lg bg-gradient-to-br ${s.gradient} p-1.5 shadow-md ${s.glow}`}>
+                    {isAI ? <Sparkles className="h-3.5 w-3.5 text-white" /> : <s.icon className="h-3.5 w-3.5 text-white" />}
                   </div>
-                  {/* Mini trend arrow */}
-                  <ArrowUpRight className={`h-3.5 w-3.5 ${s.iconColor} opacity-50`} />
+                  <ArrowUpRight className={`h-3 w-3 ${s.iconColor} opacity-50`} />
                 </div>
-                <p className={`font-extrabold leading-none ${isMain ? 'text-4xl' : 'text-2xl'}`}>{s.value}</p>
-                <p className={`mt-1 font-medium text-muted-foreground ${isMain ? 'text-sm' : 'text-xs'}`}>{s.label}</p>
+                <p className="font-extrabold leading-none text-xl">{s.value}</p>
+                <p className="mt-0.5 font-medium text-muted-foreground text-xs">{s.label}</p>
                 {s.label === 'App. imminenti' ? (
-                  <p className="text-xs text-muted-foreground/70 mt-0.5">Prossimi 30 giorni</p>
+                  <p className="text-[10px] text-muted-foreground/70 mt-0.5">30 giorni</p>
                 ) : (
-                  <div className="flex items-center gap-1 mt-1 text-xs text-green-600">
-                    <TrendingUp className="h-3 w-3" />
-                    <span>questo mese</span>
+                  <div className="flex items-center gap-0.5 mt-0.5 text-[10px] text-green-600">
+                    <TrendingUp className="h-2.5 w-2.5" />
+                    <span>mese</span>
                   </div>
-                )}
-                {isAI && (
-                  <span className="mt-2 inline-flex items-center gap-1 text-[10px] font-semibold text-[oklch(0.55_0.14_68)] uppercase tracking-wide">
-                    <Sparkles className="h-2.5 w-2.5" />
-                    AI Generato
-                  </span>
                 )}
               </div>
-            </div>
+            </CardTag>
           )
         })}
       </div>
@@ -350,7 +363,7 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
             </div>
           </div>
 
-          {/* Search + price */}
+          {/* Search + price + tone + rooms */}
           <div className="flex flex-wrap gap-2">
             <div className="relative flex-1 min-w-[180px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
@@ -361,7 +374,7 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
                 className="w-full rounded-lg border border-border bg-background pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.3)] text-foreground placeholder:text-muted-foreground"
               />
             </div>
-            <div className="relative min-w-[160px]">
+            <div className="relative min-w-[150px]">
               <Euro className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
               <input
                 type="number"
@@ -370,6 +383,41 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
                 placeholder={t('listings.filter.priceMax')}
                 className="w-full rounded-lg border border-border bg-background pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.3)] text-foreground placeholder:text-muted-foreground"
               />
+            </div>
+            {/* Tone filter */}
+            <div className="flex rounded-lg border border-border bg-card overflow-hidden text-xs">
+              {([['', 'Tono'], ['standard', 'Standard'], ['luxury', 'Luxury'], ['approachable', 'Access.'], ['investment', 'Invest.']] as [string, string][]).map(([val, label]) => (
+                <button
+                  key={val}
+                  onClick={() => setToneFilter(val === '' ? null : (toneFilter === val ? null : val))}
+                  className={`px-2.5 py-1.5 font-medium transition-colors whitespace-nowrap ${
+                    (val === '' && toneFilter === null) || (val !== '' && toneFilter === val)
+                      ? 'bg-[oklch(0.57_0.20_33)] text-white'
+                      : 'text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {/* Min rooms filter */}
+            <div className="flex rounded-lg border border-border bg-card overflow-hidden text-xs">
+              <span className="flex items-center px-2 text-muted-foreground border-r border-border">
+                <BedDouble className="h-3.5 w-3.5" />
+              </span>
+              {([null, 1, 2, 3, 4] as (number | null)[]).map((r) => (
+                <button
+                  key={r ?? 'all'}
+                  onClick={() => setMinRooms(minRooms === r ? null : r)}
+                  className={`px-2.5 py-1.5 font-medium transition-colors ${
+                    minRooms === r
+                      ? 'bg-[oklch(0.57_0.20_33)] text-white'
+                      : 'text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  {r === null ? 'Tutti' : `${r}+`}
+                </button>
+              ))}
             </div>
             {hasFilters && (
               <button
@@ -408,8 +456,8 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
           </button>
         </div>
       ) : viewMode === 'card' ? (
-        /* Card grid */
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 animate-in-4">
+        /* Card grid — 4 columns in image mode */
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 animate-in-4">
           {filtered.map((l, i) => (
             <div key={l.id} className={`animate-in-${Math.min(i + 4, 8)}`}>
               <ListingCard listing={l} typeLabels={TYPE_LABELS} />
@@ -469,8 +517,8 @@ function ListingCard({ listing: l, typeLabels }: { listing: Listing; typeLabels:
   return (
     <Link href={`/listing/${l.id}`} className="group block hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer hover:border-[oklch(0.57_0.20_33/0.3)] rounded-2xl">
       <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm card-lift">
-        {/* Image area — taller for premium feel */}
-        <div className="relative h-56 w-full overflow-hidden">
+        {/* Image area */}
+        <div className="relative h-44 w-full overflow-hidden">
           {thumb ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={thumb} alt={l.address} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />

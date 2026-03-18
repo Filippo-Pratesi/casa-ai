@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Corpo richiesta non valido' }, { status: 400 })
   }
 
+  const channel = body.channel === 'whatsapp' ? 'whatsapp' : 'email'
   const subject = typeof body.subject === 'string' ? body.subject.trim() : ''
   const bodyHtml = typeof body.body_html === 'string' ? body.body_html.trim() : ''
   const bodyText = typeof body.body_text === 'string' ? body.body_text.trim() : bodyHtml.replace(/<[^>]+>/g, '')
@@ -97,6 +98,7 @@ export async function POST(req: NextRequest) {
     .insert({
       workspace_id: profile.workspace_id,
       created_by: user.id,
+      channel,
       subject,
       body_html: bodyHtml,
       body_text: bodyText,

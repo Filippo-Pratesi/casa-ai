@@ -1,0 +1,18 @@
+Note:
+
+- Sviluppare comparto vendita + client discovery. Eventuale venditore deve poter essere cliente acquirente. inoltre Gli annunci devono essere cambiati in incarichi. Devo anche avere un ulteriore database di possibili clienti
+
+immobile -> incarico (foto + info) -> proposta -> immobile (con nuovi proprietary)
+
+mantenera history dell'immobile dal primo contatto ad oltre
+
+Zone - Viareggio
+
+Quartieri - M polo/Terminetto
+
+Vie + Civici
+
+-------
+Quello sopra si riferisce agli immobili che non ho in gestione. Devo poter costruire un database
+
+gestire in autonomia compilazione delle vie + ogni civico deve potersi estendaere a piu proprietary (condiminio + campanello)

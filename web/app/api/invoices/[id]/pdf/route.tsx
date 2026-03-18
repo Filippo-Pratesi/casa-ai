@@ -212,8 +212,8 @@ const styles = StyleSheet.create({
   },
 })
 
-function fmt(cents: number) {
-  return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(cents / 100)
+function fmt(amount: number) {
+  return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(amount)
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

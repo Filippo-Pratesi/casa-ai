@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { PlusSquare, FileText, Euro, Maximize2, Home, User } from 'lucide-react'
 import type { Listing } from '@/lib/supabase/types'
+import { ListingTransactionFilter } from '@/components/listing/listing-transaction-filter'
 
 const TONE_LABELS: Record<string, string> = {
   standard: 'Standard',
@@ -23,7 +24,7 @@ const TYPE_LABELS: Record<string, string> = {
   other: 'Altro',
 }
 
-type ListingWithAgent = Listing & { agent: { name: string } | null }
+type ListingWithAgent = Listing & { agent: { name: string } | null; transaction_type?: string }
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('it-IT', {
@@ -33,10 +34,16 @@ function formatDate(iso: string) {
   })
 }
 
-export default async function ListingHistoryPage() {
+export default async function ListingHistoryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ transaction_type?: string }>
+}) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  const { transaction_type } = await searchParams
 
   const admin = createAdminClient()
   const { data: profileData } = await admin
@@ -58,6 +65,10 @@ export default async function ListingHistoryPage() {
 
   if (!isAdmin) {
     query = query.eq('agent_id', user.id)
+  }
+
+  if (transaction_type === 'vendita' || transaction_type === 'affitto') {
+    query = query.eq('transaction_type', transaction_type)
   }
 
   const { data: listings } = await query
@@ -82,6 +93,8 @@ export default async function ListingHistoryPage() {
           Nuovo annuncio
         </Link>
       </div>
+
+      <ListingTransactionFilter active={transaction_type} />
 
       {items.length === 0 ? (
         <div className="animate-in-2 flex flex-col items-center justify-center rounded-2xl border border-dashed border-border mesh-bg py-20 text-center">
@@ -141,6 +154,11 @@ export default async function ListingHistoryPage() {
                         {listing.address}
                       </h3>
                       <p className="text-xs text-muted-foreground mt-0.5">
+                        {listing.transaction_type === 'affitto' ? (
+                          <span className="inline-flex items-center rounded-full bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300 px-1.5 py-0 text-[10px] font-medium mr-1">Affitto</span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 px-1.5 py-0 text-[10px] font-medium mr-1">Vendita</span>
+                        )}
                         {TYPE_LABELS[listing.property_type]} · {listing.city}
                         {listing.property_type === 'apartment' && listing.floor != null
                           ? ` · Piano ${listing.floor}`

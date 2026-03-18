@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
   const title = typeof body.title === 'string' ? body.title.trim() : ''
   if (!title) return NextResponse.json({ error: 'Titolo obbligatorio' }, { status: 400 })
 
-  const validTypes = ['viewing', 'meeting', 'signing', 'call', 'other']
+  const validTypes = ['viewing', 'meeting', 'signing', 'call', 'other', 'visita', 'riunione', 'atto', 'acquisizione', 'altro']
   const type = typeof body.type === 'string' && validTypes.includes(body.type) ? body.type : 'meeting'
 
   if (!body.starts_at) return NextResponse.json({ error: 'Data obbligatoria' }, { status: 400 })
