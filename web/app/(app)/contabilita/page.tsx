@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { Plus, Receipt } from 'lucide-react'
 import { InvoiceListClient } from '@/components/contabilita/invoice-list-client'
 import { InvoiceSummaryCards } from '@/components/contabilita/invoice-summary-cards'
+import { InvoiceAgingSummary } from '@/components/contabilita/invoice-aging-summary'
+import { computeStats } from '@/app/api/invoices/stats/route'
 
 export default async function ContabilitaPage() {
   const supabase = await createClient()
@@ -23,7 +25,7 @@ export default async function ContabilitaPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (admin as any)
     .from('invoices')
-    .select('id, numero_fattura, cliente_nome, data_emissione, data_scadenza, totale_documento, netto_a_pagare, status, descrizione, listing_id')
+    .select('id, numero_fattura, cliente_nome, data_emissione, data_scadenza, data_pagamento, totale_documento, netto_a_pagare, status, descrizione, listing_id')
     .eq('workspace_id', profile.workspace_id)
     .order('data_emissione', { ascending: false })
 
@@ -33,6 +35,7 @@ export default async function ContabilitaPage() {
     cliente_nome: string
     data_emissione: string
     data_scadenza: string | null
+    data_pagamento: string | null
     totale_documento: number
     netto_a_pagare: number
     status: 'bozza' | 'inviata' | 'pagata' | 'scaduta'
@@ -40,16 +43,7 @@ export default async function ContabilitaPage() {
     listing_id: string | null
   }[]
 
-  // Compute summary
-  const fatturato = invoices
-    .filter(i => i.status === 'pagata')
-    .reduce((sum, i) => sum + i.totale_documento, 0)
-  const inAttesa = invoices
-    .filter(i => i.status === 'inviata')
-    .reduce((sum, i) => sum + i.totale_documento, 0)
-  const scadute = invoices
-    .filter(i => i.status === 'scaduta')
-    .reduce((sum, i) => sum + i.totale_documento, 0)
+  const stats = computeStats(invoices as Record<string, unknown>[])
 
   return (
     <div className="flex-1 space-y-6 px-4 py-6 sm:px-6 lg:px-8">
@@ -72,7 +66,12 @@ export default async function ContabilitaPage() {
 
       {/* Summary cards — only when data exists */}
       {invoices.length > 0 && (
-        <InvoiceSummaryCards fatturato={fatturato} inAttesa={inAttesa} scadute={scadute} />
+        <InvoiceSummaryCards stats={stats} />
+      )}
+
+      {/* Aging report */}
+      {invoices.length > 0 && (
+        <InvoiceAgingSummary aging={stats.aging} />
       )}
 
       {/* Invoice list */}
