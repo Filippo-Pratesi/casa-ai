@@ -81,6 +81,29 @@ See `web/.env.local.example` for required vars:
 - Use Supabase RLS as the primary access control layer
 - Toast notifications use Sonner
 
+## Git & Commits
+
+**MANDATORY:** Commit after every code change using conventional commits format:
+- `feat:` for new features
+- `fix:` for bug fixes
+- `refactor:` for code refactoring
+- `docs:` for documentation
+- `style:` for formatting/styling
+- `test:` for tests
+- `chore:` for maintenance
+
+**At session end:** If approaching token limit, request explicit user approval to commit and push before closing the session. Never leave uncommitted work.
+
+## Recent Changes (March 2026)
+
+**Sprint F — UX Redesign:** Completed warm futurism design system overhaul with 51 improvements:
+- Redesigned all major pages (dashboard, listings, contacts, calendar, campaigns, archive, settings)
+- New components: command palette (Cmd+K), AI assistant widget, archive export, notification preferences
+- Global improvements: custom animations (spring easing), gradient treatments, glass effects, dark mode
+- See `web/UX CHANGES IMPLEMENTED.md` for complete documentation
+
+**Commit history:** `83eba84` (UX redesign + new features, March 17-18)
+
 ## Known Issues
 
 See `web/SECURITY_AUDIT.md` for 11 security findings (2 critical, 3 high) that need remediation. Key gaps: missing workspace_id checks in some API routes, no rate limiting, no CORS config.
