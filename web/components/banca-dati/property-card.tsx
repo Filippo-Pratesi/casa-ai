@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { MapPin, User, Clock, Download } from 'lucide-react'
+import { MapPin, User, Clock, Download, StickyNote } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { it } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
@@ -104,6 +104,19 @@ export function PropertyCard({ property, compact = false, className }: PropertyC
                   </span>
                 )}
               </div>
+
+              {/* Last event snippet */}
+              {property.last_event && (
+                <div className="flex items-start gap-1.5 rounded-md bg-muted/40 px-2 py-1.5 -mx-1">
+                  <StickyNote className="h-3 w-3 text-muted-foreground/60 mt-0.5 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs text-foreground/70 truncate leading-tight">{property.last_event.title}</p>
+                    <p className="text-[10px] text-muted-foreground/50 leading-tight">
+                      {formatDistanceToNow(new Date(property.last_event.event_date), { addSuffix: true, locale: it })}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Footer */}
               <div className="flex items-center justify-between pt-1 border-t border-border/50">

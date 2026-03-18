@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   ArrowLeft, MapPin, Phone, ExternalLink,
-  Plus, Trash2, Loader2, Megaphone, FileDown, Pencil
+  Plus, Trash2, Loader2, Megaphone, FileDown, Pencil, AlertTriangle
 } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -675,30 +675,59 @@ export function ImmobileDetailClient({
           </Card>
 
           {/* Incarico details */}
-          {property.stage === 'incarico' && (
-            <Card className="p-5 space-y-3">
-              <div className="flex items-center justify-between">
-                <h2 className="font-semibold text-sm">Incarico</h2>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 text-xs gap-1"
-                  onClick={handleDownloadIncaricoPdf}
-                  disabled={generatingPdf}
-                >
-                  {generatingPdf ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileDown className="h-3 w-3" />}
-                  Genera contratto
-                </Button>
-              </div>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-                {property.incarico_type && <div><span className="text-muted-foreground">Tipo:</span> <span className="font-medium capitalize">{property.incarico_type}</span></div>}
-                {property.incarico_date && <div><span className="text-muted-foreground">Data firma:</span> <span className="font-medium">{new Date(property.incarico_date).toLocaleDateString('it-IT')}</span></div>}
-                {property.incarico_expiry && <div><span className="text-muted-foreground">Scadenza:</span> <span className="font-medium">{new Date(property.incarico_expiry).toLocaleDateString('it-IT')}</span></div>}
-                {property.incarico_commission_percent && <div><span className="text-muted-foreground">Provvigione:</span> <span className="font-medium">{property.incarico_commission_percent}%</span></div>}
-                {property.incarico_notes && <div className="col-span-2"><span className="text-muted-foreground">Note:</span> <span>{property.incarico_notes}</span></div>}
-              </div>
-            </Card>
-          )}
+          {property.stage === 'incarico' && (() => {
+            const expiryDate = property.incarico_expiry ? new Date(property.incarico_expiry) : null
+            const now = new Date()
+            const daysToExpiry = expiryDate ? Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null
+            const isExpired = daysToExpiry !== null && daysToExpiry < 0
+            const isExpiringSoon = daysToExpiry !== null && daysToExpiry >= 0 && daysToExpiry <= 30
+
+            return (
+              <Card className={cn('p-5 space-y-3', isExpired ? 'border-destructive/40' : isExpiringSoon ? 'border-amber-400/40' : '')}>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="font-semibold text-sm">Incarico</h2>
+                    {isExpired && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive">
+                        <AlertTriangle className="h-3 w-3" />
+                        Scaduto
+                      </span>
+                    )}
+                    {isExpiringSoon && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-600 dark:bg-amber-950 dark:text-amber-400">
+                        <AlertTriangle className="h-3 w-3" />
+                        Scade tra {daysToExpiry}g
+                      </span>
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs gap-1 shrink-0"
+                    onClick={handleDownloadIncaricoPdf}
+                    disabled={generatingPdf}
+                  >
+                    {generatingPdf ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileDown className="h-3 w-3" />}
+                    Genera contratto
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                  {property.incarico_type && <div><span className="text-muted-foreground">Tipo:</span> <span className="font-medium capitalize">{property.incarico_type}</span></div>}
+                  {property.incarico_date && <div><span className="text-muted-foreground">Data firma:</span> <span className="font-medium">{new Date(property.incarico_date).toLocaleDateString('it-IT')}</span></div>}
+                  {property.incarico_expiry && (
+                    <div>
+                      <span className="text-muted-foreground">Scadenza:</span>{' '}
+                      <span className={cn('font-medium', isExpired ? 'text-destructive' : isExpiringSoon ? 'text-amber-600 dark:text-amber-400' : '')}>
+                        {new Date(property.incarico_expiry).toLocaleDateString('it-IT')}
+                      </span>
+                    </div>
+                  )}
+                  {property.incarico_commission_percent && <div><span className="text-muted-foreground">Provvigione:</span> <span className="font-medium">{property.incarico_commission_percent}%</span></div>}
+                  {property.incarico_notes && <div className="col-span-2"><span className="text-muted-foreground">Note:</span> <span>{property.incarico_notes}</span></div>}
+                </div>
+              </Card>
+            )
+          })()}
 
           {/* Rental details */}
           {property.stage === 'locato' && (
