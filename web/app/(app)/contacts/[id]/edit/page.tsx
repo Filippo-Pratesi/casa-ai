@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
@@ -14,12 +14,13 @@ export default async function EditContactPage({
   const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
   const admin = createAdminClient()
   const { data: profileData } = await admin
     .from('users')
     .select('workspace_id')
-    .eq('id', user!.id)
+    .eq('id', user.id)
     .single()
 
   const profile = profileData as { workspace_id: string } | null

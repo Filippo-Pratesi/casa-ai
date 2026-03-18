@@ -304,6 +304,19 @@ Italian real estate agents lose 2-3 hours per listing on admin: writing descript
 - [x] Notification preferences component
 - [x] Custom 404 page
 
+### ✅ Sprint H — COMPLETE (Accounting & Proposals — March 2026)
+**Goal**: Full invoicing module + purchase proposal system
+
+- [x] Contabilità tab — invoice CRUD, IVA/ritenuta/cassa computation, PDF, email
+- [x] Invoice detail page with totals breakdown
+- [x] Proposte d'acquisto — proposal form with vincoli, caparra, counter-offer
+- [x] Proposal detail page with accept/reject actions
+- [x] DB migrations 024 (invoices) and 025 (proposals)
+- [x] Dark mode softer palette + hydration fix
+- [x] 26 bug/UX fixes (auth guards, mobile UX, dark mode, loading skeletons)
+- [x] Sidebar nav items for both modules
+- See `web/SPRINT-H-CHANGES.md` for full details
+
 ### Sprint G — iOS App
 **Goal**: Field tool for agents
 

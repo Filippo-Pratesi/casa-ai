@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -24,12 +25,13 @@ export default async function SettingsPage({
   const { t } = await getTranslations()
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
   const admin = createAdminClient()
   const { data: profileData } = await admin
     .from('users')
     .select('role, workspace_id, group_id, workspaces(*), google_access_token')
-    .eq('id', user!.id)
+    .eq('id', user.id)
     .single()
 
   const profile = profileData as {
@@ -47,7 +49,7 @@ export default async function SettingsPage({
   const { data: connectionsData } = await (admin as any)
     .from('social_connections')
     .select('id, platform, page_name, page_id')
-    .eq('user_id', user!.id)
+    .eq('user_id', user.id)
 
   const connections = (connectionsData ?? []) as {
     id: string; platform: string; page_name: string | null; page_id: string
@@ -177,8 +179,8 @@ export default async function SettingsPage({
             <CardContent>
               <TeamManagement
                 members={members}
-                currentUserId={user!.id}
-                currentRole={profile!.role}
+                currentUserId={user.id}
+                currentRole={profile?.role ?? ''}
               />
             </CardContent>
           </Card>

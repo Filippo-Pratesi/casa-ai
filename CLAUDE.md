@@ -116,6 +116,14 @@ See `web/.env.local.example` for required vars:
 
 ## Recent Changes (March 2026)
 
+**Sprint H — Accounting & Proposals (complete, branch `sprint-h-accounting-proposals`, March 18):**
+- **Contabilità module** — Full invoicing with IVA/ritenuta/cassa, PDF export, Resend email, mark-paid. DB migration 024. Pages: `/contabilita`, `/contabilita/nuova`, `/contabilita/[id]`. API: `/api/invoices` (full CRUD + mark-paid + send + pdf + next-number).
+- **Proposte d'acquisto** — Purchase proposals with vincoli (mutuo/vendita/perizia), caparra, seller counter-proposal. DB migration 025. Pages: `/proposte`, `/proposte/nuova`, `/proposte/[id]`, `/proposte/[id]/counter-offer`. API: `/api/proposals` (full CRUD + respond + pdf + counter-offer + next-number).
+- Dark mode: lifted background to oklch(0.155), softer foreground, sidebar gradient uses brighter values
+- Fixed hydration mismatch (`suppressHydrationWarning` on `<html>`)
+- 26 bug/UX fixes across 2 review rounds: auth null guards, mobile hover-only actions, dark mode TYPE_COLORS, sidebar CasaAI gradient, loading skeletons, missing invoice detail page, broken proposal action buttons
+- See `web/SPRINT-H-CHANGES.md` for full details
+
 **Sprint F — UX Redesign (complete, commit `83eba84`, March 17-18):**
 - "Warm futurism" design system overhaul — 51 improvements across all major pages
 - Redesigned: dashboard (bento stat cards), listings, contacts, calendar, campaigns, archive, settings, notifications, todos

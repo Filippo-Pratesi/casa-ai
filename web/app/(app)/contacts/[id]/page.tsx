@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Phone, Mail, Euro, Home, MapPin, Maximize2, Building2, Layers } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
@@ -29,10 +29,10 @@ const TYPE_LABELS: Record<string, string> = {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  buyer: 'bg-blue-50 text-blue-700 border-blue-100',
-  seller: 'bg-green-50 text-green-700 border-green-100',
-  renter: 'bg-purple-50 text-purple-700 border-purple-100',
-  landlord: 'bg-amber-50 text-amber-700 border-amber-100',
+  buyer: 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800',
+  seller: 'bg-green-50 text-green-700 border-green-100 dark:bg-green-950 dark:text-green-300 dark:border-green-800',
+  renter: 'bg-purple-50 text-purple-700 border-purple-100 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800',
+  landlord: 'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800',
   other: 'bg-muted/30 text-foreground border-border',
 }
 
@@ -76,12 +76,13 @@ export default async function ContactDetailPage({
   const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
   const admin = createAdminClient()
   const { data: profileData } = await admin
     .from('users')
     .select('workspace_id')
-    .eq('id', user!.id)
+    .eq('id', user.id)
     .single()
 
   const profile = profileData as { workspace_id: string } | null
@@ -184,10 +185,10 @@ export default async function ContactDetailPage({
       <div className="animate-in-2 rounded-2xl border border-border bg-card overflow-hidden">
         {/* Gradient header by contact type */}
         <div className={`px-6 pt-6 pb-5 ${
-          contact.type === 'buyer' ? 'bg-gradient-to-br from-blue-50 to-blue-100/50' :
-          contact.type === 'seller' ? 'bg-gradient-to-br from-green-50 to-green-100/50' :
-          contact.type === 'renter' ? 'bg-gradient-to-br from-amber-50 to-amber-100/50' :
-          contact.type === 'landlord' ? 'bg-gradient-to-br from-purple-50 to-purple-100/50' :
+          contact.type === 'buyer' ? 'bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/50 dark:to-blue-900/20' :
+          contact.type === 'seller' ? 'bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/50 dark:to-green-900/20' :
+          contact.type === 'renter' ? 'bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/50 dark:to-amber-900/20' :
+          contact.type === 'landlord' ? 'bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/50 dark:to-purple-900/20' :
           'bg-gradient-to-br from-muted/60 to-muted/30'
         }`}>
           <div className="flex items-start gap-4">

@@ -1,0 +1,23 @@
+I want you to create a ralph loop that does the following tasks:
+
+
+
+Start by checking if there are unmerged commits from any branch and if there are then you need to handle them.
+
+
+
+1. Use Opus 4.6 and navigate the CasaAI project website at __http://localhost:3000/dashboard__ . Navigate each tab and find min 10 improvements to make to the layout better but also to improve the logic or add  functionalities. The app should look premium, modern and built in 2026.
+
+2. Generate a new REDESIGN PROMPT.md file and save it
+
+3. Use Sonnet 4.6 and use file in point 2. as a prompt and make the relevant adjustments
+
+4. Once step 3 is completed, use Opus 4.6. Navigate each tab in the CasaAI website project and find min 10 improvements to make to the layout better but also add to the logic or functionality.
+
+5. Generate a new EDESIGN PROMPT - 2.md and save it
+
+6. Use Sonnet 4.6 and use file in point 5. as a prompt and make the relevant adjustments
+
+
+
+Loop until all the above 7 tasks are completed. When done, use Haiku 4.5 to generate a .md file with the changes implemented. Commit the changes and push them.
