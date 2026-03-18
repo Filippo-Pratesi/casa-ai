@@ -17,10 +17,10 @@ function WhatsAppIcon({ className }: { className?: string }) {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  buyer: 'bg-blue-50 text-blue-700 border-blue-100',
-  seller: 'bg-green-50 text-green-700 border-green-100',
-  renter: 'bg-purple-50 text-purple-700 border-purple-100',
-  landlord: 'bg-amber-50 text-amber-700 border-amber-100',
+  buyer: 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800',
+  seller: 'bg-green-50 text-green-700 border-green-100 dark:bg-green-950 dark:text-green-300 dark:border-green-800',
+  renter: 'bg-purple-50 text-purple-700 border-purple-100 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800',
+  landlord: 'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800',
   other: 'bg-muted text-muted-foreground border-border',
 }
 

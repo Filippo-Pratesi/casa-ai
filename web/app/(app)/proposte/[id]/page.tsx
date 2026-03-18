@@ -2,9 +2,10 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, FileText, Download, CheckCircle, XCircle, ArrowLeftRight } from 'lucide-react'
+import { ChevronLeft, FileText, Download, ArrowLeftRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ProposalStatusBadge } from '@/components/proposals/proposal-status-badge'
+import { ProposalDetailActions } from '@/components/proposals/proposal-detail-actions'
 
 function fmtEur(n: number | null | undefined) {
   if (!n) return '€ 0'
@@ -212,23 +213,7 @@ export default async function PropostaDetailPage({ params }: Params) {
 
           {/* Quick actions */}
           {proposal.status === 'inviata' && (
-            <div className="rounded-2xl border border-border bg-card p-5 space-y-2">
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Azioni</h2>
-              <form action={`/api/proposals/${id}/respond`} method="POST">
-                <Button variant="outline" size="sm" className="w-full justify-start text-green-600 hover:bg-green-50 dark:hover:bg-green-950" asChild>
-                  <Link href="#" data-action="accept">
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Segna come accettata
-                  </Link>
-                </Button>
-              </form>
-              <Button variant="outline" size="sm" className="w-full justify-start text-red-600 hover:bg-red-50 dark:hover:bg-red-950" asChild>
-                <Link href="#" data-action="reject">
-                  <XCircle className="h-4 w-4 mr-2" />
-                  Segna come rifiutata
-                </Link>
-              </Button>
-            </div>
+            <ProposalDetailActions proposalId={id} />
           )}
         </div>
       </div>

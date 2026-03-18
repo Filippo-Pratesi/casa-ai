@@ -109,12 +109,9 @@ export function AppSidebar({
             </div>
             <div className="min-w-0">
               <p
-                className="text-sm font-extrabold leading-tight tracking-tight"
+                className="text-sm font-extrabold leading-tight tracking-tight bg-clip-text text-transparent"
                 style={{
-                  background: 'linear-gradient(135deg, oklch(0.30 0.12 33), oklch(0.57 0.20 33), oklch(0.45 0.15 20))',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
+                  backgroundImage: 'linear-gradient(135deg, oklch(0.75 0.16 36), oklch(0.82 0.14 50), oklch(0.70 0.18 33))',
                 }}
               >
                 CasaAI

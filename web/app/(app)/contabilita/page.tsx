@@ -73,8 +73,10 @@ export default async function ContabilitaPage() {
         </Button>
       </div>
 
-      {/* Summary cards */}
-      <InvoiceSummaryCards fatturato={fatturato} inAttesa={inAttesa} scadute={scadute} />
+      {/* Summary cards — only when data exists */}
+      {invoices.length > 0 && (
+        <InvoiceSummaryCards fatturato={fatturato} inAttesa={inAttesa} scadute={scadute} />
+      )}
 
       {/* Invoice list */}
       <InvoiceListClient invoices={invoices} />

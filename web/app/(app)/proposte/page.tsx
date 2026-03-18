@@ -67,8 +67,7 @@ export default async function PropostePage() {
       </div>
 
       {/* Summary stats */}
-      {total > 0 && (
-        <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-3">
           <div className="animate-in-1 rounded-xl border border-border bg-card px-4 py-3 text-center">
             <p className="text-2xl font-bold text-foreground">{total}</p>
             <p className="text-xs text-muted-foreground font-medium mt-0.5">Totali</p>
@@ -82,7 +81,6 @@ export default async function PropostePage() {
             <p className="text-xs text-muted-foreground font-medium mt-0.5">Accettate</p>
           </div>
         </div>
-      )}
 
       {/* List */}
       <ProposalList proposals={proposals} />

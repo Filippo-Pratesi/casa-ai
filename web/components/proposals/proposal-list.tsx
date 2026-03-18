@@ -178,7 +178,7 @@ export function ProposalList({ proposals: initialProposals }: ProposalListProps)
               </div>
 
               {/* Actions */}
-              <div className="shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="shrink-0 flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                 <button
                   title="Scarica PDF"
                   onClick={() => handleDownloadPdf(p.id, p.numero_proposta)}

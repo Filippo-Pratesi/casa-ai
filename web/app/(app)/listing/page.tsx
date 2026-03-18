@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { PlusSquare, FileText, Euro, Maximize2, Home, User } from 'lucide-react'
@@ -35,12 +36,13 @@ function formatDate(iso: string) {
 export default async function ListingHistoryPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
   const admin = createAdminClient()
   const { data: profileData } = await admin
     .from('users')
     .select('role, workspace_id')
-    .eq('id', user!.id)
+    .eq('id', user.id)
     .single()
 
   const profile = profileData as { role: string; workspace_id: string } | null
@@ -55,22 +57,27 @@ export default async function ListingHistoryPage() {
     .limit(50)
 
   if (!isAdmin) {
-    query = query.eq('agent_id', user!.id)
+    query = query.eq('agent_id', user.id)
   }
 
   const { data: listings } = await query
   const items = (listings ?? []) as ListingWithAgent[]
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
-      <div className="flex items-center justify-between animate-in-1">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">Storico annunci</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
-            {isAdmin ? 'Tutti gli annunci del workspace' : `${items.length} annunci`}
-          </p>
+    <div className="flex-1 space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+      <div className="flex items-start justify-between gap-4 animate-in-1">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[oklch(0.57_0.20_33/0.15)] to-[oklch(0.66_0.15_188/0.10)]">
+            <Home className="h-5 w-5 text-[oklch(0.57_0.20_33)] dark:text-[oklch(0.73_0.18_36)]" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Annunci</h1>
+            <p className="text-sm text-muted-foreground">
+              {isAdmin ? 'Tutti gli annunci del workspace' : `${items.length} annunci`}
+            </p>
+          </div>
         </div>
-        <Link href="/listing/new" className="btn-ai gap-2">
+        <Link href="/listing/new" className="btn-ai shrink-0 gap-2">
           <PlusSquare className="h-4 w-4" />
           Nuovo annuncio
         </Link>
