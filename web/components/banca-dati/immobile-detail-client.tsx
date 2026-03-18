@@ -7,7 +7,7 @@ import {
   ArrowLeft, MapPin, Phone, ExternalLink,
   Plus, Trash2, Loader2, Megaphone, FileDown
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
@@ -29,6 +29,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 import { PropertyStageBadge, type PropertyStage, STAGE_CONFIG } from './property-stage-icon'
 import { DispositionIcon, type OwnerDisposition } from './disposition-icon'
 import { EventTimeline, type PropertyEvent } from './event-timeline'
@@ -339,9 +340,9 @@ export function ImmobileDetailClient({
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-start gap-3">
-        <Button variant="ghost" size="icon" asChild className="mt-0.5">
-          <Link href="/banca-dati"><ArrowLeft className="h-4 w-4" /></Link>
-        </Button>
+        <Link href="/banca-dati" className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'mt-0.5')}>
+          <ArrowLeft className="h-4 w-4" />
+        </Link>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-xl font-bold truncate">{property.address}</h1>
@@ -369,12 +370,10 @@ export function ImmobileDetailClient({
             </Button>
           )}
           {property.listing_id && (
-            <Button variant="outline" size="sm" asChild>
-              <Link href={`/listing/${property.listing_id}`}>
-                <ExternalLink className="h-4 w-4 mr-1.5" />
-                Vedi annuncio
-              </Link>
-            </Button>
+            <Link href={`/listing/${property.listing_id}`} className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+              <ExternalLink className="h-4 w-4 mr-1.5" />
+              Vedi annuncio
+            </Link>
           )}
         </div>
       </div>
@@ -423,11 +422,9 @@ export function ImmobileDetailClient({
                     )}
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href={`/contacts/${property.owner_contact.id}`}>
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </Link>
-                </Button>
+                <Link href={`/contacts/${property.owner_contact.id}`} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </Link>
               </div>
             </Card>
           )}
@@ -458,14 +455,14 @@ export function ImmobileDetailClient({
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       {pc.contact?.phone && (
-                        <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
-                          <a href={`tel:${pc.contact.phone}`}><Phone className="h-3 w-3" /></a>
-                        </Button>
+                        <a href={`tel:${pc.contact.phone}`} className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'h-7 w-7')}>
+                          <Phone className="h-3 w-3" />
+                        </a>
                       )}
                       {pc.contact?.id && (
-                        <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
-                          <Link href={`/contacts/${pc.contact.id}`}><ExternalLink className="h-3 w-3" /></Link>
-                        </Button>
+                        <Link href={`/contacts/${pc.contact.id}`} className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'h-7 w-7')}>
+                          <ExternalLink className="h-3 w-3" />
+                        </Link>
                       )}
                       {(isAdmin || isOwner) && (
                         <Button

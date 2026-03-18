@@ -1,7 +1,8 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
-import { MapPin, User, Clock } from 'lucide-react'
+import { MapPin, User, Clock, Download } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { it } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
@@ -33,10 +34,33 @@ interface PropertyCardProps {
 }
 
 export function PropertyCard({ property, compact = false, className }: PropertyCardProps) {
+  const [pdfLoading, setPdfLoading] = useState(false)
+
+  async function handleDownloadPdf(e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    setPdfLoading(true)
+    try {
+      const res = await fetch(`/api/properties/${property.id}/incarico-pdf`)
+      if (!res.ok) throw new Error('Errore')
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `incarico-${property.address.replace(/\s+/g, '-').toLowerCase()}.pdf`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      // ignore
+    } finally {
+      setPdfLoading(false)
+    }
+  }
+
   return (
     <Link href={`/banca-dati/${property.id}`}>
       <Card className={cn(
-        'group p-4 hover:shadow-md transition-all duration-200 cursor-pointer',
+        'relative group p-4 hover:shadow-md transition-all duration-200 cursor-pointer',
         'hover:border-primary/20',
         className
       )}>
@@ -96,6 +120,17 @@ export function PropertyCard({ property, compact = false, className }: PropertyC
             </>
           )}
         </div>
+
+        {property.stage === 'incarico' && (
+          <button
+            onClick={handleDownloadPdf}
+            disabled={pdfLoading}
+            title="Scarica contratto incarico PDF"
+            className="absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-amber-600 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-amber-100 dark:bg-amber-950 dark:text-amber-400"
+          >
+            <Download className="h-3.5 w-3.5" />
+          </button>
+        )}
       </Card>
     </Link>
   )

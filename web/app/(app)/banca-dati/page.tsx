@@ -18,8 +18,8 @@ interface Property {
   rooms: number | null
   estimated_value: number | null
   updated_at: string
-  owner_contact?: { name: string } | null
-  agent?: { name: string } | null
+  owner_name: string | null
+  agent_name: string | null
 }
 
 export default async function BancaDatiPage({
@@ -50,6 +50,7 @@ export default async function BancaDatiPage({
   const q = params.q ?? ''
   const page = parseInt(params.page ?? '1', 10)
   const sort = params.sort ?? 'updated_at_desc'
+  const viewMode = params.viewMode ?? 'grid'
   const per_page = 50
 
   const SORT_MAP: Record<string, { col: string; asc: boolean }> = {
@@ -87,8 +88,8 @@ export default async function BancaDatiPage({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const properties: Property[] = (data ?? []).map((p: any) => ({
     ...p,
-    owner_contact: p.owner_contact ?? null,
-    agent: p.agent ?? null,
+    owner_name: (p.owner_contact as { name: string } | null)?.name ?? null,
+    agent_name: (p.agent as { name: string } | null)?.name ?? null,
     estimated_value: p.estimated_value ?? null,
   }))
 
@@ -133,7 +134,7 @@ export default async function BancaDatiPage({
       zones={zones}
       agents={agents}
       isAdmin={isAdmin}
-      initialFilters={{ stage, zone, agent_id, disposition, transaction_type, q, sort }}
+      initialFilters={{ stage, zone, agent_id, disposition, transaction_type, q, sort, viewMode }}
     />
   )
 }

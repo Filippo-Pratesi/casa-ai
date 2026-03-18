@@ -17,48 +17,56 @@ const STAGE_CONFIG: Record<PropertyStage, {
   icon: React.ElementType
   color: string
   bg: string
+  description: string
 }> = {
   sconosciuto: {
     label: 'Sconosciuto',
     icon: HelpCircle,
     color: 'text-gray-500',
     bg: 'bg-gray-100 dark:bg-gray-800',
+    description: 'Solo indirizzo noto, nessun contatto',
   },
   ignoto: {
     label: 'Ignoto',
     icon: EyeOff,
     color: 'text-slate-500',
     bg: 'bg-slate-100 dark:bg-slate-800',
+    description: 'Informazioni presenti, proprietario non contattato',
   },
   conosciuto: {
     label: 'Conosciuto',
     icon: Eye,
     color: 'text-blue-600',
     bg: 'bg-blue-50 dark:bg-blue-950',
+    description: 'Contatto con il proprietario attivato',
   },
   incarico: {
     label: 'Incarico',
     icon: FileText,
     color: 'text-amber-600',
     bg: 'bg-amber-50 dark:bg-amber-950',
+    description: 'Mandato di vendita o locazione firmato',
   },
   venduto: {
     label: 'Venduto',
     icon: CheckCircle,
     color: 'text-green-600',
     bg: 'bg-green-50 dark:bg-green-950',
+    description: 'Rogito completato, vendita conclusa',
   },
   locato: {
     label: 'Locato',
     icon: Home,
     color: 'text-purple-600',
     bg: 'bg-purple-50 dark:bg-purple-950',
+    description: 'Contratto di locazione attivo',
   },
   disponibile: {
     label: 'Disponibile',
     icon: RefreshCw,
     color: 'text-teal-600',
     bg: 'bg-teal-50 dark:bg-teal-950',
+    description: 'Contratto scaduto, immobile di nuovo disponibile',
   },
 }
 
@@ -79,6 +87,7 @@ export function PropertyStageIcon({ stage, showLabel = false, size = 'sm', class
 
   return (
     <span
+      title={config.description}
       className={cn(
         'inline-flex items-center gap-1 rounded-full font-medium',
         config.bg,

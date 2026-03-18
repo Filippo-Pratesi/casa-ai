@@ -42,18 +42,18 @@ export async function POST(_req: NextRequest, { params }: RouteContext) {
   }
 
   // Map property fields to listing fields
+  // Use safe defaults for NOT NULL columns when property data is incomplete
   const listingPayload = {
     workspace_id: workspaceId,
     agent_id: user.id,
-    title: `${p.address}, ${p.city}`,
     address: p.address,
     city: p.city,
     property_type: p.property_type ?? 'apartment',
-    sqm: p.sqm ?? null,
-    rooms: p.rooms ?? null,
-    bathrooms: p.bathrooms ?? null,
+    sqm: (p.sqm as number | null) ?? 0,
+    rooms: (p.rooms as number | null) ?? 0,
+    bathrooms: (p.bathrooms as number | null) ?? 1,
     floor: p.floor ?? null,
-    price: p.estimated_value ?? null,
+    price: (p.estimated_value as number | null) ?? 0,
     status: 'draft',
     transaction_type: p.transaction_type ?? 'vendita',
     property_id: id,

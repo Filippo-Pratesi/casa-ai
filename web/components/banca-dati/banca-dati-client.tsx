@@ -3,7 +3,9 @@
 import { useRouter, usePathname } from 'next/navigation'
 import { useState, useCallback, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { Plus, Search, X, ChevronLeft, ChevronRight, ArrowUpDown, Building2 } from 'lucide-react'
+import { Plus, Search, X, ChevronLeft, ChevronRight, ArrowUpDown, Building2, LayoutGrid, LayoutList, HelpCircle } from 'lucide-react'
+import { formatDistanceToNow } from 'date-fns'
+import { it } from 'date-fns/locale'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -13,9 +15,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { cn } from '@/lib/utils'
 import { PropertyCard, type PropertyCardData } from './property-card'
-import { STAGE_CONFIG, type PropertyStage } from './property-stage-icon'
-import { DISPOSITION_CONFIG } from './disposition-icon'
+import { PropertyStageBadge, STAGE_CONFIG, type PropertyStage } from './property-stage-icon'
+import { DispositionIcon, DISPOSITION_CONFIG } from './disposition-icon'
 
 const STAGES: PropertyStage[] = ['sconosciuto', 'ignoto', 'conosciuto', 'incarico', 'venduto', 'locato', 'disponibile']
 
@@ -36,6 +39,7 @@ interface BancaDatiClientProps {
     transaction_type: string
     q: string
     sort: string
+    viewMode: string
   }
 }
 
@@ -62,6 +66,7 @@ export function BancaDatiClient({
   const router = useRouter()
   const pathname = usePathname()
   const [searchText, setSearchText] = useState(initialFilters.q)
+  const [showLegend, setShowLegend] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Debounced search — auto-applies 400ms after typing
@@ -85,10 +90,16 @@ export function BancaDatiClient({
       disposition: initialFilters.disposition,
       transaction_type: initialFilters.transaction_type,
       sort: initialFilters.sort,
+      viewMode: initialFilters.viewMode,
       q: searchText,
       ...updates,
     }
-    Object.entries(current).forEach(([k, v]) => { if (v && v !== 'updated_at_desc') params.set(k, v) })
+    Object.entries(current).forEach(([k, v]) => {
+      if (!v) return
+      if (k === 'sort' && v === 'updated_at_desc') return
+      if (k === 'viewMode' && v === 'grid') return
+      params.set(k, v)
+    })
     return params.toString()
   }, [initialFilters, searchText])
 
@@ -252,7 +263,7 @@ export function BancaDatiClient({
           </Select>
         )}
 
-        {/* Sort control */}
+        {/* Sort control + view toggle + legend */}
         <div className="ml-auto flex items-center gap-1">
           <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
           <Select
@@ -268,10 +279,67 @@ export function BancaDatiClient({
               ))}
             </SelectContent>
           </Select>
+
+          {/* View mode + Legend */}
+          <div className="flex items-center gap-1 ml-1 pl-1 border-l border-border/60">
+            <button
+              onClick={() => setShowLegend(v => !v)}
+              title="Mostra legenda"
+              className={cn('flex h-8 w-8 items-center justify-center rounded-lg transition-colors', showLegend ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted')}
+            >
+              <HelpCircle className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => updateUrl({ viewMode: 'grid', page: '1' })}
+              title="Vista griglia"
+              className={cn('flex h-8 w-8 items-center justify-center rounded-lg transition-colors', initialFilters.viewMode !== 'list' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted')}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => updateUrl({ viewMode: 'list', page: '1' })}
+              title="Vista lista"
+              className={cn('flex h-8 w-8 items-center justify-center rounded-lg transition-colors', initialFilters.viewMode === 'list' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted')}
+            >
+              <LayoutList className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Property grid */}
+      {/* Legend panel */}
+      {showLegend && (
+        <div className="rounded-xl border border-border/60 bg-muted/10 p-4 space-y-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Stage Immobile</p>
+            <div className="flex flex-wrap gap-2">
+              {(Object.entries(STAGE_CONFIG) as [PropertyStage, typeof STAGE_CONFIG[PropertyStage]][]).map(([stage, cfg]) => {
+                const Icon = cfg.icon
+                return (
+                  <div key={stage} className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium', cfg.bg, cfg.color)}>
+                    <Icon className="h-3 w-3" />
+                    <span>{cfg.label}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Stato Proprietario</p>
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+              {Object.entries(DISPOSITION_CONFIG).map(([key, cfg]) => (
+                <div key={key} className="inline-flex items-center gap-1.5 text-xs">
+                  <span className={cn('text-base font-medium leading-none', cfg.color)}>{cfg.symbol}</span>
+                  <span className="font-medium">{cfg.label}</span>
+                  <span className="text-muted-foreground hidden sm:inline">— {cfg.description}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Property grid / list */}
       {properties.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border/60 py-16 text-center">
           <Building2 className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" />
@@ -288,6 +356,41 @@ export function BancaDatiClient({
               Aggiungi il primo immobile
             </Link>
           )}
+        </div>
+      ) : initialFilters.viewMode === 'list' ? (
+        <div className="rounded-xl border border-border overflow-hidden bg-card">
+          {properties.map((p) => (
+            <Link
+              key={p.id}
+              href={`/banca-dati/${p.id}`}
+              className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted/50 border-b border-border/40 last:border-0 transition-colors"
+            >
+              <PropertyStageBadge stage={p.stage} className="shrink-0" />
+              <DispositionIcon disposition={p.owner_disposition} className="shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{p.address}</p>
+                <p className="text-xs text-muted-foreground truncate">{p.city}{p.zone ? ` · ${p.zone}` : ''}</p>
+              </div>
+              {p.owner_name && (
+                <p className="text-xs text-muted-foreground hidden md:block truncate max-w-[120px]">{p.owner_name}</p>
+              )}
+              {p.transaction_type && (
+                <span className={cn(
+                  'text-xs rounded px-1.5 py-0.5 font-medium hidden sm:block shrink-0',
+                  p.transaction_type === 'affitto'
+                    ? 'bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400'
+                    : 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400'
+                )}>
+                  {p.transaction_type === 'affitto' ? 'Affitto' : 'Vendita'}
+                </span>
+              )}
+              {p.estimated_value && (
+                <p className="text-sm font-semibold text-foreground hidden lg:block shrink-0">€{p.estimated_value.toLocaleString('it-IT')}</p>
+              )}
+              <p className="text-xs text-muted-foreground hidden sm:block shrink-0">{formatDistanceToNow(new Date(p.updated_at), { addSuffix: true, locale: it })}</p>
+              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+            </Link>
+          ))}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">

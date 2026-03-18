@@ -106,15 +106,17 @@ export default async function ListingDetailPage({
 
   // Fetch sold comparables for valuation widget
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: comparablesData } = await (admin as any)
+  let comparablesQuery = (admin as any)
     .from('archived_listings')
     .select('address, price, sqm, rooms')
     .eq('workspace_id', listing.workspace_id)
     .eq('sold', true)
-    .ilike('city', listing.city)
-    .gte('rooms', listing.rooms - 1)
-    .lte('rooms', listing.rooms + 1)
     .limit(5)
+  if (listing.city) comparablesQuery = comparablesQuery.ilike('city', listing.city)
+  if (listing.rooms != null) {
+    comparablesQuery = comparablesQuery.gte('rooms', listing.rooms - 1).lte('rooms', listing.rooms + 1)
+  }
+  const { data: comparablesData } = await comparablesQuery
 
   const comparables = (comparablesData ?? []) as { address: string; price: number; sqm: number; rooms: number }[]
 
@@ -155,11 +157,11 @@ export default async function ListingDetailPage({
     type: string; budget_max: number | null; preferred_cities: string[]
     preferred_types: string[]; min_rooms: number | null; min_sqm: number | null
   }>).filter(c => {
-    if (c.budget_max !== null && c.budget_max < listing.price) return false
-    if (c.preferred_cities.length > 0 && !c.preferred_cities.map(s => s.toLowerCase()).includes(listing.city.toLowerCase())) return false
-    if (c.preferred_types.length > 0 && !c.preferred_types.includes(listing.property_type)) return false
-    if (c.min_rooms !== null && c.min_rooms > listing.rooms) return false
-    if (c.min_sqm !== null && c.min_sqm > listing.sqm) return false
+    if (listing.price != null && c.budget_max !== null && c.budget_max < listing.price) return false
+    if (listing.city && c.preferred_cities.length > 0 && !c.preferred_cities.map(s => s.toLowerCase()).includes(listing.city.toLowerCase())) return false
+    if (c.preferred_types.length > 0 && listing.property_type && !c.preferred_types.includes(listing.property_type)) return false
+    if (listing.rooms != null && c.min_rooms !== null && c.min_rooms > listing.rooms) return false
+    if (listing.sqm != null && c.min_sqm !== null && c.min_sqm > listing.sqm) return false
     return true
   }).slice(0, 6)
 
@@ -221,7 +223,9 @@ export default async function ListingDetailPage({
       {/* Price prominent */}
       <div className="rounded-2xl border-2 border-[oklch(0.57_0.20_33)] bg-[oklch(0.57_0.20_33/0.06)] px-6 py-4">
         <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">PREZZO</p>
-        <p className="text-[oklch(0.57_0.20_33)] text-3xl font-bold">€{listing.price.toLocaleString('it-IT')}</p>
+        <p className="text-[oklch(0.57_0.20_33)] text-3xl font-bold">
+          {listing.price != null ? `€${listing.price.toLocaleString('it-IT')}` : <span className="text-muted-foreground text-xl">Da definire</span>}
+        </p>
       </div>
 
       {/* MLS toggle (admins only) */}
@@ -245,13 +249,13 @@ export default async function ListingDetailPage({
         <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-3">Storico prezzi</p>
         <PriceHistory
           listingId={listing.id}
-          currentPrice={listing.price}
+          currentPrice={listing.price ?? 0}
           history={priceHistory}
         />
       </div>
 
       {/* Valuation widget */}
-      {comparables.length > 0 && (
+      {comparables.length > 0 && listing.price != null && listing.sqm != null && (
         <ValuationWidget
           currentPrice={listing.price}
           currentSqm={listing.sqm}
@@ -263,17 +267,17 @@ export default async function ListingDetailPage({
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="rounded-xl border border-border bg-muted/30 p-4 text-center">
           <Maximize2 className="h-4 w-4 text-muted-foreground mx-auto mb-1.5" />
-          <p className="text-xl font-semibold">{listing.sqm}</p>
+          <p className="text-xl font-semibold">{listing.sqm ?? '—'}</p>
           <p className="text-xs text-muted-foreground mt-0.5">m²</p>
         </div>
         <div className="rounded-xl border border-border bg-muted/30 p-4 text-center">
           <Home className="h-4 w-4 text-muted-foreground mx-auto mb-1.5" />
-          <p className="text-xl font-semibold">{listing.rooms}</p>
+          <p className="text-xl font-semibold">{listing.rooms ?? '—'}</p>
           <p className="text-xs text-muted-foreground mt-0.5">Locali</p>
         </div>
         <div className="rounded-xl border border-border bg-muted/30 p-4 text-center">
           <Bath className="h-4 w-4 text-muted-foreground mx-auto mb-1.5" />
-          <p className="text-xl font-semibold">{listing.bathrooms}</p>
+          <p className="text-xl font-semibold">{listing.bathrooms ?? '—'}</p>
           <p className="text-xs text-muted-foreground mt-0.5">Bagni</p>
         </div>
         {listing.property_type === 'apartment' && listing.floor != null && (
@@ -387,10 +391,12 @@ export default async function ListingDetailPage({
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {matchingContacts.slice(0, 6).map((c) => {
               const phone = c.phone?.replace(/\D/g, '') ?? ''
-              const waText = `Buongiorno ${c.name},\n\nHo pensato a lei per un immobile che potrebbe interessarla:\n📍 ${listing.address}, ${listing.city}\n💶 €${listing.price.toLocaleString('it-IT')}\n\nSarebbe disponibile per una visita?`
+              const priceStr = listing.price != null ? `€${listing.price.toLocaleString('it-IT')}` : 'prezzo da definire'
+              const locationStr = [listing.address, listing.city].filter(Boolean).join(', ')
+              const waText = `Buongiorno ${c.name},\n\nHo pensato a lei per un immobile che potrebbe interessarla:\n📍 ${locationStr}\n💶 ${priceStr}\n\nSarebbe disponibile per una visita?`
               const waUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(waText)}` : null
-              const emailSubject = `Immobile per lei — ${listing.address}, ${listing.city}`
-              const emailBody = `Buongiorno ${c.name},\n\nHo pensato a lei per un immobile:\n\n${listing.address}, ${listing.city}\nPrezzo: €${listing.price.toLocaleString('it-IT')}\n${listing.sqm} m² · ${listing.rooms} locali\n\nSarebbe disponibile per una visita?\n\nCordiali saluti`
+              const emailSubject = `Immobile per lei — ${locationStr}`
+              const emailBody = `Buongiorno ${c.name},\n\nHo pensato a lei per un immobile:\n\n${locationStr}\nPrezzo: ${priceStr}\n${listing.sqm != null ? `${listing.sqm} m²` : ''}${listing.sqm != null && listing.rooms != null ? ' · ' : ''}${listing.rooms != null ? `${listing.rooms} locali` : ''}\n\nSarebbe disponibile per una visita?\n\nCordiali saluti`
               const emailUrl = c.email ? `mailto:${c.email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}` : null
               return (
                 <div key={c.id} className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3">
