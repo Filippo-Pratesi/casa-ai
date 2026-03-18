@@ -20,6 +20,7 @@ interface Property {
   updated_at: string
   owner_name: string | null
   agent_name: string | null
+  last_event: { event_type: string; title: string; event_date: string } | null
 }
 
 export default async function BancaDatiPage({
@@ -50,7 +51,7 @@ export default async function BancaDatiPage({
   const q = params.q ?? ''
   const page = parseInt(params.page ?? '1', 10)
   const sort = params.sort ?? 'updated_at_desc'
-  const viewMode = params.viewMode ?? 'grid'
+  const viewMode = params.viewMode ?? 'list'
   const per_page = 50
 
   const SORT_MAP: Record<string, { col: string; asc: boolean }> = {
@@ -85,12 +86,31 @@ export default async function BancaDatiPage({
 
   const { data, count } = await query
 
+  // Fetch last event per property (for list view)
+  const propertyIds = (data ?? []).map((p: any) => (p as { id: string }).id)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: lastEventsData } = propertyIds.length > 0
+    ? await (admin as any)
+        .from('property_events')
+        .select('property_id, event_type, title, event_date')
+        .in('property_id', propertyIds)
+        .order('event_date', { ascending: false })
+    : { data: [] }
+
+  const lastEventMap: Record<string, { event_type: string; title: string; event_date: string }> = {}
+  for (const ev of ((lastEventsData ?? []) as { property_id: string; event_type: string; title: string; event_date: string }[])) {
+    if (!lastEventMap[ev.property_id]) {
+      lastEventMap[ev.property_id] = ev
+    }
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const properties: Property[] = (data ?? []).map((p: any) => ({
     ...p,
     owner_name: (p.owner_contact as { name: string } | null)?.name ?? null,
     agent_name: (p.agent as { name: string } | null)?.name ?? null,
     estimated_value: p.estimated_value ?? null,
+    last_event: lastEventMap[p.id] ?? null,
   }))
 
   // Stage counts for header badges

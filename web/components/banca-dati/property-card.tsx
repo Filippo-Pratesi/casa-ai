@@ -25,6 +25,7 @@ export interface PropertyCardData {
   rooms?: number | null
   estimated_value?: number | null
   updated_at: string
+  last_event?: { event_type: string; title: string; event_date: string } | null
 }
 
 interface PropertyCardProps {

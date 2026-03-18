@@ -97,7 +97,7 @@ export function BancaDatiClient({
     Object.entries(current).forEach(([k, v]) => {
       if (!v) return
       if (k === 'sort' && v === 'updated_at_desc') return
-      if (k === 'viewMode' && v === 'grid') return
+      if (k === 'viewMode' && v === 'list') return  // list is default, don't add to URL
       params.set(k, v)
     })
     return params.toString()
@@ -292,14 +292,14 @@ export function BancaDatiClient({
             <button
               onClick={() => updateUrl({ viewMode: 'grid', page: '1' })}
               title="Vista griglia"
-              className={cn('flex h-8 w-8 items-center justify-center rounded-lg transition-colors', initialFilters.viewMode !== 'list' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted')}
+              className={cn('flex h-8 w-8 items-center justify-center rounded-lg transition-colors', initialFilters.viewMode === 'grid' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted')}
             >
               <LayoutGrid className="h-4 w-4" />
             </button>
             <button
               onClick={() => updateUrl({ viewMode: 'list', page: '1' })}
               title="Vista lista"
-              className={cn('flex h-8 w-8 items-center justify-center rounded-lg transition-colors', initialFilters.viewMode === 'list' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted')}
+              className={cn('flex h-8 w-8 items-center justify-center rounded-lg transition-colors', initialFilters.viewMode !== 'grid' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted')}
             >
               <LayoutList className="h-4 w-4" />
             </button>
@@ -357,37 +357,53 @@ export function BancaDatiClient({
             </Link>
           )}
         </div>
-      ) : initialFilters.viewMode === 'list' ? (
+      ) : initialFilters.viewMode !== 'grid' ? (
         <div className="rounded-xl border border-border overflow-hidden bg-card">
+          {/* Column headers */}
+          <div className="hidden md:flex items-center gap-3 px-4 py-2 bg-muted/30 border-b border-border/60 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground select-none">
+            <span className="w-[86px] shrink-0">Stage</span>
+            <span className="w-5 shrink-0"></span>
+            <span className="flex-1 min-w-0">Via</span>
+            <span className="w-28 hidden lg:block">Città</span>
+            <span className="w-20 hidden xl:block">Zona</span>
+            <span className="w-24 hidden xl:block">Proprietario</span>
+            <span className="w-14 hidden sm:block text-center">Tipo</span>
+            <span className="w-20 hidden lg:block text-right">Valore</span>
+            <span className="w-36 hidden xl:block">Ultima nota</span>
+            <span className="w-14 hidden md:block text-right">Aggiornato</span>
+            <span className="w-4"></span>
+          </div>
           {properties.map((p) => (
             <Link
               key={p.id}
               href={`/banca-dati/${p.id}`}
-              className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted/50 border-b border-border/40 last:border-0 transition-colors"
+              className="flex items-center gap-3 px-4 py-2 hover:bg-muted/50 border-b border-border/30 last:border-0 transition-colors"
             >
-              <PropertyStageBadge stage={p.stage} className="shrink-0" />
-              <DispositionIcon disposition={p.owner_disposition} className="shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{p.address}</p>
-                <p className="text-xs text-muted-foreground truncate">{p.city}{p.zone ? ` · ${p.zone}` : ''}</p>
-              </div>
-              {p.owner_name && (
-                <p className="text-xs text-muted-foreground hidden md:block truncate max-w-[120px]">{p.owner_name}</p>
-              )}
-              {p.transaction_type && (
+              <PropertyStageBadge stage={p.stage} className="w-[86px] shrink-0" />
+              <DispositionIcon disposition={p.owner_disposition} className="w-5 shrink-0" />
+              <p className="flex-1 min-w-0 text-sm font-medium truncate">{p.address}</p>
+              <p className="w-28 hidden lg:block text-xs text-muted-foreground truncate">{p.city}</p>
+              <p className="w-20 hidden xl:block text-xs text-muted-foreground truncate">{p.zone ?? <span className="text-border/50">—</span>}</p>
+              <p className="w-24 hidden xl:block text-xs text-muted-foreground truncate">{p.owner_name ?? '—'}</p>
+              {p.transaction_type ? (
                 <span className={cn(
-                  'text-xs rounded px-1.5 py-0.5 font-medium hidden sm:block shrink-0',
+                  'w-14 hidden sm:block text-[10px] rounded px-1.5 py-0.5 font-medium text-center shrink-0',
                   p.transaction_type === 'affitto'
                     ? 'bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400'
                     : 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400'
                 )}>
                   {p.transaction_type === 'affitto' ? 'Affitto' : 'Vendita'}
                 </span>
-              )}
-              {p.estimated_value && (
-                <p className="text-sm font-semibold text-foreground hidden lg:block shrink-0">€{p.estimated_value.toLocaleString('it-IT')}</p>
-              )}
-              <p className="text-xs text-muted-foreground hidden sm:block shrink-0">{formatDistanceToNow(new Date(p.updated_at), { addSuffix: true, locale: it })}</p>
+              ) : <span className="w-14 hidden sm:block shrink-0" />}
+              {p.estimated_value ? (
+                <p className="w-20 hidden lg:block text-xs font-semibold text-foreground text-right shrink-0">€{p.estimated_value.toLocaleString('it-IT')}</p>
+              ) : <span className="w-20 hidden lg:block shrink-0" />}
+              {(p as PropertyCardData & { last_event?: { title: string; event_date: string } | null }).last_event ? (
+                <p className="w-36 hidden xl:block text-xs text-muted-foreground truncate">
+                  {(p as PropertyCardData & { last_event?: { title: string; event_date: string } | null }).last_event!.title}
+                </p>
+              ) : <span className="w-36 hidden xl:block shrink-0" />}
+              <p className="w-14 hidden md:block text-xs text-muted-foreground text-right shrink-0">{formatDistanceToNow(new Date(p.updated_at), { addSuffix: false, locale: it })}</p>
               <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
             </Link>
           ))}

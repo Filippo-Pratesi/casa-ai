@@ -76,6 +76,13 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
        (defaultValues?.preferred_types && (defaultValues.preferred_types as string[]).length > 0))
   )
 
+  // Property linking state (create mode only)
+  const [propertySearch, setPropertySearch] = useState('')
+  const [propertyResults, setPropertyResults] = useState<{ id: string; address: string; city: string; stage: string }[]>([])
+  const [selectedProperty, setSelectedProperty] = useState<{ id: string; address: string; city: string; stage: string } | null>(null)
+  const [propertyRole, setPropertyRole] = useState('proprietario')
+  const [searchingProperties, setSearchingProperties] = useState(false)
+
   function update(field: keyof FormState, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }))
   }
@@ -110,6 +117,22 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
     }
   }
 
+  async function searchProperties(q: string) {
+    setPropertySearch(q)
+    setSelectedProperty(null)
+    if (q.length < 2) { setPropertyResults([]); return }
+    setSearchingProperties(true)
+    try {
+      const res = await fetch(`/api/properties?q=${encodeURIComponent(q)}&per_page=8`)
+      if (res.ok) {
+        const data = await res.json()
+        setPropertyResults((data.properties ?? []).slice(0, 8))
+      }
+    } finally {
+      setSearchingProperties(false)
+    }
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!form.name.trim()) {
@@ -127,6 +150,41 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
         })
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || 'Errore nel salvataggio')
+
+        // Link property if selected (only on create)
+        if (mode === 'create' && selectedProperty && data.id) {
+          try {
+            await fetch(`/api/properties/${selectedProperty.id}/contacts`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ contact_id: data.id, role: propertyRole }),
+            })
+            // If proprietario and property was sconosciuto, advance stage
+            if (propertyRole === 'proprietario') {
+              await fetch(`/api/properties/${selectedProperty.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ owner_contact_id: data.id }),
+              })
+              // Advance: sconosciuto→conosciuto, ignoto→conosciuto
+              if (selectedProperty.stage === 'sconosciuto' || selectedProperty.stage === 'ignoto') {
+                await fetch(`/api/properties/${selectedProperty.id}/advance`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ target_stage: 'conosciuto' }),
+                })
+              }
+            } else if (selectedProperty.stage === 'sconosciuto') {
+              // Non-proprietario contact on sconosciuto → advance to ignoto
+              await fetch(`/api/properties/${selectedProperty.id}/advance`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ target_stage: 'ignoto' }),
+              })
+            }
+          } catch { /* non-fatal */ }
+        }
+
         toast.success(mode === 'create' ? 'Cliente aggiunto' : 'Cliente aggiornato')
         router.push(mode === 'create' ? `/contacts/${data.id}` : `/contacts/${contactId}`)
         router.refresh()
@@ -338,6 +396,89 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
               </div>
             </div>
           )}
+        </section>
+      )}
+
+      {/* Collega immobile — solo in creazione */}
+      {mode === 'create' && (
+        <section className="py-6 space-y-4">
+          <div>
+            <h2 className="text-base font-semibold">Collega immobile <span className="ml-2 text-xs font-normal text-muted-foreground">(opzionale)</span></h2>
+            <p className="text-xs text-muted-foreground mt-0.5">Se il contatto è proprietario, l&apos;immobile avanzerà automaticamente di stage</p>
+          </div>
+
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label>Cerca immobile</Label>
+              <div className="relative">
+                <Input
+                  placeholder="Via, città..."
+                  value={propertySearch}
+                  onChange={(e) => searchProperties(e.target.value)}
+                  autoComplete="off"
+                />
+                {searchingProperties && (
+                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
+                )}
+              </div>
+              {propertyResults.length > 0 && !selectedProperty && (
+                <div className="rounded-lg border border-border max-h-40 overflow-auto">
+                  {propertyResults.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => { setSelectedProperty(p); setPropertySearch(`${p.address}, ${p.city}`); setPropertyResults([]) }}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/50"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium truncate">{p.address}</p>
+                        <p className="text-xs text-muted-foreground">{p.city}</p>
+                      </div>
+                      <span className="text-xs text-muted-foreground shrink-0 capitalize">{p.stage}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {selectedProperty && (
+                <div className="flex items-center justify-between rounded-lg bg-green-50 dark:bg-green-950 px-3 py-2">
+                  <p className="text-sm text-green-700 dark:text-green-400">✓ {selectedProperty.address}, {selectedProperty.city}</p>
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedProperty(null); setPropertySearch('') }}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    Rimuovi
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {selectedProperty && (
+              <div className="space-y-1.5">
+                <Label>Ruolo nel contatto</Label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: 'proprietario', label: 'Proprietario' },
+                    { value: 'inquilino', label: 'Inquilino' },
+                    { value: 'altro', label: 'Altro' },
+                  ].map((r) => (
+                    <button
+                      key={r.value}
+                      type="button"
+                      onClick={() => setPropertyRole(r.value)}
+                      className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${
+                        propertyRole === r.value
+                          ? 'border-[oklch(0.57_0.20_33)] bg-[oklch(0.57_0.20_33)] text-white'
+                          : 'border-border bg-card text-muted-foreground hover:border-muted-foreground/50'
+                      }`}
+                    >
+                      {r.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </section>
       )}
 
