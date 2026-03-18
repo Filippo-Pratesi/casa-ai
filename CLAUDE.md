@@ -79,7 +79,7 @@ Key entities: workspaces, users, listings, contacts, appointments, campaigns, no
 
 Enums: `user_role` (admin/agent), `property_type` (apartment/house/villa/commercial/land/garage/other), `tone` (standard/luxury/approachable/investment), `listing_status` (draft/published), `workspace_plan` (trial/starter/growth/network), `contact_type` (buyer/seller/renter/landlord/other).
 
-**Important:** When changing the schema, always create a new migration file with the next number in `web/supabase/migrations/` (current highest: 023). Never modify existing migration files.
+**Important:** When changing the schema, always create a new migration file with the next number in `web/supabase/migrations/` (current highest: 042). Never modify existing migration files.
 
 ## Environment Variables
 
@@ -133,9 +133,11 @@ See `web/.env.local.example` for required vars:
 - Global: spring animations, gradient treatments, glass/blur effects, dark mode refinements
 - See `web/UX CHANGES IMPLEMENTED.md` for full details (51 items)
 
-## Sprint I — Banca Dati Immobiliare (In Progress)
+## Sprint I — Banca Dati Immobiliare (Completo, branch `sprint-i-banca-dati`, Marzo 2026)
 
-**Status:** Phase 0 complete (specs drafted and committed), beginning Phase 1 (database migrations)
+**Status:** All phases 0-7 complete. 15 migrations applied to live DB.
+
+**Live DB:** 164 properties, 246 events, 5 zones, 25 annunci linked — seed data applied.
 
 ### Overview
 Fundamental architecture change: add **property lifecycle management** from discovery through sale/rental. Every property discovered by agents enters the database and is tracked through all stages (sconosciuto → ignoto → conosciuto → incarico → venduto/locato → disponibile) with complete chronistoria (append-only event log), multi-role contacts, zone management, and automatic notifications.
