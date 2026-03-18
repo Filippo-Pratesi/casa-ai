@@ -492,12 +492,29 @@ export function ImmobileDetailClient({
 
         {/* Primary action */}
         <div className="flex gap-2 shrink-0">
-          {canAdvance && nextStage && (
-            <Button onClick={handleAdvanceStageClick} disabled={advancing} size="sm">
-              {advancing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-              {ADVANCE_LABELS[nextStage] ?? `→ ${nextStage}`}
-            </Button>
-          )}
+          {canAdvance && nextStage && (() => {
+            // Compute blocking reason for the next stage
+            let blockReason: string | null = null
+            if (nextStage === 'conosciuto' && !property.owner_contact_id) {
+              blockReason = 'Aggiungi prima il proprietario (sezione "Contatti immobile")'
+            }
+            return (
+              <div className="flex flex-col items-end gap-1">
+                <Button
+                  onClick={handleAdvanceStageClick}
+                  disabled={advancing || !!blockReason}
+                  size="sm"
+                  title={blockReason ?? undefined}
+                >
+                  {advancing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                  {ADVANCE_LABELS[nextStage] ?? `→ ${nextStage}`}
+                </Button>
+                {blockReason && (
+                  <p className="text-[10px] text-muted-foreground text-right max-w-[200px] leading-tight">{blockReason}</p>
+                )}
+              </div>
+            )
+          })()}
           {/* Delete — only for early-stage properties */}
           {(property.stage === 'sconosciuto' || property.stage === 'ignoto') && (isAdmin || isOwner) && (
             <Button
