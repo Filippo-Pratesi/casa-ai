@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Receipt, Download, Send, CheckCircle, Trash2, ChevronRight } from 'lucide-react'
+import { Receipt, Download, Send, CheckCircle, Trash2, ChevronRight, Copy, FileDown, MoreVertical, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -25,6 +25,36 @@ interface Invoice {
 
 interface InvoiceListClientProps {
   invoices: Invoice[]
+}
+
+function InvoiceRowMenu({ inv, onAction }: { inv: Invoice; onAction: (a: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!open) return
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [open])
+  const item = 'flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors'
+  return (
+    <div className="relative" ref={ref}>
+      <button onClick={() => setOpen(!open)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+        <MoreVertical className="h-4 w-4" />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 z-50 min-w-[180px] rounded-xl border border-border bg-card shadow-lg py-1">
+          <Link href={`/contabilita/${inv.id}`} className={item} onClick={() => setOpen(false)}><ChevronRight className="h-4 w-4" />Visualizza</Link>
+          {inv.status === 'bozza' && <Link href={`/contabilita/${inv.id}/modifica`} className={item} onClick={() => setOpen(false)}><Pencil className="h-4 w-4" />Modifica</Link>}
+          <button onClick={() => { setOpen(false); onAction('pdf') }} className={item}><Download className="h-4 w-4" />Scarica PDF</button>
+          <button onClick={() => { setOpen(false); onAction('duplicate') }} className={item}><Copy className="h-4 w-4" />Duplica</button>
+          {inv.status === 'bozza' && <button onClick={() => { setOpen(false); onAction('send') }} className={item}><Send className="h-4 w-4" />Invia via email</button>}
+          {(inv.status === 'inviata' || inv.status === 'scaduta') && <button onClick={() => { setOpen(false); onAction('paid') }} className={`${item} text-green-600 dark:text-green-400`}><CheckCircle className="h-4 w-4" />Segna come pagata</button>}
+          {inv.status === 'bozza' && <><div className="my-1 border-t border-border" /><button onClick={() => { setOpen(false); onAction('delete') }} className={`${item} text-destructive hover:bg-destructive/10`}><Trash2 className="h-4 w-4" />Elimina</button></>}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function InvoiceListClient({ invoices: initialInvoices }: InvoiceListClientProps) {
@@ -107,6 +137,50 @@ export function InvoiceListClient({ invoices: initialInvoices }: InvoiceListClie
     }
   }
 
+  async function handleDuplicate(id: string) {
+    setActionLoading(id + '-dup')
+    try {
+      const res = await fetch(`/api/invoices/${id}/duplicate`, { method: 'POST' })
+      if (!res.ok) throw new Error('Errore')
+      const d = await res.json()
+      toast.success(`Fattura duplicata: ${d.numero_fattura}`)
+      router.refresh()
+    } catch {
+      toast.error('Errore nella duplicazione')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  async function handleExportCsv() {
+    try {
+      const params = new URLSearchParams()
+      if (statusFilter !== 'all') params.set('status', statusFilter)
+      const res = await fetch(`/api/invoices/export?${params.toString()}`)
+      if (!res.ok) throw new Error('Errore')
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `fatture-${new Date().toISOString().split('T')[0]}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+      toast.success('Export CSV scaricato')
+    } catch {
+      toast.error("Errore nell'export")
+    }
+  }
+
+  function handleRowAction(inv: Invoice, action: string) {
+    switch (action) {
+      case 'pdf': handleDownloadPdf(inv.id, inv.numero_fattura); break
+      case 'send': handleSendEmail(inv.id); break
+      case 'paid': handleMarkPaid(inv.id); break
+      case 'delete': handleDelete(inv.id); break
+      case 'duplicate': handleDuplicate(inv.id); break
+    }
+  }
+
   if (invoices.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-muted/30 py-16 text-center">
@@ -124,29 +198,35 @@ export function InvoiceListClient({ invoices: initialInvoices }: InvoiceListClie
 
   return (
     <div className="space-y-4">
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <Input
-          placeholder="Cerca per n. fattura o cliente…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="sm:max-w-xs"
-        />
-        <div className="flex gap-2 flex-wrap">
-          {(['all', 'bozza', 'inviata', 'pagata', 'scaduta'] as const).map(s => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-                statusFilter === s
-                  ? 'bg-[oklch(0.57_0.20_33)] text-white dark:bg-[oklch(0.73_0.18_36)]'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              }`}
-            >
-              {s === 'all' ? 'Tutte' : s.charAt(0).toUpperCase() + s.slice(1)}
-            </button>
-          ))}
+      {/* Filters + Export */}
+      <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+        <div className="flex flex-col sm:flex-row gap-3 flex-1">
+          <Input
+            placeholder="Cerca per n. fattura o cliente..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="sm:max-w-xs"
+          />
+          <div className="flex gap-2 flex-wrap">
+            {(['all', 'bozza', 'inviata', 'pagata', 'scaduta'] as const).map(s => (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  statusFilter === s
+                    ? 'bg-[oklch(0.57_0.20_33)] text-white dark:bg-[oklch(0.73_0.18_36)]'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                }`}
+              >
+                {s === 'all' ? 'Tutte' : s.charAt(0).toUpperCase() + s.slice(1)}
+              </button>
+            ))}
+          </div>
         </div>
+        <Button variant="outline" size="sm" onClick={handleExportCsv} className="shrink-0 gap-1.5">
+          <FileDown className="h-4 w-4" />
+          Esporta CSV
+        </Button>
       </div>
 
       {/* List */}
@@ -165,7 +245,7 @@ export function InvoiceListClient({ invoices: initialInvoices }: InvoiceListClie
               </div>
 
               {/* Details */}
-              <div className="flex-1 min-w-0">
+              <Link href={`/contabilita/${inv.id}`} className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-sm font-semibold text-foreground">{inv.numero_fattura}</span>
                   <InvoiceStatusBadge status={inv.status} />
@@ -178,7 +258,7 @@ export function InvoiceListClient({ invoices: initialInvoices }: InvoiceListClie
                     <span className="ml-2">· scad. {new Date(inv.data_scadenza).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}</span>
                   )}
                 </p>
-              </div>
+              </Link>
 
               {/* Amount */}
               <div className="text-right shrink-0">
@@ -188,52 +268,18 @@ export function InvoiceListClient({ invoices: initialInvoices }: InvoiceListClie
                 )}
               </div>
 
-              {/* Actions */}
-              <div className="shrink-0 flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                <button
-                  title="Scarica PDF"
-                  onClick={() => handleDownloadPdf(inv.id, inv.numero_fattura)}
-                  disabled={actionLoading === inv.id + '-pdf'}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                >
-                  <Download className="h-4 w-4" />
-                </button>
-                {inv.status === 'bozza' && (
-                  <button
-                    title="Invia via email"
-                    onClick={() => handleSendEmail(inv.id)}
-                    disabled={actionLoading === inv.id + '-send'}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                  >
-                    <Send className="h-4 w-4" />
-                  </button>
-                )}
-                {(inv.status === 'inviata' || inv.status === 'scaduta') && (
-                  <button
-                    title="Segna come pagata"
-                    onClick={() => handleMarkPaid(inv.id)}
-                    disabled={actionLoading === inv.id + '-paid'}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-green-500 hover:text-white transition-colors"
-                  >
-                    <CheckCircle className="h-4 w-4" />
-                  </button>
-                )}
-                {inv.status === 'bozza' && (
-                  <button
-                    title="Elimina"
-                    onClick={() => handleDelete(inv.id)}
-                    disabled={actionLoading === inv.id + '-del'}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                )}
-                <Link
-                  href={`/contabilita/${inv.id}`}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Link>
+              {/* Desktop actions */}
+              <div className="shrink-0 hidden sm:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button title="PDF" onClick={() => handleDownloadPdf(inv.id, inv.numero_fattura)} disabled={actionLoading === inv.id + '-pdf'} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"><Download className="h-4 w-4" /></button>
+                <button title="Duplica" onClick={() => handleDuplicate(inv.id)} disabled={actionLoading === inv.id + '-dup'} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"><Copy className="h-4 w-4" /></button>
+                {inv.status === 'bozza' && <button title="Invia" onClick={() => handleSendEmail(inv.id)} disabled={actionLoading === inv.id + '-send'} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"><Send className="h-4 w-4" /></button>}
+                {(inv.status === 'inviata' || inv.status === 'scaduta') && <button title="Pagata" onClick={() => handleMarkPaid(inv.id)} disabled={actionLoading === inv.id + '-paid'} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-green-500 hover:text-white transition-colors"><CheckCircle className="h-4 w-4" /></button>}
+                {inv.status === 'bozza' && <button title="Elimina" onClick={() => handleDelete(inv.id)} disabled={actionLoading === inv.id + '-del'} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"><Trash2 className="h-4 w-4" /></button>}
+                <Link href={`/contabilita/${inv.id}`} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"><ChevronRight className="h-4 w-4" /></Link>
+              </div>
+              {/* Mobile dropdown */}
+              <div className="shrink-0 sm:hidden">
+                <InvoiceRowMenu inv={inv} onAction={(action) => handleRowAction(inv, action)} />
               </div>
             </div>
           ))}
