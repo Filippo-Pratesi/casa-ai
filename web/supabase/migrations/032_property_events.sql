@@ -35,6 +35,9 @@ CREATE TYPE sentiment AS ENUM (
 );
 
 -- Property events (append-only chronistoria)
+-- INTENTIONALLY append-only: no UPDATE policy is defined.
+-- Events are immutable records. To correct an event, add a new corrective event.
+-- agent_id uses ON DELETE SET NULL: if an agent is deleted, the event is preserved (audit trail).
 CREATE TABLE property_events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,

@@ -41,6 +41,9 @@ CREATE INDEX property_contacts_property_id_idx ON property_contacts(property_id)
 CREATE INDEX property_contacts_contact_id_idx ON property_contacts(contact_id);
 CREATE INDEX property_contacts_role_idx ON property_contacts(role);
 CREATE INDEX property_contacts_is_primary_idx ON property_contacts(is_primary);
+-- Enforce at most one primary contact per property
+CREATE UNIQUE INDEX property_contacts_one_primary_per_property
+  ON property_contacts(property_id) WHERE is_primary = true;
 
 -- RLS
 ALTER TABLE property_contacts ENABLE ROW LEVEL SECURITY;
@@ -58,7 +61,11 @@ CREATE POLICY "property_contacts_insert" ON property_contacts
 CREATE POLICY "property_contacts_update" ON property_contacts
   FOR UPDATE
   USING (workspace_id IN (SELECT workspace_id FROM users WHERE id = auth.uid()))
-  WITH CHECK (workspace_id IN (SELECT workspace_id FROM users WHERE id = auth.uid()));
+  WITH CHECK (
+    workspace_id IN (SELECT workspace_id FROM users WHERE id = auth.uid())
+    AND EXISTS (SELECT 1 FROM properties WHERE id = property_id AND workspace_id = property_contacts.workspace_id)
+    AND EXISTS (SELECT 1 FROM contacts WHERE id = contact_id AND workspace_id = property_contacts.workspace_id)
+  );
 
 CREATE POLICY "property_contacts_delete" ON property_contacts
   FOR DELETE USING (

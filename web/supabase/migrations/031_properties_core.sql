@@ -158,12 +158,16 @@ CREATE POLICY "properties_insert" ON properties
   );
 
 CREATE POLICY "properties_update" ON properties
-  FOR UPDATE USING (
+  FOR UPDATE
+  USING (
     workspace_id IN (SELECT workspace_id FROM users WHERE id = auth.uid())
     AND (
       agent_id = auth.uid()
       OR EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('admin', 'group_admin'))
     )
+  )
+  WITH CHECK (
+    workspace_id IN (SELECT workspace_id FROM users WHERE id = auth.uid())
   );
 
 CREATE POLICY "properties_delete" ON properties
@@ -177,3 +181,38 @@ CREATE POLICY "properties_delete" ON properties
 CREATE TRIGGER properties_updated_at
   BEFORE UPDATE ON properties
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- CHECK constraints for data quality
+ALTER TABLE properties ADD CONSTRAINT property_type_valid
+  CHECK (property_type IS NULL OR property_type IN ('apartment', 'house', 'villa', 'commercial', 'land', 'garage', 'other'));
+
+ALTER TABLE properties ADD CONSTRAINT estimated_value_positive
+  CHECK (estimated_value IS NULL OR estimated_value >= 0);
+
+ALTER TABLE properties ADD CONSTRAINT monthly_rent_positive
+  CHECK (monthly_rent IS NULL OR monthly_rent >= 0);
+
+ALTER TABLE properties ADD CONSTRAINT monthly_rent_discounted_positive
+  CHECK (monthly_rent_discounted IS NULL OR monthly_rent_discounted >= 0);
+
+ALTER TABLE properties ADD CONSTRAINT deposit_positive
+  CHECK (deposit IS NULL OR deposit >= 0);
+
+ALTER TABLE properties ADD CONSTRAINT lease_dates_valid
+  CHECK (lease_end_date IS NULL OR lease_start_date IS NULL OR lease_end_date >= lease_start_date);
+
+ALTER TABLE properties ADD CONSTRAINT incarico_dates_valid
+  CHECK (incarico_expiry IS NULL OR incarico_date IS NULL OR incarico_expiry >= incarico_date);
+
+-- Comment documenting the circular FK with listings (intentional, both SET NULL)
+COMMENT ON COLUMN properties.listing_id IS 'FK to listings. Circular with listings.property_id — both ON DELETE SET NULL. Intentional: a property without a listing or a listing without a property_id are valid states.';
+
+-- Comment documenting valid property_stage transitions
+COMMENT ON TYPE property_stage IS 'Property lifecycle stages.
+Valid transitions:
+  sconosciuto (only address) → ignoto (details, no contact) → conosciuto (owner known) → incarico (mandate signed)
+  incarico → venduto | locato
+  locato → disponibile (contract expired)
+  disponibile → incarico (new mandate)
+  Reverse allowed: conosciuto ← ignoto (contact lost), incarico ← conosciuto (mandate expired)
+';

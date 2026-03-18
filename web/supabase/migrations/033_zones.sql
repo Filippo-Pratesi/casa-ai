@@ -62,9 +62,13 @@ CREATE POLICY "zones_insert" ON zones
   );
 
 CREATE POLICY "zones_update" ON zones
-  FOR UPDATE USING (
+  FOR UPDATE
+  USING (
     workspace_id IN (SELECT workspace_id FROM users WHERE id = auth.uid())
     AND EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('admin', 'group_admin'))
+  )
+  WITH CHECK (
+    workspace_id IN (SELECT workspace_id FROM users WHERE id = auth.uid())
   );
 
 CREATE POLICY "zones_delete" ON zones
@@ -85,9 +89,13 @@ CREATE POLICY "sub_zones_insert" ON sub_zones
   );
 
 CREATE POLICY "sub_zones_update" ON sub_zones
-  FOR UPDATE USING (
+  FOR UPDATE
+  USING (
     workspace_id IN (SELECT workspace_id FROM users WHERE id = auth.uid())
     AND EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('admin', 'group_admin'))
+  )
+  WITH CHECK (
+    workspace_id IN (SELECT workspace_id FROM users WHERE id = auth.uid())
   );
 
 CREATE POLICY "sub_zones_delete" ON sub_zones
@@ -106,6 +114,16 @@ CREATE POLICY "agent_zones_insert" ON agent_zones
   FOR INSERT WITH CHECK (
     workspace_id IN (SELECT workspace_id FROM users WHERE id = auth.uid())
     AND EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('admin', 'group_admin'))
+  );
+
+CREATE POLICY "agent_zones_update" ON agent_zones
+  FOR UPDATE
+  USING (
+    workspace_id IN (SELECT workspace_id FROM users WHERE id = auth.uid())
+    AND EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role IN ('admin', 'group_admin'))
+  )
+  WITH CHECK (
+    workspace_id IN (SELECT workspace_id FROM users WHERE id = auth.uid())
   );
 
 CREATE POLICY "agent_zones_delete" ON agent_zones
