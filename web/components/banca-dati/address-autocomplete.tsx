@@ -35,6 +35,7 @@ export function AddressAutocomplete({
   const [open, setOpen] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const abortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -44,6 +45,14 @@ export function AddressAutocomplete({
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  // Cleanup debounce and in-flight request on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+      if (abortRef.current) abortRef.current.abort()
+    }
   }, [])
 
   function handleChange(text: string) {
@@ -57,14 +66,19 @@ export function AddressAutocomplete({
     }
 
     debounceRef.current = setTimeout(async () => {
+      if (abortRef.current) abortRef.current.abort()
+      abortRef.current = new AbortController()
       setLoading(true)
       try {
-        const res = await fetch(`/api/geocode?q=${encodeURIComponent(text)}&country=it`)
+        const res = await fetch(`/api/geocode?q=${encodeURIComponent(text)}&country=it`, {
+          signal: abortRef.current.signal,
+        })
         if (!res.ok) return
         const data = await res.json()
         setSuggestions(data.suggestions ?? [])
         setOpen(true)
-      } catch {
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return
         // silently fail — user can still type manually
       } finally {
         setLoading(false)

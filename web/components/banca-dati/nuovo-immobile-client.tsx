@@ -64,12 +64,15 @@ export function NuovoImmobileClient({ agentDefaultZones }: NuovoImmobileClientPr
   // Load nearby when coordinates are set
   useEffect(() => {
     if (!latitude || !longitude) return
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 5000)
     setLoadingNearby(true)
-    fetch(`/api/properties/nearby?lat=${latitude}&lng=${longitude}&radius=100`)
+    fetch(`/api/properties/nearby?lat=${latitude}&lng=${longitude}&radius=100`, { signal: controller.signal })
       .then((r) => r.json())
       .then((data) => setNearby(data))
-      .catch(() => {})
-      .finally(() => setLoadingNearby(false))
+      .catch((err) => { if (err?.name !== 'AbortError') console.error('Nearby fetch failed:', err) })
+      .finally(() => { clearTimeout(timeoutId); setLoadingNearby(false) })
+    return () => { clearTimeout(timeoutId); controller.abort() }
   }, [latitude, longitude])
 
   function handleAddressSelect(suggestion: { address: string; city: string; latitude: number; longitude: number }) {

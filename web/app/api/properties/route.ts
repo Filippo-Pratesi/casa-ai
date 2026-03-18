@@ -24,7 +24,9 @@ export async function GET(req: NextRequest) {
   const disposition = params.get('disposition')
   const transaction_type = params.get('transaction_type')
   const last_contact = params.get('last_contact') // today | week | month | over_30 | over_60
-  const q = params.get('q')
+  // Sanitize search query: strip PostgREST special chars, limit to 100 chars
+  const rawQ = params.get('q') ?? ''
+  const q = rawQ.replace(/['"();\\]/g, '').trim().slice(0, 100) || null
   const page = Math.max(1, parseInt(params.get('page') ?? '1', 10))
   const per_page = Math.min(200, Math.max(1, parseInt(params.get('per_page') ?? '50', 10)))
   const offset = (page - 1) * per_page
