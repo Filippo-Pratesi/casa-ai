@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTheme } from 'next-themes'
-import { LayoutDashboard, Settings, Users, UserRound, Archive, CreditCard, Mail, Bell, CalendarDays, Building2, CheckSquare, Sun, Moon, Search, Receipt, FileText } from 'lucide-react'
+import { LayoutDashboard, Settings, Users, UserRound, Archive, CreditCard, Megaphone, Bell, CalendarDays, Building2, CheckSquare, Sun, Moon, Search, Receipt, FileText, Database, Euro } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -135,33 +135,48 @@ export function AppSidebar({
           </button>
         </div>
 
+        {/* GESTIONE */}
         <SidebarGroup className="py-1">
           <SidebarGroupLabel className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
-            {t('nav.work')}
+            {t('nav.gestione')}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-0.5">
               <NavItem href="/dashboard" icon={LayoutDashboard} label={t('nav.listings')} />
-              <NavItem href="/contacts" icon={UserRound} label={t('nav.contacts')} badge={birthdayCount} />
+              <NavItem href="/banca-dati" icon={Database} label={t('nav.bancaDati')} exact={false} />
+              <NavItem href="/listing" icon={Megaphone} label={t('nav.annunci')} exact={false} />
+              <NavItem href="/contacts" icon={UserRound} label={t('nav.contacts')} badge={birthdayCount} exact={false} />
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* OPERATIVITÀ */}
+        <SidebarGroup className="py-1">
+          <SidebarGroupLabel className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
+            {t('nav.operativita')}
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu className="space-y-0.5">
               <NavItem href="/calendar" icon={CalendarDays} label={t('nav.calendar')} exact={false} />
-              <NavItem href="/todos" icon={CheckSquare} label={t('nav.todos')} badge={pendingTodos} />
+              {isAdmin && <NavItem href="/campaigns" icon={Megaphone} label={t('nav.campaigns')} exact={false} />}
+              <NavItem href="/proposte" icon={FileText} label={t('nav.proposte')} exact={false} />
+              <NavItem href="/todos" icon={CheckSquare} label={t('nav.todos')} badge={pendingTodos} exact={false} />
               <NavItem href="/notifications" icon={Bell} label={t('nav.notifications')} badge={unreadNotifications} />
               {hasGroup && <NavItem href="/mls" icon={Building2} label={t('nav.mls')} exact={false} />}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
+        {/* AMMINISTRAZIONE */}
         <SidebarGroup className="py-1">
           <SidebarGroupLabel className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
-            {isAdmin ? t('nav.manage') : t('nav.team')}
+            {t('nav.amministrazione')}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-0.5">
-              <NavItem href="/admin" icon={Users} label={t('nav.team')} />
-              <NavItem href="/archive" icon={Archive} label={t('nav.archive')} />
-              {isAdmin && <NavItem href="/campaigns" icon={Mail} label={t('nav.campaigns')} />}
-              <NavItem href="/contabilita" icon={Receipt} label={t('nav.contabilita')} exact={false} />
-              <NavItem href="/proposte" icon={FileText} label={t('nav.proposte')} exact={false} />
+              <NavItem href="/contabilita" icon={Euro} label={t('nav.contabilita')} exact={false} />
+              <NavItem href="/archive" icon={Archive} label={t('nav.archive')} exact={false} />
+              {isAdmin && <NavItem href="/admin" icon={Users} label={t('nav.team')} exact={false} />}
               <NavItem href="/settings" icon={Settings} label={t('nav.settings')} />
               {isAdmin && <NavItem href="/plans" icon={CreditCard} label={t('nav.plan')} />}
             </SidebarMenu>

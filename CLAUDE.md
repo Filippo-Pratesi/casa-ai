@@ -133,6 +133,68 @@ See `web/.env.local.example` for required vars:
 - Global: spring animations, gradient treatments, glass/blur effects, dark mode refinements
 - See `web/UX CHANGES IMPLEMENTED.md` for full details (51 items)
 
+## Sprint I — Banca Dati Immobiliare (In Progress)
+
+**Status:** Phase 0 complete (specs drafted and committed), beginning Phase 1 (database migrations)
+
+### Overview
+Fundamental architecture change: add **property lifecycle management** from discovery through sale/rental. Every property discovered by agents enters the database and is tracked through all stages (sconosciuto → ignoto → conosciuto → incarico → venduto/locato → disponibile) with complete chronistoria (append-only event log), multi-role contacts, zone management, and automatic notifications.
+
+### Key Features
+- **Property lifecycle stages** with automatic and manual state transitions
+- **Owner disposition tracking** — seller intent with auto-updates (incarico_firmato, appena_acquistato with 3-month reset)
+- **Cronistoria** — append-only event log capturing every interaction
+- **Multi-contact system** — multiple roles per property (proprietario, moglie, vicino, avvocato, etc.)
+- **Zone management** — zones + sub-zones with agent defaults, substitution UI
+- **Vicinanza search** — properties within 100m radius using Haversine distance
+- **Locazioni cycle** — rental with automatic notifications at 90/60/30/0 days before expiry
+- **PDF contracts** — vendita and locazione templates with automatic field population
+- **Mapbox geocoding** — address autocomplete and coordinate validation
+
+### Specification Files
+All technical specifications are documented in separate files in `web/`:
+
+| File | Content |
+|------|---------|
+| `SPEC-DATABASE.md` | Schema: 6 new tables (properties, property_events, zones, sub_zones, agent_zones, property_contacts), 6 enums, RLS policies, indices, Haversine function |
+| `SPEC-API.md` | 15+ API endpoints with request/response specs, validation, stage advancement logic, geocoding proxy, vicinanza search |
+| `SPEC-UI.md` | 3 new pages (/banca-dati, /banca-dati/nuovo, /banca-dati/[id]), sidebar restructure, progressive form, timeline component |
+| `SPEC-AFFITTI.md` | Rental lifecycle (incarico→locato→disponibile), 4 automatic notifications, lease_type enum, proposal locazione with canone_agevolato |
+| `SPEC-PDF-TEMPLATES.md` | 2 contract templates (vendita, locazione), 20+ field placeholders, dropdown auto-population, email+WhatsApp sending |
+| `SPEC-SICUREZZA.md` | Security checklist: RLS policies, workspace isolation, input validation, rate limiting, XSS prevention, GPS coordinate protection |
+| `SPEC-TESTING.md` | 70+ test cases covering all features, mock data (30+ properties, 5+ zones, 15+ contacts, 50+ events) |
+| `REQUISITI-STRUMENTI.md` | Mapbox setup (free token: 100k requests/month), PDF templates (user-provided), future Google Maps + property valuation APIs |
+
+### Development Workflow
+
+**Phase Structure:** Each of 9 phases (0–8) ends with a commit and PLAN update:
+1. **Phase 0** (✅ complete): Specification files drafted, committed with `docs: Sprint I — specifiche tecniche Banca Dati Immobiliare`
+2. **Phase 1** (in progress): 7 database migrations (028–034) — create properties, events, zones, contacts tables, update existing tables for RLS
+3. **Phase 2**: API backend — CRUD, geocoding, stage advancement, vicinanza, cron notifications
+4. **Phase 3**: UI — list, create, detail pages, sidebar redesign, zone management
+5. **Phase 4**: Incarico & PDF — contract generation, email/WhatsApp sending
+6. **Phase 5**: Integration — contacts page, annunci auto-creation, dashboard card
+7. **Phase 6**: Testing & mock data — run all 70+ test cases
+8. **Phase 7**: Security review — RLS, isolation, validation, rate limiting
+9. **Phase 8**: Ralph Loop (5 iterations) — explore and propose UX improvements
+
+**Commit Protocol (MANDATORY):**
+- After each phase completion: create commit with `feat:` or `docs:` prefix
+- Include phase number in message: `feat: Sprint I Fase X — [summary]`
+- Update `PLAN.md` in commit: mark completed phase, describe changes, note blockers
+
+**PLAN Update Protocol:**
+- File: `PLAN-Client Discovery.md` (or specified plan document)
+- Update after each phase with: completion date, what was built, what's next, any adjustments
+- Keep PLAN and code in sync — if implementation changes approach, update PLAN before next phase
+
+### Database Additions (Phase 1)
+**New tables:** properties, property_events, zones, sub_zones, agent_zones, property_contacts
+**New enums:** property_stage, owner_disposition, property_event_type, proposal_type, lease_type, property_contact_role
+**Modified tables:** contacts (add roles[], codice_fiscale, partita_iva), listings (add property_id), proposals (add proposal_type + rental fields)
+**RLS policies:** All new tables scoped to workspace_id
+**See:** `SPEC-DATABASE.md` for complete schema
+
 ## Known Issues
 
 See `web/SECURITY_AUDIT.md` for 11 security findings (2 critical, 3 high) that need remediation. Key gaps: missing workspace_id checks in some API routes, no rate limiting, no CORS config.
