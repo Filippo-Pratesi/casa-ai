@@ -119,6 +119,25 @@ export function ImmobileDetailClient({
   const [contacts, setContacts] = useState(initialContacts)
   const [events, setEvents] = useState(initialEvents)
   const [advancing, setAdvancing] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  async function handleDeleteProperty() {
+    if (!confirm('Eliminare questo immobile dalla banca dati? L\'operazione non è reversibile.')) return
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/properties/${property.id}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: 'Errore' }))
+        throw new Error(data.error || 'Errore eliminazione')
+      }
+      toast.success('Immobile eliminato dalla banca dati')
+      router.push('/banca-dati')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Errore')
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   // Incarico dialog
   const [incaricoOpen, setIncaricoOpen] = useState(false)
@@ -421,6 +440,19 @@ export function ImmobileDetailClient({
             <Button onClick={handleAdvanceStageClick} disabled={advancing} size="sm">
               {advancing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
               {ADVANCE_LABELS[nextStage] ?? `→ ${nextStage}`}
+            </Button>
+          )}
+          {/* Delete — only for early-stage properties */}
+          {(property.stage === 'sconosciuto' || property.stage === 'ignoto') && (isAdmin || isOwner) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDeleteProperty}
+              disabled={deleting}
+              className="text-destructive hover:text-destructive border-destructive/30 hover:bg-destructive/10"
+              title="Elimina immobile"
+            >
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
             </Button>
           )}
           {property.stage === 'incarico' && !property.listing_id && (

@@ -481,8 +481,8 @@ export const translations = {
     'calendar.type.acquisizione': 'Acquisition',
     'calendar.type.riunione': 'Meeting',
     'calendar.type.atto': 'Deed',
-    'calendar.type.visita': 'Viewing',
     'calendar.type.altro': 'Other',
+    'calendar.type.visita': 'Viewing',
     // Calendar modal
     'calendar.modal.newAppt': 'New appointment',
     'calendar.modal.editAppt': 'Edit appointment',
