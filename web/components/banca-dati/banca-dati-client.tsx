@@ -452,10 +452,15 @@ export function BancaDatiClient({
                 <div style={{ width: colWidths.type, minWidth: colWidths.type }} className="hidden xl:block shrink-0 px-2 py-2 text-xs text-muted-foreground truncate">{PROPERTY_TYPE_IT[(p as PropertyCardData & { property_type?: string | null }).property_type ?? ''] ?? <span className="opacity-30">—</span>}</div>
                 <div
                   style={{ width: colWidths.last_event, minWidth: colWidths.last_event }}
-                  className="hidden xl:block shrink-0 px-2 py-2 text-xs text-muted-foreground truncate"
-                  title={lastEv?.title ?? undefined}
+                  className="hidden xl:block shrink-0 px-2 py-1.5 min-w-0"
+                  title={lastEv ? `${lastEv.title} · ${formatDistanceToNow(new Date(lastEv.event_date), { addSuffix: true, locale: it })}` : undefined}
                 >
-                  {lastEv?.title ?? <span className="opacity-30">—</span>}
+                  {lastEv ? (
+                    <>
+                      <p className="text-xs text-foreground/80 truncate leading-tight">{lastEv.title}</p>
+                      <p className="text-[10px] text-muted-foreground/60 leading-tight mt-0.5">{formatDistanceToNow(new Date(lastEv.event_date), { addSuffix: false, locale: it })}</p>
+                    </>
+                  ) : <span className="text-xs opacity-30">—</span>}
                 </div>
                 <div style={{ width: colWidths.updated, minWidth: colWidths.updated }} className="hidden md:block shrink-0 px-2 py-2 text-xs text-muted-foreground text-right">{formatDistanceToNow(new Date(p.updated_at), { addSuffix: false, locale: it })}</div>
                 <div className="w-8 shrink-0 flex items-center justify-center">

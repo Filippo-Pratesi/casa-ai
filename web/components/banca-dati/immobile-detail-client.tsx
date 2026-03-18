@@ -31,7 +31,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { PropertyStageBadge, type PropertyStage, STAGE_CONFIG } from './property-stage-icon'
-import { DispositionIcon, type OwnerDisposition } from './disposition-icon'
+import { DispositionIcon, DISPOSITION_CONFIG, type OwnerDisposition } from './disposition-icon'
 import { EventTimeline, type PropertyEvent } from './event-timeline'
 import { PropertyCard } from './property-card'
 
@@ -136,6 +136,32 @@ export function ImmobileDetailClient({
   const [monthlyRent, setMonthlyRent] = useState('')
   const [deposit, setDeposit] = useState('')
   const [leaseNotes, setLeaseNotes] = useState('')
+
+  // Disposition change
+  const [changingDisposition, setChangingDisposition] = useState(false)
+
+  async function handleChangeDisposition(newDisposition: string) {
+    if (newDisposition === property.owner_disposition) return
+    setChangingDisposition(true)
+    try {
+      const res = await fetch(`/api/properties/${property.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ owner_disposition: newDisposition }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: 'Errore' }))
+        throw new Error(data.error || 'Errore aggiornamento')
+      }
+      const { property: updated } = await res.json()
+      setProperty(updated)
+      toast.success('Stato proprietario aggiornato')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Errore')
+    } finally {
+      setChangingDisposition(false)
+    }
+  }
 
   // PDF generation
   const [generatingPdf, setGeneratingPdf] = useState(false)
@@ -362,7 +388,26 @@ export function ImmobileDetailClient({
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-xl font-bold truncate">{property.address}</h1>
             <PropertyStageBadge stage={property.stage} />
-            <DispositionIcon disposition={property.owner_disposition} showLabel />
+            {/* Disposition — clickable to change */}
+            <Select
+              value={property.owner_disposition}
+              onValueChange={handleChangeDisposition}
+              disabled={changingDisposition}
+            >
+              <SelectTrigger className="h-7 w-auto gap-1.5 border-transparent bg-transparent px-2 hover:bg-muted/60 focus:ring-0 text-xs font-medium [&>svg]:opacity-50">
+                <DispositionIcon disposition={property.owner_disposition as OwnerDisposition} showLabel />
+              </SelectTrigger>
+              <SelectContent align="start">
+                {Object.entries(DISPOSITION_CONFIG).map(([key, cfg]) => (
+                  <SelectItem key={key} value={key}>
+                    <span className={cn('inline-flex items-center gap-1.5', cfg.color)}>
+                      <span>{cfg.symbol}</span>
+                      <span className="text-foreground">{cfg.label}</span>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
             <MapPin className="h-3.5 w-3.5 shrink-0" />
@@ -433,7 +478,10 @@ export function ImmobileDetailClient({
                   <div>
                     <p className="text-sm font-medium">{property.owner_contact.name}</p>
                     {property.owner_contact.phone && (
-                      <p className="text-xs text-muted-foreground">{property.owner_contact.phone}</p>
+                      <a href={`tel:${property.owner_contact.phone}`} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
+                        <Phone className="h-3 w-3" />
+                        {property.owner_contact.phone}
+                      </a>
                     )}
                   </div>
                 </div>
