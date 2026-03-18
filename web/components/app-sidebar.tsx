@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTheme } from 'next-themes'
-import { LayoutDashboard, Settings, Users, UserRound, Archive, CreditCard, Mail, Bell, CalendarDays, Building2, CheckSquare, Sun, Moon, Search } from 'lucide-react'
+import { LayoutDashboard, Settings, Users, UserRound, Archive, CreditCard, Mail, Bell, CalendarDays, Building2, CheckSquare, Sun, Moon, Search, Receipt, FileText } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -163,6 +163,8 @@ export function AppSidebar({
               <NavItem href="/admin" icon={Users} label={t('nav.team')} />
               <NavItem href="/archive" icon={Archive} label={t('nav.archive')} />
               {isAdmin && <NavItem href="/campaigns" icon={Mail} label={t('nav.campaigns')} />}
+              <NavItem href="/contabilita" icon={Receipt} label={t('nav.contabilita')} exact={false} />
+              <NavItem href="/proposte" icon={FileText} label={t('nav.proposte')} exact={false} />
               <NavItem href="/settings" icon={Settings} label={t('nav.settings')} />
               {isAdmin && <NavItem href="/plans" icon={CreditCard} label={t('nav.plan')} />}
             </SidebarMenu>
