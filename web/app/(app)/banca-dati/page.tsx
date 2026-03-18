@@ -45,6 +45,7 @@ export default async function BancaDatiPage({
 
   const params = await searchParams
   const stage = params.stage ?? ''
+  const city = params.city ?? ''
   const zone = params.zone ?? ''
   const agent_id = params.agent_id ?? ''
   const disposition = params.disposition ?? ''
@@ -79,6 +80,7 @@ export default async function BancaDatiPage({
     .range((page - 1) * per_page, page * per_page - 1)
 
   if (stage) query = query.eq('stage', stage)
+  if (city) query = query.eq('city', city)
   if (zone) query = query.eq('zone', zone)
   if (agent_id) query = query.eq('agent_id', agent_id)
   if (disposition) query = query.eq('owner_disposition', disposition)
@@ -88,6 +90,7 @@ export default async function BancaDatiPage({
   const { data, count } = await query
 
   // Fetch last event per property (for list view)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const propertyIds = (data ?? []).map((p: any) => (p as { id: string }).id)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: lastEventsData } = propertyIds.length > 0
@@ -134,7 +137,8 @@ export default async function BancaDatiPage({
     .eq('workspace_id', profile.workspace_id)
     .order('name')
 
-  const zones = ((zonesData ?? []) as { name: string; city: string }[]).map((z) => z.name)
+  const zonesWithCity = (zonesData ?? []) as { name: string; city: string }[]
+  const cities = Array.from(new Set(zonesWithCity.map(z => z.city))).sort()
 
   // Agents for filter dropdown (admins see all)
   const isAdmin = profile.role === 'admin' || profile.role === 'group_admin'
@@ -152,10 +156,11 @@ export default async function BancaDatiPage({
       page={page}
       perPage={per_page}
       countByStage={countByStage}
-      zones={zones}
+      zonesWithCity={zonesWithCity}
+      cities={cities}
       agents={agents}
       isAdmin={isAdmin}
-      initialFilters={{ stage, zone, agent_id, disposition, transaction_type, q, sort, viewMode }}
+      initialFilters={{ stage, city, zone, agent_id, disposition, transaction_type, q, sort, viewMode }}
     />
   )
 }

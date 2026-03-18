@@ -4,7 +4,6 @@ import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { UserPlus, Users, Phone, Mail, Euro, Home, Cake, LayoutGrid, List, Search, X, MapPin, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
-import { ExportContactsButton } from '@/components/contacts/export-contacts-button'
 import { useI18n } from '@/lib/i18n/context'
 
 // WhatsApp SVG icon (official brand icon)
@@ -66,7 +65,7 @@ type SortKey = 'date_desc' | 'date_asc' | 'budget_desc' | 'budget_asc'
 
 export function ContactsClient({ contacts, isAdmin }: ContactsClientProps) {
   const { t } = useI18n()
-  const [viewMode, setViewMode] = useState<'card' | 'table'>('card')
+  const [viewMode, setViewMode] = useState<'card' | 'table'>('table')
   const [activeTypes, setActiveTypes] = useState<Set<string>>(new Set())
   const [citySearch, setCitySearch] = useState('')
   const [budgetMax, setBudgetMax] = useState('')
@@ -151,7 +150,6 @@ export function ContactsClient({ contacts, isAdmin }: ContactsClientProps) {
               </button>
             </div>
           )}
-          {isAdmin && <ExportContactsButton />}
           <Link href="/contacts/new" className="btn-ai inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold">
             <UserPlus className="h-4 w-4" />
             {t('contacts.new')}

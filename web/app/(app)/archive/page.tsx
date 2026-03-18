@@ -2,10 +2,10 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Archive, Home, UserRound, CheckCircle2, Trash2, ChevronRight, TrendingUp, Euro, BarChart2 } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
+import { Archive, Home, UserRound, CheckCircle2, Trash2, ChevronRight, Euro, BarChart2 } from 'lucide-react'
 import { getTranslations } from '@/lib/i18n/server'
-import { ArchiveExportButtons } from '@/components/archive/archive-export-buttons'
+import { ArchiveDateFilter } from '@/components/archive/archive-date-filter'
+import { Suspense } from 'react'
 
 interface ArchivedListing {
   id: string
@@ -41,9 +41,9 @@ interface ArchivedContact {
 export default async function ArchivePage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string }>
+  searchParams: Promise<{ filter?: string; date_from?: string; date_to?: string }>
 }) {
-  const { filter = 'all' } = await searchParams
+  const { filter = 'all', date_from = '', date_to = '' } = await searchParams
   const { t, locale } = await getTranslations()
   const dateLocale = locale === 'en' ? 'en-GB' : 'it-IT'
 
@@ -88,13 +88,17 @@ export default async function ArchivePage({
     ((agentsData ?? []) as { id: string; name: string }[]).map(a => [a.id, a.name])
   )
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let listingsQuery = (admin as any)
+    .from('archived_listings')
+    .select('id, original_id, address, city, neighborhood, price, property_type, sqm, rooms, bathrooms, floor, total_floors, sold, sold_to_name, sold_by_agent_id, agent_id, archived_at')
+    .eq('workspace_id', profile.workspace_id)
+    .order('archived_at', { ascending: false })
+  if (date_from) listingsQuery = listingsQuery.gte('archived_at', date_from)
+  if (date_to) listingsQuery = listingsQuery.lte('archived_at', date_to + 'T23:59:59')
+
   const [listingsRes, contactsRes] = await Promise.all([
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (admin as any)
-      .from('archived_listings')
-      .select('id, original_id, address, city, neighborhood, price, property_type, sqm, rooms, bathrooms, floor, total_floors, sold, sold_to_name, sold_by_agent_id, agent_id, archived_at')
-      .eq('workspace_id', profile.workspace_id)
-      .order('archived_at', { ascending: false }),
+    listingsQuery,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (admin as any)
       .from('archived_contacts')
@@ -153,17 +157,19 @@ export default async function ArchivePage({
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-10">
       {/* Header */}
-      <div className="flex items-start justify-between gap-3 animate-in-1">
+      <div className="space-y-3 animate-in-1">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[oklch(0.57_0.20_33)] to-[oklch(0.48_0.18_20)] text-white shadow-md shadow-[oklch(0.57_0.20_33/0.3)]">
             <Archive className="h-4 w-4" />
           </div>
           <div>
-            <h1 className="text-xl font-extrabold tracking-tight">{t('archive.title')}</h1>
+            <h1 className="text-xl font-extrabold tracking-tight">Vendite</h1>
             <p className="text-sm text-muted-foreground">{t('archive.subtitle')}</p>
           </div>
         </div>
-        <ArchiveExportButtons />
+        <Suspense>
+          <ArchiveDateFilter dateFrom={date_from} dateTo={date_to} filter={filter} />
+        </Suspense>
       </div>
 
       {/* Stats bar */}

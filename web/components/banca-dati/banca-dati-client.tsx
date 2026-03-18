@@ -45,11 +45,13 @@ interface BancaDatiClientProps {
   page: number
   perPage: number
   countByStage: Record<string, number>
-  zones: string[]
+  zonesWithCity: { name: string; city: string }[]
+  cities: string[]
   agents: { id: string; name: string }[]
   isAdmin: boolean
   initialFilters: {
     stage: string
+    city: string
     zone: string
     agent_id: string
     disposition: string
@@ -75,7 +77,8 @@ export function BancaDatiClient({
   page,
   perPage,
   countByStage,
-  zones,
+  zonesWithCity,
+  cities,
   agents,
   isAdmin,
   initialFilters,
@@ -119,6 +122,7 @@ export function BancaDatiClient({
     const params = new URLSearchParams()
     const current = {
       stage: initialFilters.stage,
+      city: initialFilters.city,
       zone: initialFilters.zone,
       agent_id: initialFilters.agent_id,
       disposition: initialFilters.disposition,
@@ -146,7 +150,11 @@ export function BancaDatiClient({
     router.push(pathname)
   }
 
-  const hasFilters = !!(initialFilters.stage || initialFilters.zone || initialFilters.agent_id || initialFilters.disposition || initialFilters.transaction_type || initialFilters.q)
+  const hasFilters = !!(initialFilters.stage || initialFilters.city || initialFilters.zone || initialFilters.agent_id || initialFilters.disposition || initialFilters.transaction_type || initialFilters.q)
+  // Zones filtered by selected city
+  const filteredZones = initialFilters.city
+    ? zonesWithCity.filter(z => z.city === initialFilters.city)
+    : zonesWithCity
   const totalPages = Math.ceil(total / perPage)
   const totalAll = Object.values(countByStage).reduce((a, b) => a + b, 0)
 
@@ -208,9 +216,9 @@ export function BancaDatiClient({
       </div>
 
       {/* Filter bar */}
-      <div className="flex flex-wrap gap-2 rounded-xl border border-border/60 bg-muted/20 p-3">
-        {/* Search — live debounced */}
-        <div className="relative flex-1 min-w-[200px]">
+      <div className="rounded-xl border border-border/60 bg-muted/20 p-3 space-y-2">
+        {/* Row 1: Search */}
+        <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
           <Input
             placeholder="Cerca via, città, zona…"
@@ -234,109 +242,151 @@ export function BancaDatiClient({
           )}
         </div>
 
-        {/* Zone filter */}
-        {zones.length > 0 && (
-          <Select
-            value={initialFilters.zone || 'all'}
-            onValueChange={(v) => updateUrl({ zone: !v || v === 'all' ? '' : v, page: '1' })}
-          >
-            <SelectTrigger className="h-8 w-[150px] text-sm">
-              <SelectValue placeholder="Zona" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tutte le zone</SelectItem>
-              {zones.map((z) => <SelectItem key={z} value={z}>{z}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        )}
+        {/* Row 2: Filters */}
+        <div className="flex flex-wrap gap-2">
+          {/* Città filter */}
+          {cities.length > 0 && (
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[10px] font-medium text-muted-foreground px-0.5">Città</span>
+              <Select
+                value={initialFilters.city || 'all'}
+                onValueChange={(v) => {
+                  // When city changes, clear zone too
+                  updateUrl({ city: !v || v === 'all' ? '' : v, zone: '', page: '1' })
+                }}
+              >
+                <SelectTrigger className="h-8 w-[130px] text-sm">
+                  <SelectValue placeholder="Tutte" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tutte</SelectItem>
+                  {cities.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
-        {/* Transaction type */}
-        <Select
-          value={initialFilters.transaction_type || 'all'}
-          onValueChange={(v) => updateUrl({ transaction_type: !v || v === 'all' ? '' : v, page: '1' })}
-        >
-          <SelectTrigger className="h-8 w-[130px] text-sm">
-            <SelectValue placeholder="Tipo" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Vendita + Affitto</SelectItem>
-            <SelectItem value="vendita">Vendita</SelectItem>
-            <SelectItem value="affitto">Affitto</SelectItem>
-          </SelectContent>
-        </Select>
+          {/* Zona filter — cascades from city */}
+          {filteredZones.length > 0 && (
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[10px] font-medium text-muted-foreground px-0.5">Zona</span>
+              <Select
+                value={initialFilters.zone || 'all'}
+                onValueChange={(v) => updateUrl({ zone: !v || v === 'all' ? '' : v, page: '1' })}
+              >
+                <SelectTrigger className="h-8 w-[140px] text-sm">
+                  <SelectValue placeholder="Tutte" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tutte</SelectItem>
+                  {filteredZones.map((z) => <SelectItem key={z.name} value={z.name}>{z.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
-        {/* Disposition filter */}
-        <Select
-          value={initialFilters.disposition || 'all'}
-          onValueChange={(v) => updateUrl({ disposition: !v || v === 'all' ? '' : v, page: '1' })}
-        >
-          <SelectTrigger className="h-8 w-[160px] text-sm">
-            <SelectValue placeholder="Stato proprietario" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tutti gli stati</SelectItem>
-            {Object.entries(DISPOSITION_CONFIG).map(([key, cfg]) => (
-              <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {/* Agent filter (admin only) */}
-        {isAdmin && agents.length > 1 && (
-          <Select
-            value={initialFilters.agent_id || 'all'}
-            onValueChange={(v) => updateUrl({ agent_id: !v || v === 'all' ? '' : v, page: '1' })}
-          >
-            <SelectTrigger className="h-8 w-[140px] text-sm">
-              <SelectValue placeholder="Agente" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tutti gli agenti</SelectItem>
-              {agents.map((a) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        )}
-
-        {/* Sort control + view toggle + legend */}
-        <div className="ml-auto flex items-center gap-1">
-          <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-          <Select
-            value={initialFilters.sort || 'updated_at_desc'}
-            onValueChange={(v) => updateUrl({ sort: v ?? 'updated_at_desc', page: '1' })}
-          >
-            <SelectTrigger className="h-8 w-[160px] text-sm border-dashed">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent align="end">
-              {SORT_OPTIONS.map((o) => (
-                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* View mode + Legend */}
-          <div className="flex items-center gap-1 ml-1 pl-1 border-l border-border/60">
-            <button
-              onClick={() => setShowLegend(v => !v)}
-              title="Mostra legenda"
-              className={cn('flex h-8 w-8 items-center justify-center rounded-lg transition-colors', showLegend ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted')}
+          {/* Operazione */}
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[10px] font-medium text-muted-foreground px-0.5">Operazione</span>
+            <Select
+              value={initialFilters.transaction_type || 'all'}
+              onValueChange={(v) => updateUrl({ transaction_type: !v || v === 'all' ? '' : v, page: '1' })}
             >
-              <HelpCircle className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => updateUrl({ viewMode: 'grid', page: '1' })}
-              title="Vista griglia"
-              className={cn('flex h-8 w-8 items-center justify-center rounded-lg transition-colors', initialFilters.viewMode === 'grid' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted')}
+              <SelectTrigger className="h-8 w-[120px] text-sm">
+                <SelectValue placeholder="Tutto" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tutto</SelectItem>
+                <SelectItem value="vendita">Vendita</SelectItem>
+                <SelectItem value="affitto">Affitto</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Stato proprietario */}
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[10px] font-medium text-muted-foreground px-0.5">Stato proprietario</span>
+            <Select
+              value={initialFilters.disposition || 'all'}
+              onValueChange={(v) => updateUrl({ disposition: !v || v === 'all' ? '' : v, page: '1' })}
             >
-              <LayoutGrid className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => updateUrl({ viewMode: 'list', page: '1' })}
-              title="Vista lista"
-              className={cn('flex h-8 w-8 items-center justify-center rounded-lg transition-colors', initialFilters.viewMode !== 'grid' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted')}
-            >
-              <LayoutList className="h-4 w-4" />
-            </button>
+              <SelectTrigger className="h-8 w-[160px] text-sm">
+                <SelectValue placeholder="Tutti" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tutti</SelectItem>
+                {Object.entries(DISPOSITION_CONFIG).map(([key, cfg]) => (
+                  <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Agente (admin only) */}
+          {isAdmin && agents.length > 1 && (
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[10px] font-medium text-muted-foreground px-0.5">Agente</span>
+              <Select
+                value={initialFilters.agent_id || 'all'}
+                onValueChange={(v) => updateUrl({ agent_id: !v || v === 'all' ? '' : v, page: '1' })}
+              >
+                <SelectTrigger className="h-8 w-[140px] text-sm">
+                  <SelectValue placeholder="Tutti" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tutti</SelectItem>
+                  {agents.map((a) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Sort control + view toggle + legend — right-aligned */}
+          <div className="ml-auto flex items-end gap-1">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[10px] font-medium text-muted-foreground px-0.5">Ordina</span>
+              <div className="flex items-center gap-1">
+                <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                <Select
+                  value={initialFilters.sort || 'updated_at_desc'}
+                  onValueChange={(v) => updateUrl({ sort: v ?? 'updated_at_desc', page: '1' })}
+                >
+                  <SelectTrigger className="h-8 w-[160px] text-sm border-dashed">
+                    <SelectValue placeholder="Recenti prima" />
+                  </SelectTrigger>
+                  <SelectContent align="end">
+                    {SORT_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* View mode + Legend */}
+            <div className="flex items-center gap-1 ml-1 pl-1 border-l border-border/60">
+              <button
+                onClick={() => setShowLegend(v => !v)}
+                title="Mostra legenda"
+                className={cn('flex h-8 w-8 items-center justify-center rounded-lg transition-colors', showLegend ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted')}
+              >
+                <HelpCircle className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => updateUrl({ viewMode: 'grid', page: '1' })}
+                title="Vista griglia"
+                className={cn('flex h-8 w-8 items-center justify-center rounded-lg transition-colors', initialFilters.viewMode === 'grid' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted')}
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => updateUrl({ viewMode: 'list', page: '1' })}
+                title="Vista lista"
+                className={cn('flex h-8 w-8 items-center justify-center rounded-lg transition-colors', initialFilters.viewMode !== 'grid' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted')}
+              >
+                <LayoutList className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
