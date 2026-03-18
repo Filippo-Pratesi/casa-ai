@@ -22,6 +22,7 @@ export interface PropertyCardData {
   agent_name?: string | null
   sqm?: number | null
   rooms?: number | null
+  estimated_value?: number | null
   updated_at: string
 }
 
@@ -69,6 +70,11 @@ export function PropertyCard({ property, compact = false, className }: PropertyC
                       : 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400'
                   )}>
                     {property.transaction_type === 'affitto' ? 'Affitto' : 'Vendita'}
+                  </span>
+                )}
+                {property.estimated_value && (
+                  <span className="ml-auto font-semibold text-foreground">
+                    €{property.estimated_value.toLocaleString('it-IT')}
                   </span>
                 )}
               </div>

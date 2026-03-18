@@ -16,6 +16,7 @@ interface Property {
   transaction_type: string | null
   sqm: number | null
   rooms: number | null
+  estimated_value: number | null
   updated_at: string
   owner_contact?: { name: string } | null
   agent?: { name: string } | null
@@ -48,19 +49,30 @@ export default async function BancaDatiPage({
   const transaction_type = params.transaction_type ?? ''
   const q = params.q ?? ''
   const page = parseInt(params.page ?? '1', 10)
+  const sort = params.sort ?? 'updated_at_desc'
   const per_page = 50
+
+  const SORT_MAP: Record<string, { col: string; asc: boolean }> = {
+    updated_at_desc: { col: 'updated_at', asc: false },
+    updated_at_asc:  { col: 'updated_at', asc: true },
+    city_asc:        { col: 'city', asc: true },
+    city_desc:       { col: 'city', asc: false },
+    value_desc:      { col: 'estimated_value', asc: false },
+    value_asc:       { col: 'estimated_value', asc: true },
+  }
+  const sortOpt = SORT_MAP[sort] ?? SORT_MAP.updated_at_desc
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let query = (admin as any)
     .from('properties')
     .select(`
       id, address, city, zone, sub_zone, stage, owner_disposition, transaction_type,
-      sqm, rooms, updated_at,
+      sqm, rooms, estimated_value, updated_at,
       owner_contact:contacts!properties_owner_contact_id_fkey(name),
       agent:users!properties_agent_id_fkey(name)
     `, { count: 'exact' })
     .eq('workspace_id', profile.workspace_id)
-    .order('updated_at', { ascending: false })
+    .order(sortOpt.col, { ascending: sortOpt.asc })
     .range((page - 1) * per_page, page * per_page - 1)
 
   if (stage) query = query.eq('stage', stage)
@@ -77,6 +89,7 @@ export default async function BancaDatiPage({
     ...p,
     owner_contact: p.owner_contact ?? null,
     agent: p.agent ?? null,
+    estimated_value: p.estimated_value ?? null,
   }))
 
   // Stage counts for header badges
@@ -120,7 +133,7 @@ export default async function BancaDatiPage({
       zones={zones}
       agents={agents}
       isAdmin={isAdmin}
-      initialFilters={{ stage, zone, agent_id, disposition, transaction_type, q }}
+      initialFilters={{ stage, zone, agent_id, disposition, transaction_type, q, sort }}
     />
   )
 }
