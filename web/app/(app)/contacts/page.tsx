@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ContactsClient } from '@/components/contacts/contacts-client'
@@ -19,12 +20,13 @@ interface Contact {
 export default async function ContactsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
   const admin = createAdminClient()
   const { data: profileData } = await admin
     .from('users')
     .select('workspace_id, role')
-    .eq('id', user!.id)
+    .eq('id', user.id)
     .single()
 
   const profile = profileData as { workspace_id: string; role: string } | null

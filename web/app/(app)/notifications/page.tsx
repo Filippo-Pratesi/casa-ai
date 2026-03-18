@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Bell, Cake, CheckSquare, CalendarDays, ChevronRight } from 'lucide-react'
@@ -50,22 +51,22 @@ function NotificationIcon({ type, read }: { type: string; read: boolean }) {
   const base = 'h-3.5 w-3.5'
   if (type === 'birthday' || type === 'birthday_reminder') {
     return (
-      <div className={`mt-0.5 rounded-full p-1.5 shrink-0 ${read ? 'bg-muted' : 'bg-pink-100'}`}>
-        <Cake className={`${base} ${read ? 'text-muted-foreground' : 'text-pink-500'}`} />
+      <div className={`mt-0.5 rounded-full p-1.5 shrink-0 ${read ? 'bg-muted' : 'bg-pink-100 dark:bg-pink-950'}`}>
+        <Cake className={`${base} ${read ? 'text-muted-foreground' : 'text-pink-500 dark:text-pink-300'}`} />
       </div>
     )
   }
   if (type === 'todo_assigned' || type === 'todo') {
     return (
-      <div className={`mt-0.5 rounded-full p-1.5 shrink-0 ${read ? 'bg-muted' : 'bg-blue-100'}`}>
-        <CheckSquare className={`${base} ${read ? 'text-muted-foreground' : 'text-blue-500'}`} />
+      <div className={`mt-0.5 rounded-full p-1.5 shrink-0 ${read ? 'bg-muted' : 'bg-blue-100 dark:bg-blue-950'}`}>
+        <CheckSquare className={`${base} ${read ? 'text-muted-foreground' : 'text-blue-500 dark:text-blue-300'}`} />
       </div>
     )
   }
   if (type === 'appointment_assigned' || type === 'appointment') {
     return (
-      <div className={`mt-0.5 rounded-full p-1.5 shrink-0 ${read ? 'bg-muted' : 'bg-purple-100'}`}>
-        <CalendarDays className={`${base} ${read ? 'text-muted-foreground' : 'text-purple-500'}`} />
+      <div className={`mt-0.5 rounded-full p-1.5 shrink-0 ${read ? 'bg-muted' : 'bg-purple-100 dark:bg-purple-950'}`}>
+        <CalendarDays className={`${base} ${read ? 'text-muted-foreground' : 'text-purple-500 dark:text-purple-300'}`} />
       </div>
     )
   }
@@ -79,6 +80,7 @@ function NotificationIcon({ type, read }: { type: string; read: boolean }) {
 export default async function NotificationsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
   const { t, locale } = await getTranslations()
 
   const admin = createAdminClient()
@@ -87,7 +89,7 @@ export default async function NotificationsPage() {
   const { data } = await (admin as any)
     .from('notifications')
     .select('id, type, title, body, contact_id, read, created_at')
-    .eq('agent_id', user!.id)
+    .eq('agent_id', user.id)
     .order('created_at', { ascending: false })
     .limit(50)
 

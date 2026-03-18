@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, MapPin, Euro, Maximize2, Home, Bath, Layers, Users, Pencil, Mail, AlertTriangle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
@@ -51,10 +51,10 @@ const TONE_LABELS: Record<string, string> = {
 }
 
 const TONE_COLORS: Record<string, string> = {
-  standard: 'bg-blue-50 text-blue-700 border-blue-100',
-  luxury: 'bg-amber-50 text-amber-700 border-amber-100',
-  approachable: 'bg-green-50 text-green-700 border-green-100',
-  investment: 'bg-purple-50 text-purple-700 border-purple-100',
+  standard: 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800',
+  luxury: 'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800',
+  approachable: 'bg-green-50 text-green-700 border-green-100 dark:bg-green-950 dark:text-green-300 dark:border-green-800',
+  investment: 'bg-purple-50 text-purple-700 border-purple-100 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800',
 }
 
 const FEATURE_LABELS: Record<string, string> = {
@@ -78,6 +78,7 @@ export default async function ListingDetailPage({
   const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
   const admin = createAdminClient()
   const { data, error } = await admin
@@ -94,7 +95,7 @@ export default async function ListingDetailPage({
   const { data: connectionsData } = await (admin as any)
     .from('social_connections')
     .select('platform')
-    .eq('user_id', user!.id)
+    .eq('user_id', user.id)
 
   const connectedPlatforms = new Set(
     ((connectionsData ?? []) as { platform: string }[]).map((c) => c.platform)
@@ -129,7 +130,7 @@ export default async function ListingDetailPage({
   const { data: profileData } = await admin
     .from('users')
     .select('workspace_id, role')
-    .eq('id', user!.id)
+    .eq('id', user.id)
     .single()
   const profile = profileData as { workspace_id: string; role: string } | null
 
@@ -457,7 +458,7 @@ export default async function ListingDetailPage({
 
       {/* Stale price warning */}
       {priceHistory.length > 0 && listing.generated_content && (
-        <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5 text-sm text-amber-800">
+        <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5 text-sm text-amber-800 dark:bg-amber-950 dark:border-amber-800 dark:text-amber-300">
           <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
           <span>Il prezzo è cambiato dopo l&apos;ultima generazione. Considera di rigenerare il contenuto.</span>
           <span className="ml-auto"><GenerateContentButton listingId={listing.id} /></span>

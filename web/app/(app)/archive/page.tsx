@@ -263,7 +263,7 @@ export default async function ArchivePage({
                           className={`flex items-start gap-4 px-4 py-3.5 hover:bg-muted/40 transition-colors group ${rowIdx % 2 === 1 ? 'even:bg-muted/30' : ''}`}
                         >
                           <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
-                            l.sold ? 'bg-green-100' : 'bg-muted'
+                            l.sold ? 'bg-green-100 dark:bg-green-950' : 'bg-muted'
                           }`}>
                             {l.sold
                               ? <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
@@ -277,7 +277,7 @@ export default async function ArchivePage({
                                 {l.address}, {l.city}
                               </span>
                               {l.sold ? (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-green-50 border border-green-200 px-2 py-0.5 text-[11px] font-medium text-green-700">
+                                <span className="inline-flex items-center gap-1 rounded-full bg-green-50 border border-green-200 px-2 py-0.5 text-[11px] font-medium text-green-700 dark:bg-green-950 dark:border-green-800 dark:text-green-300">
                                   <CheckCircle2 className="h-3 w-3" />
                                   {t('archive.badge.sold')}
                                 </span>
@@ -342,7 +342,7 @@ export default async function ArchivePage({
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-medium">{c.name}</span>
                     {c.bought_listing && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2 py-0.5 text-[11px] font-medium text-blue-700">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2 py-0.5 text-[11px] font-medium text-blue-700 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-300">
                         <CheckCircle2 className="h-3 w-3" />
                         {t('archive.badge.bought')}
                       </span>

@@ -34,9 +34,9 @@ interface Props {
 }
 
 const PRIORITY_CONFIG = {
-  high:   { label: 'Alta',  color: 'text-red-500',   dot: 'bg-red-500',   ring: 'ring-red-200',   bg: 'bg-red-50 border-red-200' },
-  medium: { label: 'Media', color: 'text-amber-500', dot: 'bg-amber-400', ring: 'ring-amber-200', bg: 'bg-amber-50 border-amber-200' },
-  low:    { label: 'Bassa', color: 'text-green-500', dot: 'bg-green-400', ring: 'ring-green-200', bg: 'bg-green-50 border-green-200' },
+  high:   { label: 'Alta',  color: 'text-red-500',   dot: 'bg-red-500',   ring: 'ring-red-200',   bg: 'bg-red-50 border-red-200 dark:bg-red-950 dark:border-red-800' },
+  medium: { label: 'Media', color: 'text-amber-500', dot: 'bg-amber-400', ring: 'ring-amber-200', bg: 'bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800' },
+  low:    { label: 'Bassa', color: 'text-green-500', dot: 'bg-green-400', ring: 'ring-green-200', bg: 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800' },
 }
 
 // Localized date formatting
@@ -527,7 +527,7 @@ function TodoRow({
   return (
     <div className={`flex items-start gap-3 px-4 py-3 group transition-colors ${
       todo.completed ? 'bg-muted/20' :
-      isHighPriority ? 'border-l-4 border-l-red-500 bg-red-50/30 hover:bg-red-50/50' :
+      isHighPriority ? 'border-l-4 border-l-red-500 bg-red-50/30 hover:bg-red-50/50 dark:bg-red-950/20 dark:hover:bg-red-950/30' :
       'hover:bg-muted/40'
     }`}>
       {/* Checkbox */}
@@ -568,9 +568,9 @@ function TodoRow({
             {dateLabel && (
               <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] font-medium border ${
                 overdue
-                  ? 'bg-red-50 border-red-200 text-red-600'
+                  ? 'bg-red-50 border-red-200 text-red-600 dark:bg-red-950 dark:border-red-800 dark:text-red-300'
                   : today || isDueWithin24h
-                    ? 'bg-amber-50 border-amber-200 text-amber-600'
+                    ? 'bg-amber-50 border-amber-200 text-amber-600 dark:bg-amber-950 dark:border-amber-800 dark:text-amber-300'
                     : 'bg-muted border-border text-muted-foreground'
               }`}>
                 <Calendar className="h-2.5 w-2.5" />
