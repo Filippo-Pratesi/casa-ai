@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { PlusSquare, FileText, Euro, Maximize2, Home, User, Users, CalendarDays, TrendingUp, LayoutGrid, List, Search, X, Download, ChevronUp, ChevronDown, ChevronsUpDown, Sparkles, ArrowUpRight, Pencil, ExternalLink } from 'lucide-react'
+import { PlusSquare, FileText, Euro, Maximize2, Home, User, Users, CalendarDays, TrendingUp, LayoutGrid, List, Search, X, Download, ChevronUp, ChevronDown, ChevronsUpDown, Sparkles, ArrowUpRight, Pencil, ExternalLink, Building2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { useI18n } from '@/lib/i18n/context'
 
@@ -54,6 +54,7 @@ interface Stats {
   contacts: number
   appointments: number
   aiContent: number
+  bancaDati: number
 }
 
 interface DashboardClientProps {
@@ -199,6 +200,17 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
       glow: 'shadow-[oklch(0.76_0.14_75/0.25)]',
       bg: 'from-[oklch(0.96_0.055_75)] to-[oklch(0.97_0.025_65)]',
       iconColor: 'text-[oklch(0.60_0.14_68)]',
+      href: undefined,
+    },
+    {
+      label: 'Banca dati',
+      value: stats.bancaDati,
+      icon: Building2,
+      gradient: 'from-[oklch(0.52_0.17_250)] to-[oklch(0.43_0.16_265)]',
+      glow: 'shadow-[oklch(0.52_0.17_250/0.25)]',
+      bg: 'from-[oklch(0.94_0.055_250)] to-[oklch(0.96_0.025_260)]',
+      iconColor: 'text-[oklch(0.50_0.17_250)]',
+      href: '/banca-dati',
     },
   ]
 
@@ -270,10 +282,13 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
         {statCards.map((s, i) => {
           const isAI = s.label === 'Contenuto AI'
           const isMain = false
+          const CardTag = s.href ? Link : 'div'
           return (
-            <div
+            <CardTag
               key={s.label}
-              className={`animate-in-${i + 2} relative overflow-hidden rounded-2xl border border-border bg-card card-lift min-h-[120px]`}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              {...(s.href ? { href: s.href } as any : {})}
+              className={`animate-in-${i + 2} relative overflow-hidden rounded-2xl border border-border bg-card card-lift min-h-[120px]${s.href ? ' cursor-pointer' : ''}`}
               style={{ padding: '1rem' }}
             >
               {/* Subtle gradient background */}
@@ -314,7 +329,7 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
                   </span>
                 )}
               </div>
-            </div>
+            </CardTag>
           )
         })}
       </div>

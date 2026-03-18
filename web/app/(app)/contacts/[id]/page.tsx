@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Phone, Mail, Euro, Home, MapPin, Maximize2, Building2, Layers } from 'lucide-react'
+import { ArrowLeft, Phone, Mail, Euro, Home, MapPin, Maximize2, Building2, Layers, ExternalLink } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Button } from '@/components/ui/button'
@@ -86,8 +86,8 @@ export default async function ContactDetailPage({
     .single()
 
   const profile = profileData as { workspace_id: string } | null
+  if (!profile?.workspace_id) notFound()
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (admin as any)
     .from('contacts')
@@ -155,6 +155,69 @@ export default async function ContactDetailPage({
   }
 
   const birthdayDays = birthdayDaysLeft(contact.date_of_birth)
+
+  // Linked properties from banca dati
+  interface LinkedProperty {
+    id: string; address: string; city: string; zone: string | null; stage: string
+    transaction_type: string | null; role?: string
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: ownerProps } = await (admin as any)
+    .from('properties')
+    .select('id, address, city, zone, stage, transaction_type')
+    .eq('workspace_id', profile?.workspace_id)
+    .eq('owner_contact_id', id)
+    .order('updated_at', { ascending: false })
+    .limit(20)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: tenantProps } = await (admin as any)
+    .from('properties')
+    .select('id, address, city, zone, stage, transaction_type')
+    .eq('workspace_id', profile?.workspace_id)
+    .eq('tenant_contact_id', id)
+    .order('updated_at', { ascending: false })
+    .limit(20)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: contactLinks } = await (admin as any)
+    .from('property_contacts')
+    .select('role, properties!property_contacts_property_id_fkey(id, address, city, zone, stage, transaction_type)')
+    .eq('workspace_id', profile?.workspace_id)
+    .eq('contact_id', id)
+    .limit(20)
+
+  const ownerProperties: LinkedProperty[] = (ownerProps ?? []) as LinkedProperty[]
+  const tenantProperties: LinkedProperty[] = (tenantProps ?? []) as LinkedProperty[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const otherProperties: LinkedProperty[] = ((contactLinks ?? []) as any[])
+    .filter((cl) => cl.properties)
+    .map((cl) => ({ ...cl.properties, role: cl.role }))
+    // exclude properties already shown as owner/tenant
+    .filter((p) =>
+      !ownerProperties.some((op) => op.id === p.id) &&
+      !tenantProperties.some((tp) => tp.id === p.id)
+    )
+
+  const hasLinkedProperties = ownerProperties.length > 0 || tenantProperties.length > 0 || otherProperties.length > 0
+
+  const STAGE_LABELS: Record<string, string> = {
+    sconosciuto: 'Sconosciuto', ignoto: 'Ignoto', conosciuto: 'Conosciuto',
+    incarico: 'Incarico', venduto: 'Venduto', locato: 'Locato', disponibile: 'Disponibile',
+  }
+  const STAGE_COLORS: Record<string, string> = {
+    sconosciuto: 'bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300',
+    ignoto: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
+    conosciuto: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
+    incarico: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
+    venduto: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300',
+    locato: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300',
+    disponibile: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300',
+  }
+  const ROLE_LABELS: Record<string, string> = {
+    proprietario: 'Proprietario', moglie_marito: 'Moglie/Marito', figlio_figlia: 'Figlio/Figlia',
+    vicino: 'Vicino', portiere: 'Portiere', amministratore: 'Amministratore',
+    avvocato: 'Avvocato', commercialista: 'Commercialista',
+    precedente_proprietario: 'Ex proprietario', inquilino: 'Inquilino', altro: 'Altro',
+  }
 
   const hasPreferences = isBuyerLike && (
     contact.budget_min || contact.budget_max ||
@@ -389,6 +452,67 @@ export default async function ContactDetailPage({
         downloadBase={`/api/contacts/${id}/attachments/download`}
         label="Documenti allegati"
       />
+
+      {/* Immobili collegati dalla Banca Dati */}
+      {hasLinkedProperties && (
+        <div className="rounded-xl border border-border bg-muted/30 px-4 py-4 space-y-3">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium flex items-center gap-1.5">
+            <Building2 className="h-3.5 w-3.5" />
+            Immobili collegati
+          </p>
+          {ownerProperties.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-foreground/70">Come proprietario</p>
+              {ownerProperties.map((p) => (
+                <Link key={p.id} href={`/banca-dati/${p.id}`} className="flex items-center justify-between gap-2 rounded-lg border border-border bg-background px-3 py-2 hover:bg-muted/50 transition-colors">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{p.address}, {p.city}</p>
+                    <p className="text-xs text-muted-foreground">{p.zone ? p.zone + ' · ' : ''}{p.transaction_type === 'affitto' ? 'Affitto' : 'Vendita'}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STAGE_COLORS[p.stage] ?? ''}`}>{STAGE_LABELS[p.stage] ?? p.stage}</span>
+                    <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+          {tenantProperties.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-foreground/70">Come inquilino</p>
+              {tenantProperties.map((p) => (
+                <Link key={p.id} href={`/banca-dati/${p.id}`} className="flex items-center justify-between gap-2 rounded-lg border border-border bg-background px-3 py-2 hover:bg-muted/50 transition-colors">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{p.address}, {p.city}</p>
+                    <p className="text-xs text-muted-foreground">{p.zone ? p.zone + ' · ' : ''}Locazione</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STAGE_COLORS[p.stage] ?? ''}`}>{STAGE_LABELS[p.stage] ?? p.stage}</span>
+                    <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+          {otherProperties.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-foreground/70">Altro ruolo</p>
+              {otherProperties.map((p) => (
+                <Link key={p.id} href={`/banca-dati/${p.id}`} className="flex items-center justify-between gap-2 rounded-lg border border-border bg-background px-3 py-2 hover:bg-muted/50 transition-colors">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{p.address}, {p.city}</p>
+                    <p className="text-xs text-muted-foreground">{ROLE_LABELS[p.role ?? ''] ?? p.role}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STAGE_COLORS[p.stage] ?? ''}`}>{STAGE_LABELS[p.stage] ?? p.stage}</span>
+                    <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Activity timeline */}
       {appointments && appointments.length > 0 && (

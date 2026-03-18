@@ -4,8 +4,8 @@ import { useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  ArrowLeft, MapPin, User, Phone, Mail, ExternalLink, ChevronRight,
-  Plus, Trash2, Loader2, Edit, Home, Megaphone
+  ArrowLeft, MapPin, Phone, ExternalLink,
+  Plus, Trash2, Loader2, Megaphone, FileDown
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -104,6 +104,26 @@ export function ImmobileDetailClient({
   const [events, setEvents] = useState(initialEvents)
   const [advancing, setAdvancing] = useState(false)
 
+  // Incarico dialog
+  const [incaricoOpen, setIncaricoOpen] = useState(false)
+  const [incaricoType, setIncaricoType] = useState<string>('esclusivo')
+  const [incaricoDate, setIncaricoDate] = useState('')
+  const [incaricoExpiry, setIncaricoExpiry] = useState('')
+  const [incaricoCommission, setIncaricoCommission] = useState('')
+  const [incaricoNotes, setIncaricoNotes] = useState('')
+
+  // Locato dialog
+  const [locatoOpen, setLocatoOpen] = useState(false)
+  const [leaseType, setLeaseType] = useState<string>('4_plus_4')
+  const [leaseStart, setLeaseStart] = useState('')
+  const [leaseEnd, setLeaseEnd] = useState('')
+  const [monthlyRent, setMonthlyRent] = useState('')
+  const [deposit, setDeposit] = useState('')
+  const [leaseNotes, setLeaseNotes] = useState('')
+
+  // PDF generation
+  const [generatingPdf, setGeneratingPdf] = useState(false)
+
   // Add contact dialog
   const [addContactOpen, setAddContactOpen] = useState(false)
   const [contactSearch, setContactSearch] = useState('')
@@ -117,14 +137,32 @@ export function ImmobileDetailClient({
   const nextStage = STAGE_ADVANCES[property.stage as PropertyStage]
   const config = STAGE_CONFIG[property.stage as PropertyStage]
 
-  async function handleAdvanceStage() {
+  function handleAdvanceStageClick() {
     if (!nextStage) return
+    if (nextStage === 'incarico') { setIncaricoOpen(true); return }
+    if (nextStage === 'locato') { setLocatoOpen(true); return }
+    doAdvanceStage(nextStage)
+  }
+
+  async function doAdvanceStage(targetStage: string, extraPayload?: Record<string, unknown>) {
     setAdvancing(true)
     try {
+      // If extra data needed, PATCH first
+      if (extraPayload && Object.keys(extraPayload).length > 0) {
+        const patchRes = await fetch(`/api/properties/${property.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(extraPayload),
+        })
+        if (!patchRes.ok) {
+          const data = await patchRes.json().catch(() => ({ error: 'Errore sconosciuto' }))
+          throw new Error(data.error || 'Errore aggiornamento dati')
+        }
+      }
       const res = await fetch(`/api/properties/${property.id}/advance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ target_stage: nextStage }),
+        body: JSON.stringify({ target_stage: targetStage }),
       })
       if (!res.ok) {
         const { error } = await res.json()
@@ -132,8 +170,7 @@ export function ImmobileDetailClient({
       }
       const { property: updated } = await res.json()
       setProperty(updated)
-      toast.success(`Stage aggiornato a: ${STAGE_CONFIG[nextStage as PropertyStage]?.label}`)
-      // Reload events
+      toast.success(`Stage aggiornato a: ${STAGE_CONFIG[targetStage as PropertyStage]?.label}`)
       const evRes = await fetch(`/api/properties/${property.id}/events`)
       if (evRes.ok) {
         const evData = await evRes.json()
@@ -143,6 +180,73 @@ export function ImmobileDetailClient({
       toast.error(err instanceof Error ? err.message : 'Errore')
     } finally {
       setAdvancing(false)
+    }
+  }
+
+  async function handleConfirmIncarico() {
+    if (!incaricoDate || !incaricoCommission) {
+      toast.error('Data e provvigione sono obbligatorie')
+      return
+    }
+    const commission = parseFloat(incaricoCommission)
+    if (isNaN(commission) || commission <= 0 || commission > 20) {
+      toast.error('Provvigione deve essere tra 0% e 20%')
+      return
+    }
+    setIncaricoOpen(false)
+    await doAdvanceStage('incarico', {
+      incarico_type: incaricoType,
+      incarico_date: incaricoDate,
+      incarico_expiry: incaricoExpiry || null,
+      incarico_commission_percent: commission,
+      incarico_notes: incaricoNotes || null,
+    })
+  }
+
+  async function handleConfirmLocato() {
+    if (!leaseType || !leaseStart || !leaseEnd || !monthlyRent) {
+      toast.error('Tipo contratto, date e canone sono obbligatori')
+      return
+    }
+    const rent = parseInt(monthlyRent, 10)
+    if (isNaN(rent) || rent <= 0) {
+      toast.error('Canone mensile deve essere > 0')
+      return
+    }
+    if (leaseEnd <= leaseStart) {
+      toast.error('La data di fine deve essere successiva alla data di inizio')
+      return
+    }
+    setLocatoOpen(false)
+    await doAdvanceStage('locato', {
+      lease_type: leaseType,
+      lease_start_date: leaseStart,
+      lease_end_date: leaseEnd,
+      monthly_rent: rent,
+      deposit: deposit ? parseInt(deposit, 10) : null,
+      lease_notes: leaseNotes || null,
+    })
+  }
+
+  async function handleDownloadIncaricoPdf() {
+    setGeneratingPdf(true)
+    try {
+      const res = await fetch(`/api/properties/${property.id}/incarico-pdf`)
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: 'Errore' }))
+        throw new Error(error)
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `incarico-${property.address.replace(/\s+/g, '-').toLowerCase()}.pdf`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Errore generazione PDF')
+    } finally {
+      setGeneratingPdf(false)
     }
   }
 
@@ -183,7 +287,9 @@ export function ImmobileDetailClient({
       const cRes = await fetch(`/api/properties/${property.id}/contacts`)
       if (cRes.ok) {
         const cData = await cRes.json()
-        setContacts(cData.contacts ?? [])
+        setContacts(Array.isArray(cData.contacts) ? cData.contacts : [])
+      } else {
+        toast.error('Contatto aggiunto ma impossibile ricaricare la lista')
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Errore')
@@ -195,11 +301,14 @@ export function ImmobileDetailClient({
   async function handleRemoveContact(linkId: string) {
     try {
       const res = await fetch(`/api/properties/${property.id}/contacts/${linkId}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error('Errore')
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: 'Errore' }))
+        throw new Error(data.error || 'Errore rimozione contatto')
+      }
       setContacts((prev) => prev.filter((c) => c.id !== linkId))
       toast.success('Contatto rimosso')
-    } catch {
-      toast.error('Errore nella rimozione')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Errore nella rimozione')
     }
   }
 
@@ -248,7 +357,7 @@ export function ImmobileDetailClient({
         {/* Primary action */}
         <div className="flex gap-2 shrink-0">
           {canAdvance && nextStage && (
-            <Button onClick={handleAdvanceStage} disabled={advancing} size="sm">
+            <Button onClick={handleAdvanceStageClick} disabled={advancing} size="sm">
               {advancing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
               {ADVANCE_LABELS[nextStage] ?? `→ ${nextStage}`}
             </Button>
@@ -378,12 +487,25 @@ export function ImmobileDetailClient({
           {/* Incarico details */}
           {property.stage === 'incarico' && (
             <Card className="p-5 space-y-3">
-              <h2 className="font-semibold text-sm">Incarico</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-sm">Incarico</h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs gap-1"
+                  onClick={handleDownloadIncaricoPdf}
+                  disabled={generatingPdf}
+                >
+                  {generatingPdf ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileDown className="h-3 w-3" />}
+                  Genera contratto
+                </Button>
+              </div>
               <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                 {property.incarico_type && <div><span className="text-muted-foreground">Tipo:</span> <span className="font-medium capitalize">{property.incarico_type}</span></div>}
                 {property.incarico_date && <div><span className="text-muted-foreground">Data firma:</span> <span className="font-medium">{new Date(property.incarico_date).toLocaleDateString('it-IT')}</span></div>}
                 {property.incarico_expiry && <div><span className="text-muted-foreground">Scadenza:</span> <span className="font-medium">{new Date(property.incarico_expiry).toLocaleDateString('it-IT')}</span></div>}
                 {property.incarico_commission_percent && <div><span className="text-muted-foreground">Provvigione:</span> <span className="font-medium">{property.incarico_commission_percent}%</span></div>}
+                {property.incarico_notes && <div className="col-span-2"><span className="text-muted-foreground">Note:</span> <span>{property.incarico_notes}</span></div>}
               </div>
             </Card>
           )}
@@ -510,6 +632,138 @@ export function ImmobileDetailClient({
             <Button variant="outline" onClick={() => setAddContactOpen(false)}>Annulla</Button>
             <Button onClick={handleAddContact} disabled={!selectedContact || addingContact}>
               {addingContact ? 'Aggiungendo...' : 'Aggiungi'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Incarico dialog */}
+      <Dialog open={incaricoOpen} onOpenChange={setIncaricoOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Avvia Incarico</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <Label>Tipo incarico *</Label>
+              <Select value={incaricoType} onValueChange={(v) => setIncaricoType(v ?? 'esclusivo')}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="esclusivo">Esclusivo</SelectItem>
+                  <SelectItem value="non_esclusivo">Non esclusivo</SelectItem>
+                  <SelectItem value="mediazione">Mediazione</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Data firma *</Label>
+                <Input type="date" value={incaricoDate} onChange={(e) => setIncaricoDate(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Scadenza incarico</Label>
+                <Input type="date" value={incaricoExpiry} onChange={(e) => setIncaricoExpiry(e.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Provvigione (%) *</Label>
+              <Input
+                type="number"
+                step="0.5"
+                min="0"
+                max="10"
+                value={incaricoCommission}
+                onChange={(e) => setIncaricoCommission(e.target.value)}
+                placeholder="Es. 3"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Note incarico</Label>
+              <Textarea
+                value={incaricoNotes}
+                onChange={(e) => setIncaricoNotes(e.target.value)}
+                placeholder="Condizioni particolari, accordi..."
+                rows={2}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIncaricoOpen(false)}>Annulla</Button>
+            <Button onClick={handleConfirmIncarico} disabled={advancing}>
+              {advancing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Conferma incarico
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Locato dialog */}
+      <Dialog open={locatoOpen} onOpenChange={setLocatoOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Registra Locazione</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <Label>Tipo contratto *</Label>
+              <Select value={leaseType} onValueChange={(v) => setLeaseType(v ?? '4_plus_4')}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="4_plus_4">4+4</SelectItem>
+                  <SelectItem value="3_plus_2">3+2</SelectItem>
+                  <SelectItem value="transitorio">Transitorio</SelectItem>
+                  <SelectItem value="foresteria">Foresteria</SelectItem>
+                  <SelectItem value="altro">Altro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Data inizio *</Label>
+                <Input type="date" value={leaseStart} onChange={(e) => setLeaseStart(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Data fine *</Label>
+                <Input type="date" value={leaseEnd} onChange={(e) => setLeaseEnd(e.target.value)} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Canone mensile (€) *</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={monthlyRent}
+                  onChange={(e) => setMonthlyRent(e.target.value)}
+                  placeholder="Es. 800"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Deposito cauzionale (€)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={deposit}
+                  onChange={(e) => setDeposit(e.target.value)}
+                  placeholder="Es. 2400"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Note locazione</Label>
+              <Textarea
+                value={leaseNotes}
+                onChange={(e) => setLeaseNotes(e.target.value)}
+                placeholder="Condizioni particolari, clausole..."
+                rows={2}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLocatoOpen(false)}>Annulla</Button>
+            <Button onClick={handleConfirmLocato} disabled={advancing}>
+              {advancing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Registra locazione
             </Button>
           </DialogFooter>
         </DialogContent>
