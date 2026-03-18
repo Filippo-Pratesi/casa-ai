@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   ArrowLeft, MapPin, Phone, ExternalLink,
-  Plus, Trash2, Loader2, Megaphone, FileDown
+  Plus, Trash2, Loader2, Megaphone, FileDown, Pencil
 } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -58,7 +58,7 @@ const STAGE_ADVANCES: Record<PropertyStage, PropertyStage | null> = {
   sconosciuto: 'ignoto',
   ignoto: 'conosciuto',
   conosciuto: 'incarico',
-  incarico: 'venduto',
+  incarico: null,  // computed dynamically from transaction_type (see nextStage below)
   venduto: null,
   locato: 'disponibile',
   disponibile: 'locato',
@@ -156,6 +156,59 @@ export function ImmobileDetailClient({
   const [deposit, setDeposit] = useState('')
   const [leaseNotes, setLeaseNotes] = useState('')
 
+  // Edit details dialog
+  const [editDetailsOpen, setEditDetailsOpen] = useState(false)
+  const [editForm, setEditForm] = useState({
+    property_type: property.property_type ?? '',
+    transaction_type: property.transaction_type ?? '',
+    sqm: property.sqm ? String(property.sqm) : '',
+    rooms: property.rooms ? String(property.rooms) : '',
+    bathrooms: property.bathrooms ? String(property.bathrooms) : '',
+    floor: property.floor != null ? String(property.floor) : '',
+    total_floors: property.total_floors ? String(property.total_floors) : '',
+    condition: property.condition ?? '',
+    estimated_value: property.estimated_value ? String(property.estimated_value) : '',
+    doorbell: property.doorbell ?? '',
+    building_notes: property.building_notes ?? '',
+  })
+  const [savingDetails, setSavingDetails] = useState(false)
+
+  async function handleSaveDetails() {
+    setSavingDetails(true)
+    try {
+      const payload: Record<string, unknown> = {
+        property_type: editForm.property_type || null,
+        transaction_type: editForm.transaction_type || null,
+        sqm: editForm.sqm ? parseInt(editForm.sqm, 10) : null,
+        rooms: editForm.rooms ? parseInt(editForm.rooms, 10) : null,
+        bathrooms: editForm.bathrooms ? parseInt(editForm.bathrooms, 10) : null,
+        floor: editForm.floor !== '' ? parseInt(editForm.floor, 10) : null,
+        total_floors: editForm.total_floors ? parseInt(editForm.total_floors, 10) : null,
+        condition: editForm.condition || null,
+        estimated_value: editForm.estimated_value ? parseInt(editForm.estimated_value, 10) : null,
+        doorbell: editForm.doorbell.trim() || null,
+        building_notes: editForm.building_notes.trim() || null,
+      }
+      const res = await fetch(`/api/properties/${property.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: 'Errore' }))
+        throw new Error(data.error || 'Errore salvataggio')
+      }
+      const { property: updated } = await res.json()
+      setProperty(updated)
+      setEditDetailsOpen(false)
+      toast.success('Dettagli aggiornati')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Errore')
+    } finally {
+      setSavingDetails(false)
+    }
+  }
+
   // Disposition change
   const [changingDisposition, setChangingDisposition] = useState(false)
 
@@ -195,7 +248,10 @@ export function ImmobileDetailClient({
   const [addingContact, setAddingContact] = useState(false)
 
   const canAdvance = isAdmin || isOwner
-  const nextStage = STAGE_ADVANCES[property.stage as PropertyStage]
+  // For incarico stage, next step depends on transaction_type: affitto → locato, else → venduto
+  const nextStage: PropertyStage | null = property.stage === 'incarico'
+    ? (property.transaction_type === 'affitto' ? 'locato' : 'venduto')
+    : STAGE_ADVANCES[property.stage as PropertyStage]
   const config = STAGE_CONFIG[property.stage as PropertyStage]
 
   function handleAdvanceStageClick() {
@@ -478,7 +534,35 @@ export function ImmobileDetailClient({
 
           {/* Details card */}
           <Card className="p-5 space-y-4">
-            <h2 className="font-semibold text-sm">Dettagli immobile</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-sm">Dettagli immobile</h2>
+              {(isAdmin || isOwner) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                  onClick={() => {
+                    setEditForm({
+                      property_type: property.property_type ?? '',
+                      transaction_type: property.transaction_type ?? '',
+                      sqm: property.sqm ? String(property.sqm) : '',
+                      rooms: property.rooms ? String(property.rooms) : '',
+                      bathrooms: property.bathrooms ? String(property.bathrooms) : '',
+                      floor: property.floor != null ? String(property.floor) : '',
+                      total_floors: property.total_floors ? String(property.total_floors) : '',
+                      condition: property.condition ?? '',
+                      estimated_value: property.estimated_value ? String(property.estimated_value) : '',
+                      doorbell: property.doorbell ?? '',
+                      building_notes: property.building_notes ?? '',
+                    })
+                    setEditDetailsOpen(true)
+                  }}
+                  title="Modifica dettagli"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
               {property.property_type && <div><span className="text-muted-foreground">Tipo:</span> <span className="font-medium">{PROPERTY_TYPE_IT[property.property_type] ?? property.property_type}</span></div>}
               {property.sqm && <div><span className="text-muted-foreground">Superficie:</span> <span className="font-medium">{property.sqm} mq</span></div>}
@@ -628,6 +712,33 @@ export function ImmobileDetailClient({
                 {property.lease_start_date && <div><span className="text-muted-foreground">Inizio:</span> <span className="font-medium">{new Date(property.lease_start_date).toLocaleDateString('it-IT')}</span></div>}
                 {property.lease_end_date && <div><span className="text-muted-foreground">Fine:</span> <span className="font-medium">{new Date(property.lease_end_date).toLocaleDateString('it-IT')}</span></div>}
               </div>
+              {property.lease_notes && (
+                <p className="text-sm text-muted-foreground">{property.lease_notes}</p>
+              )}
+              {property.tenant_contact && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Inquilino</p>
+                  <div className="flex items-center justify-between gap-2 rounded-lg border border-border/50 p-2.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-bold shrink-0">
+                        {property.tenant_contact.name?.charAt(0)?.toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{property.tenant_contact.name}</p>
+                        {property.tenant_contact.phone && (
+                          <a href={`tel:${property.tenant_contact.phone}`} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
+                            <Phone className="h-3 w-3" />
+                            {property.tenant_contact.phone}
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                    <Link href={`/contacts/${property.tenant_contact.id}`} className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'h-7 w-7 shrink-0')}>
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </Link>
+                  </div>
+                </div>
+              )}
             </Card>
           )}
 
@@ -738,6 +849,105 @@ export function ImmobileDetailClient({
             <Button variant="outline" onClick={() => setAddContactOpen(false)}>Annulla</Button>
             <Button onClick={handleAddContact} disabled={!selectedContact || addingContact}>
               {addingContact ? 'Aggiungendo...' : 'Aggiungi'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit details dialog */}
+      <Dialog open={editDetailsOpen} onOpenChange={setEditDetailsOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Modifica dettagli immobile</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Tipo immobile</Label>
+                <Select value={editForm.property_type || 'none'} onValueChange={(v) => setEditForm(f => ({ ...f, property_type: v === 'none' ? '' : v }))}>
+                  <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— Non specificato —</SelectItem>
+                    <SelectItem value="apartment">Appartamento</SelectItem>
+                    <SelectItem value="house">Casa</SelectItem>
+                    <SelectItem value="villa">Villa</SelectItem>
+                    <SelectItem value="commercial">Commerciale</SelectItem>
+                    <SelectItem value="land">Terreno</SelectItem>
+                    <SelectItem value="garage">Garage</SelectItem>
+                    <SelectItem value="other">Altro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Tipo operazione</Label>
+                <Select value={editForm.transaction_type || 'none'} onValueChange={(v) => setEditForm(f => ({ ...f, transaction_type: v === 'none' ? '' : v }))}>
+                  <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— Non specificato —</SelectItem>
+                    <SelectItem value="vendita">Vendita</SelectItem>
+                    <SelectItem value="affitto">Affitto</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label>Superficie (mq)</Label>
+                <Input type="number" min="0" value={editForm.sqm} onChange={(e) => setEditForm(f => ({ ...f, sqm: e.target.value }))} placeholder="Es. 85" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Locali</Label>
+                <Input type="number" min="0" value={editForm.rooms} onChange={(e) => setEditForm(f => ({ ...f, rooms: e.target.value }))} placeholder="Es. 3" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Bagni</Label>
+                <Input type="number" min="0" value={editForm.bathrooms} onChange={(e) => setEditForm(f => ({ ...f, bathrooms: e.target.value }))} placeholder="Es. 1" />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label>Piano</Label>
+                <Input type="number" value={editForm.floor} onChange={(e) => setEditForm(f => ({ ...f, floor: e.target.value }))} placeholder="Es. 2" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Piani totali</Label>
+                <Input type="number" min="1" value={editForm.total_floors} onChange={(e) => setEditForm(f => ({ ...f, total_floors: e.target.value }))} placeholder="Es. 4" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Condizioni</Label>
+                <Select value={editForm.condition || 'none'} onValueChange={(v) => setEditForm(f => ({ ...f, condition: v === 'none' ? '' : v }))}>
+                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— —</SelectItem>
+                    <SelectItem value="nuovo">Nuovo</SelectItem>
+                    <SelectItem value="ottimo">Ottimo</SelectItem>
+                    <SelectItem value="buono">Buono</SelectItem>
+                    <SelectItem value="da_ristrutturare">Da ristrutturare</SelectItem>
+                    <SelectItem value="in_costruzione">In costruzione</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Valutazione (€)</Label>
+                <Input type="number" min="0" value={editForm.estimated_value} onChange={(e) => setEditForm(f => ({ ...f, estimated_value: e.target.value }))} placeholder="Es. 180000" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Campanello</Label>
+                <Input value={editForm.doorbell} onChange={(e) => setEditForm(f => ({ ...f, doorbell: e.target.value }))} placeholder="Es. Rossi / Int. 4" />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Note palazzo</Label>
+              <Textarea value={editForm.building_notes} onChange={(e) => setEditForm(f => ({ ...f, building_notes: e.target.value }))} rows={2} placeholder="Es. Palazzo anni '60, 4 piani, no ascensore..." />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDetailsOpen(false)} disabled={savingDetails}>Annulla</Button>
+            <Button onClick={handleSaveDetails} disabled={savingDetails}>
+              {savingDetails ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Salva
             </Button>
           </DialogFooter>
         </DialogContent>
