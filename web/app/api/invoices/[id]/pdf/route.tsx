@@ -390,7 +390,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
   try {
     const buffer = await renderToBuffer(<InvoicePdf invoice={invoice} />)
-    return new NextResponse(buffer, {
+    return new NextResponse(Buffer.from(buffer), {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',

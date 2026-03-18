@@ -42,7 +42,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
   try {
     // Generate PDF via internal route
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-    let pdfAttachment: { filename: string; content: number[] } | undefined
+    let pdfAttachment: { filename: string; content: Buffer } | undefined
     try {
       const pdfRes = await fetch(`${appUrl}/api/invoices/${id}/pdf`, {
         headers: { Cookie: `sb-access-token=${user.id}` }
@@ -51,7 +51,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
         const pdfBuffer = await pdfRes.arrayBuffer()
         pdfAttachment = {
           filename: `Fattura-${invoice.numero_fattura}.pdf`,
-          content: Array.from(new Uint8Array(pdfBuffer)),
+          content: Buffer.from(pdfBuffer),
         }
       }
     } catch { /* continue without attachment */ }
