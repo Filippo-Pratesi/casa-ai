@@ -61,6 +61,9 @@ export function NuovoImmobileClient({ agentDefaultZones }: NuovoImmobileClientPr
   const [contactRole, setContactRole] = useState('proprietario')
   const [searchingContacts, setSearchingContacts] = useState(false)
 
+  const [transactionType, setTransactionType] = useState('')
+  const [propertyType, setPropertyType] = useState('')
+
   const [nearby, setNearby] = useState<NearbyResult | null>(null)
   const [loadingNearby, setLoadingNearby] = useState(false)
 
@@ -127,6 +130,8 @@ export function NuovoImmobileClient({ agentDefaultZones }: NuovoImmobileClientPr
           doorbell: doorbell.trim() || null,
           building_notes: buildingNotes.trim() || null,
           initial_note: initialNote.trim() || null,
+          transaction_type: transactionType || null,
+          property_type: propertyType || null,
         }),
       })
       if (!res.ok) {
@@ -262,6 +267,37 @@ export function NuovoImmobileClient({ agentDefaultZones }: NuovoImmobileClientPr
               placeholder="Dettagli sul palazzo, accesso, portineria..."
               rows={2}
             />
+          </div>
+
+          {/* Transaction type + property type (optional, can be set later) */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Tipo operazione</Label>
+              <Select value={transactionType || 'none'} onValueChange={(v) => setTransactionType(!v || v === 'none' ? '' : v)}>
+                <SelectTrigger><SelectValue placeholder="Non specificato" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Non specificato</SelectItem>
+                  <SelectItem value="vendita">Vendita</SelectItem>
+                  <SelectItem value="affitto">Affitto</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Tipo immobile</Label>
+              <Select value={propertyType || 'none'} onValueChange={(v) => setPropertyType(!v || v === 'none' ? '' : v)}>
+                <SelectTrigger><SelectValue placeholder="Non specificato" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Non specificato</SelectItem>
+                  <SelectItem value="apartment">Appartamento</SelectItem>
+                  <SelectItem value="house">Casa</SelectItem>
+                  <SelectItem value="villa">Villa</SelectItem>
+                  <SelectItem value="commercial">Commerciale</SelectItem>
+                  <SelectItem value="land">Terreno</SelectItem>
+                  <SelectItem value="garage">Garage</SelectItem>
+                  <SelectItem value="other">Altro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </Card>
 

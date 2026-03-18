@@ -36,7 +36,7 @@ function splitAddress(address: string): { street: string; civic: string } {
 const DEFAULT_WIDTHS: Record<string, number> = {
   city: 90, zone: 90, sub_zone: 70, street: 160, civic: 52,
   agent: 90, price: 80, owner: 110, stage: 90, disposition: 32,
-  type: 70, last_event: 160, updated: 70,
+  op: 60, type: 70, last_event: 160, updated: 70,
 }
 
 interface BancaDatiClientProps {
@@ -406,6 +406,7 @@ export function BancaDatiClient({
               { key: 'owner', label: 'Proprietario', hiddenBelow: 'xl' },
               { key: 'stage', label: 'Stage' },
               { key: 'disposition', label: 'St.' },
+              { key: 'op', label: 'Op.', hiddenBelow: 'lg' },
               { key: 'type', label: 'Tipologia', hiddenBelow: 'xl' },
               { key: 'last_event', label: 'Ultima nota', hiddenBelow: 'xl' },
               { key: 'updated', label: 'Agg.', hiddenBelow: 'md' },
@@ -447,20 +448,20 @@ export function BancaDatiClient({
                 <div style={{ width: colWidths.agent, minWidth: colWidths.agent }} className="hidden xl:block shrink-0 px-2 py-2 text-xs text-muted-foreground truncate">{(p as PropertyCardData & { agent_name?: string | null }).agent_name ?? <span className="opacity-30">—</span>}</div>
                 <div style={{ width: colWidths.price, minWidth: colWidths.price }} className="hidden lg:block shrink-0 px-2 py-2 text-xs font-semibold tabular-nums">{p.estimated_value ? `€${p.estimated_value.toLocaleString('it-IT')}` : <span className="opacity-30">—</span>}</div>
                 <div style={{ width: colWidths.owner, minWidth: colWidths.owner }} className="hidden xl:block shrink-0 px-2 py-2 text-xs text-muted-foreground truncate">{p.owner_name ?? <span className="opacity-30">—</span>}</div>
-                <div style={{ width: colWidths.stage, minWidth: colWidths.stage }} className="shrink-0 px-2 py-1.5 flex items-center gap-1 flex-wrap">
-                  <PropertyStageBadge stage={p.stage} />
-                  {p.transaction_type && (
+                <div style={{ width: colWidths.stage, minWidth: colWidths.stage }} className="shrink-0 px-2 py-1.5"><PropertyStageBadge stage={p.stage} /></div>
+                <div style={{ width: colWidths.disposition, minWidth: colWidths.disposition }} className="shrink-0 px-1 py-2 flex items-center justify-center"><DispositionIcon disposition={p.owner_disposition} /></div>
+                <div style={{ width: colWidths.op, minWidth: colWidths.op }} className="hidden lg:flex shrink-0 px-2 py-2 items-center">
+                  {p.transaction_type ? (
                     <span className={cn(
-                      'rounded px-1 py-0.5 text-[9px] font-semibold leading-none',
+                      'rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none',
                       p.transaction_type === 'affitto'
                         ? 'bg-purple-100 text-purple-600 dark:bg-purple-950/60 dark:text-purple-400'
                         : 'bg-blue-100 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400'
                     )}>
-                      {p.transaction_type === 'affitto' ? 'Aff.' : 'Vend.'}
+                      {p.transaction_type === 'affitto' ? 'Affitto' : 'Vendita'}
                     </span>
-                  )}
+                  ) : <span className="opacity-30 text-xs">—</span>}
                 </div>
-                <div style={{ width: colWidths.disposition, minWidth: colWidths.disposition }} className="shrink-0 px-1 py-2 flex items-center justify-center"><DispositionIcon disposition={p.owner_disposition} /></div>
                 <div style={{ width: colWidths.type, minWidth: colWidths.type }} className="hidden xl:block shrink-0 px-2 py-2 text-xs text-muted-foreground truncate">{PROPERTY_TYPE_IT[(p as PropertyCardData & { property_type?: string | null }).property_type ?? ''] ?? <span className="opacity-30">—</span>}</div>
                 <div
                   style={{ width: colWidths.last_event, minWidth: colWidths.last_event }}
