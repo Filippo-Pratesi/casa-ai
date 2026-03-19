@@ -49,9 +49,11 @@ const CONTACT_TYPES = [
 interface CampaignComposerProps {
   cities: string[]
   totalContacts: number
+  listingId?: string | null
+  listingAddress?: string | null
 }
 
-export function CampaignComposer({ cities, totalContacts }: CampaignComposerProps) {
+export function CampaignComposer({ cities, totalContacts, listingId, listingAddress }: CampaignComposerProps) {
   const router = useRouter()
   const [channel, setChannel] = useState<'email' | 'whatsapp'>('email')
   const [template, setTemplate] = useState('custom')
@@ -107,6 +109,7 @@ export function CampaignComposer({ cities, totalContacts }: CampaignComposerProp
             city: cityFilter || undefined,
           },
           send: sendNow,
+          ...(listingId ? { listing_id: listingId } : {}),
         }),
       })
       const data = await res.json()
@@ -151,6 +154,14 @@ export function CampaignComposer({ cities, totalContacts }: CampaignComposerProp
           </p>
         </div>
       </div>
+      {/* Linked listing banner */}
+      {listingId && listingAddress && (
+        <div className="flex items-center gap-2 rounded-xl border border-[oklch(0.57_0.20_33/0.3)] bg-[oklch(0.57_0.20_33/0.06)] px-4 py-2.5">
+          <span className="text-xs text-muted-foreground">Annuncio collegato:</span>
+          <span className="text-sm font-semibold text-[oklch(0.40_0.16_33)] dark:text-[oklch(0.75_0.12_33)] truncate flex-1">{listingAddress}</span>
+          <Link href={`/listing/${listingId}`} className="text-xs text-[oklch(0.57_0.20_33)] hover:underline shrink-0">Vedi annuncio</Link>
+        </div>
+      )}
 
       {/* Channel selector */}
       <div>

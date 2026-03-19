@@ -299,6 +299,10 @@ export default async function ListingDetailPage({
           )}
           {/* Edit & sold cluster */}
           <div className="flex items-center gap-1">
+            <Button nativeButton={false} render={<Link href={`/campaigns/new?listing_id=${listing.id}`} />} variant="outline" size="sm" className="h-8 gap-1.5 text-purple-700 border-purple-300 hover:bg-purple-50 dark:text-purple-400 dark:border-purple-700 dark:hover:bg-purple-950">
+              <Megaphone className="h-3.5 w-3.5" />
+              Campagna
+            </Button>
             <Button nativeButton={false} render={<Link href={`/listing/${listing.id}/edit`} />} variant="outline" size="sm" className="h-8 gap-1.5">
               <Pencil className="h-3.5 w-3.5" />
               Modifica
