@@ -118,6 +118,9 @@ export function BancaDatiClient({
 
   useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current) }, [])
 
+  // Sync search text when URL q param changes (e.g. browser back/forward)
+  useEffect(() => { setSearchText(initialFilters.q) }, [initialFilters.q])
+
   const buildParams = useCallback((updates: Record<string, string>) => {
     const params = new URLSearchParams()
     const current = {
@@ -157,6 +160,20 @@ export function BancaDatiClient({
     : zonesWithCity
   const totalPages = Math.ceil(total / perPage)
   const totalAll = Object.values(countByStage).reduce((a, b) => a + b, 0)
+
+  // Label lookups for Select triggers (avoids raw value display in shadcn/ui)
+  const currentSortLabel = SORT_OPTIONS.find(o => o.value === (initialFilters.sort || 'updated_at_desc'))?.label ?? 'Recenti prima'
+
+  // Active filter pills (Task 7)
+  const activePills = [
+    initialFilters.stage && { key: 'stage', label: STAGE_CONFIG[initialFilters.stage as PropertyStage]?.label ?? initialFilters.stage, clear: { stage: '', page: '1' } },
+    initialFilters.city && { key: 'city', label: initialFilters.city, clear: { city: '', zone: '', page: '1' } },
+    initialFilters.zone && { key: 'zone', label: initialFilters.zone, clear: { zone: '', page: '1' } },
+    initialFilters.transaction_type && { key: 'transaction_type', label: initialFilters.transaction_type === 'vendita' ? 'Vendita' : 'Affitto', clear: { transaction_type: '', page: '1' } },
+    initialFilters.disposition && { key: 'disposition', label: DISPOSITION_CONFIG[initialFilters.disposition]?.label ?? initialFilters.disposition, clear: { disposition: '', page: '1' } },
+    initialFilters.agent_id && { key: 'agent_id', label: agents.find(a => a.id === initialFilters.agent_id)?.name ?? 'Agente', clear: { agent_id: '', page: '1' } },
+    searchText && { key: 'q', label: `"${searchText}"`, clear: { q: '', page: '1' } },
+  ].filter((p): p is { key: string; label: string; clear: Record<string, string> } => Boolean(p))
 
   return (
     <div className="space-y-5">
@@ -256,7 +273,7 @@ export function BancaDatiClient({
                 }}
               >
                 <SelectTrigger className="h-8 w-[130px] text-sm">
-                  <SelectValue placeholder="Tutte" />
+                  <span className="truncate">{initialFilters.city || 'Tutte'}</span>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tutte</SelectItem>
@@ -275,7 +292,7 @@ export function BancaDatiClient({
                 onValueChange={(v) => updateUrl({ zone: !v || v === 'all' ? '' : v, page: '1' })}
               >
                 <SelectTrigger className="h-8 w-[140px] text-sm">
-                  <SelectValue placeholder="Tutte" />
+                  <span className="truncate">{initialFilters.zone || 'Tutte'}</span>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tutte</SelectItem>
@@ -293,10 +310,12 @@ export function BancaDatiClient({
               onValueChange={(v) => updateUrl({ transaction_type: !v || v === 'all' ? '' : v, page: '1' })}
             >
               <SelectTrigger className="h-8 w-[120px] text-sm">
-                <SelectValue placeholder="Tutto" />
+                <span className="truncate">
+                  {initialFilters.transaction_type === 'vendita' ? 'Vendita' : initialFilters.transaction_type === 'affitto' ? 'Affitto' : 'Tutte'}
+                </span>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tutto</SelectItem>
+                <SelectItem value="all">Tutte</SelectItem>
                 <SelectItem value="vendita">Vendita</SelectItem>
                 <SelectItem value="affitto">Affitto</SelectItem>
               </SelectContent>
@@ -311,7 +330,9 @@ export function BancaDatiClient({
               onValueChange={(v) => updateUrl({ disposition: !v || v === 'all' ? '' : v, page: '1' })}
             >
               <SelectTrigger className="h-8 w-[160px] text-sm">
-                <SelectValue placeholder="Tutti" />
+                <span className="truncate">
+                  {initialFilters.disposition ? (DISPOSITION_CONFIG[initialFilters.disposition]?.label ?? initialFilters.disposition) : 'Tutti'}
+                </span>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tutti</SelectItem>
@@ -331,7 +352,9 @@ export function BancaDatiClient({
                 onValueChange={(v) => updateUrl({ agent_id: !v || v === 'all' ? '' : v, page: '1' })}
               >
                 <SelectTrigger className="h-8 w-[140px] text-sm">
-                  <SelectValue placeholder="Tutti" />
+                  <span className="truncate">
+                    {initialFilters.agent_id ? (agents.find(a => a.id === initialFilters.agent_id)?.name ?? 'Agente') : 'Tutti'}
+                  </span>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tutti</SelectItem>
@@ -352,7 +375,7 @@ export function BancaDatiClient({
                   onValueChange={(v) => updateUrl({ sort: v ?? 'updated_at_desc', page: '1' })}
                 >
                   <SelectTrigger className="h-8 w-[160px] text-sm border-dashed">
-                    <SelectValue placeholder="Recenti prima" />
+                    <span className="truncate">{currentSortLabel}</span>
                   </SelectTrigger>
                   <SelectContent align="end">
                     {SORT_OPTIONS.map((o) => (
@@ -390,6 +413,26 @@ export function BancaDatiClient({
           </div>
         </div>
       </div>
+
+      {/* Active filter pills */}
+      {activePills.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 items-center">
+          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Filtri attivi:</span>
+          {activePills.map((pill) => (
+            <button
+              key={pill.key}
+              onClick={() => {
+                if (pill.key === 'q') setSearchText('')
+                updateUrl(pill.clear)
+              }}
+              className="inline-flex items-center gap-1 rounded-full bg-[oklch(0.57_0.20_33/0.10)] text-[oklch(0.45_0.20_33)] dark:bg-[oklch(0.57_0.20_33/0.20)] dark:text-[oklch(0.80_0.15_33)] border border-[oklch(0.57_0.20_33/0.25)] px-2.5 py-0.5 text-xs font-medium hover:bg-[oklch(0.57_0.20_33/0.18)] transition-colors"
+            >
+              {pill.label}
+              <X className="h-3 w-3 opacity-60" />
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Legend panel */}
       {showLegend && (
@@ -443,8 +486,9 @@ export function BancaDatiClient({
         </div>
       ) : initialFilters.viewMode !== 'grid' ? (
         <div className="rounded-xl border border-border overflow-hidden bg-card select-none">
+          <div className="overflow-x-auto">
           {/* Headers */}
-          <div className="flex items-center bg-muted/40 border-b border-border/60 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground overflow-x-auto">
+          <div className="flex items-center bg-muted/40 border-b border-border/60 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             {[
               { key: 'city', label: 'Città' },
               { key: 'zone', label: 'Zona', hiddenBelow: 'lg' },
@@ -480,7 +524,7 @@ export function BancaDatiClient({
             ))}
             <div className="w-8 shrink-0" />
           </div>
-          {/* Rows */}
+          {/* Rows — inside shared scroll container */}
           {properties.map((p) => {
             const { street, civic } = splitAddress(p.address)
             const lastEv = (p as PropertyCardData & { last_event?: { title: string; event_date: string } | null }).last_event
@@ -488,7 +532,7 @@ export function BancaDatiClient({
               <Link
                 key={p.id}
                 href={`/banca-dati/${p.id}`}
-                className="group flex items-center border-b border-border/20 last:border-0 hover:bg-primary/[0.04] dark:hover:bg-primary/[0.08] transition-colors cursor-pointer overflow-x-auto"
+                className="group flex items-center border-b border-border/20 last:border-0 hover:bg-[oklch(0.57_0.20_33/0.06)] dark:hover:bg-[oklch(0.57_0.20_33/0.10)] transition-colors cursor-pointer"
               >
                 <div style={{ width: colWidths.city, minWidth: colWidths.city }} className="shrink-0 px-2 py-2 text-xs text-muted-foreground truncate">{p.city}</div>
                 <div style={{ width: colWidths.zone, minWidth: colWidths.zone }} className="hidden lg:block shrink-0 px-2 py-2 text-xs text-muted-foreground truncate">{p.zone ?? <span className="opacity-30">—</span>}</div>
@@ -532,6 +576,7 @@ export function BancaDatiClient({
               </Link>
             )
           })}
+          </div>{/* end overflow-x-auto */}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
