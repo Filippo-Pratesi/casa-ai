@@ -10,7 +10,7 @@ import { AnalyticsAgentFilter } from '@/components/analytics/analytics-agent-fil
 export const metadata = { title: 'Analytics — CasaAI' }
 
 const STAGE_LABELS: Record<string, string> = {
-  sconosciuto: 'Sconosciuto', ignoto: 'Ignoto', conosciuto: 'Conosciuto',
+  sconosciuto: 'Sconosciuto', ignoto: 'Non contattato', conosciuto: 'Conosciuto',
   incarico: 'Incarico', venduto: 'Venduto', locato: 'Locato', disponibile: 'Disponibile',
 }
 
@@ -291,11 +291,11 @@ export default async function AnalyticsPage({
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="rounded-lg bg-muted/40 p-4 text-center">
-            <p className="text-xs text-muted-foreground mb-1">Sconosciuto → Ignoto</p>
+            <p className="text-xs text-muted-foreground mb-1">Sconosciuto → Non contattato</p>
             <p className="text-3xl font-bold">{conversionSconosciuto}%</p>
           </div>
           <div className="rounded-lg bg-muted/40 p-4 text-center">
-            <p className="text-xs text-muted-foreground mb-1">Ignoto → Conosciuto</p>
+            <p className="text-xs text-muted-foreground mb-1">Non contattato → Conosciuto</p>
             <p className="text-3xl font-bold">{conversionIgnoto}%</p>
           </div>
           <div className="rounded-lg bg-muted/40 p-4 text-center">

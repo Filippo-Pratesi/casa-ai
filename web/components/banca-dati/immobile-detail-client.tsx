@@ -66,7 +66,7 @@ const STAGE_ADVANCES: Record<PropertyStage, PropertyStage | null> = {
 }
 
 const ADVANCE_LABELS: Record<string, string> = {
-  ignoto: 'Segna come Ignoto',
+  ignoto: 'Segna come Non contattato',
   conosciuto: 'Segna come Conosciuto',
   incarico: 'Avvia Incarico',
   venduto: 'Segna come Venduto',

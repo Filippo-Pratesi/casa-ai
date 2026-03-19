@@ -302,7 +302,7 @@ export const translations = {
     'bancaDati.empty.body': 'Aggiungi il primo immobile per iniziare a tracciare la tua banca dati.',
     'bancaDati.empty.cta': 'Aggiungi immobile',
     'bancaDati.stage.sconosciuto': 'Sconosciuto',
-    'bancaDati.stage.ignoto': 'Ignoto',
+    'bancaDati.stage.ignoto': 'Non contattato',
     'bancaDati.stage.conosciuto': 'Conosciuto',
     'bancaDati.stage.incarico': 'Incarico',
     'bancaDati.stage.venduto': 'Venduto',

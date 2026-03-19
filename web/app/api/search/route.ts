@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
   ])
 
   const STAGE_LABELS: Record<string, string> = {
-    sconosciuto: 'Sconosciuto', ignoto: 'Ignoto', conosciuto: 'Conosciuto',
+    sconosciuto: 'Sconosciuto', ignoto: 'Non contattato', conosciuto: 'Conosciuto',
     incarico: 'Incarico', venduto: 'Venduto', locato: 'Locato', disponibile: 'Disponibile',
   }
 

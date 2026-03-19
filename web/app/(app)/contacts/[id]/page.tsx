@@ -192,7 +192,7 @@ export default async function ContactDetailPage({
   const hasLinkedProperties = ownerProperties.length > 0 || tenantProperties.length > 0 || otherProperties.length > 0
 
   const STAGE_LABELS: Record<string, string> = {
-    sconosciuto: 'Sconosciuto', ignoto: 'Ignoto', conosciuto: 'Conosciuto',
+    sconosciuto: 'Sconosciuto', ignoto: 'Non contattato', conosciuto: 'Conosciuto',
     incarico: 'Incarico', venduto: 'Venduto', locato: 'Locato', disponibile: 'Disponibile',
   }
   const STAGE_COLORS: Record<string, string> = {

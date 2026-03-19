@@ -27,7 +27,7 @@ const STAGE_CONFIG: Record<PropertyStage, {
     description: 'Solo indirizzo noto, nessun contatto',
   },
   ignoto: {
-    label: 'Ignoto',
+    label: 'Non contattato',
     icon: EyeOff,
     color: 'text-slate-500',
     bg: 'bg-slate-100 dark:bg-slate-800',

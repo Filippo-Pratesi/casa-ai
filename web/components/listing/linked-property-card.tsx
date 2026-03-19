@@ -25,7 +25,7 @@ interface LinkedPropertyCardProps {
 export function LinkedPropertyCard({ property }: LinkedPropertyCardProps) {
   const stageLabels: Record<string, string> = {
     sconosciuto: 'Sconosciuto',
-    ignoto: 'Ignoto',
+    ignoto: 'Non contattato',
     conosciuto: 'Conosciuto',
     incarico: 'Incarico',
     venduto: 'Venduto',
