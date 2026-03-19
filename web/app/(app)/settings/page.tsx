@@ -100,18 +100,23 @@ export default async function SettingsPage({
     id: string
     agent_id: string
     zone_id: string
+    sub_zone_id: string | null
     agent_name: string
     zone_name: string
+    sub_zone_name: string | null
     city: string
   }
   let agentZoneAssignments: AgentZoneRow[] = []
   let allZones: { id: string; name: string; city: string }[] = []
+  let allSubZones: { id: string; name: string; zone_id: string }[] = []
+  let hasGroupAdmin = false
+
   if (isAdmin && profile?.workspace_id) {
-    const [azRes, zonesRes] = await Promise.all([
+    const [azRes, zonesRes, subZonesRes, groupAdminRes] = await Promise.all([
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (admin as any)
         .from('agent_zones')
-        .select('id, agent_id, zone_id, agent:users!agent_zones_agent_id_fkey(name), zone:zones!agent_zones_zone_id_fkey(name, city)')
+        .select('id, agent_id, zone_id, sub_zone_id, agent:users!agent_zones_agent_id_fkey(name, email), zone:zones!agent_zones_zone_id_fkey(name, city), sub_zone:sub_zones!agent_zones_sub_zone_id_fkey(name)')
         .eq('workspace_id', profile.workspace_id),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (admin as any)
@@ -120,18 +125,36 @@ export default async function SettingsPage({
         .eq('workspace_id', profile.workspace_id)
         .order('city')
         .order('name'),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (admin as any)
+        .from('sub_zones')
+        .select('id, name, zone_id')
+        .eq('workspace_id', profile.workspace_id)
+        .order('name'),
+      admin
+        .from('users')
+        .select('id', { count: 'exact', head: true })
+        .eq('workspace_id', profile.workspace_id)
+        .eq('role', 'group_admin'),
     ])
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     agentZoneAssignments = ((azRes.data ?? []) as any[]).map((row) => ({
       id: row.id,
       agent_id: row.agent_id,
       zone_id: row.zone_id,
-      agent_name: row.agent?.name ?? 'Agente',
+      sub_zone_id: row.sub_zone_id ?? null,
+      agent_name: row.agent?.name?.trim() || row.agent?.email?.split('@')[0] || 'Agente',
       zone_name: row.zone?.name ?? '',
+      sub_zone_name: row.sub_zone?.name ?? null,
       city: row.zone?.city ?? '',
     }))
     allZones = (zonesRes.data ?? []) as { id: string; name: string; city: string }[]
+    allSubZones = (subZonesRes.data ?? []) as { id: string; name: string; zone_id: string }[]
+    hasGroupAdmin = (groupAdminRes.count ?? 0) > 0
   }
+
+  // Piano section visible to group_admin, or to admin if no group_admin exists in workspace
+  const showPianoSection = isGroupAdmin || (isAdmin && !hasGroupAdmin)
 
   const TABS = [
     { id: 'generale', label: 'Generale' },
@@ -239,6 +262,7 @@ export default async function SettingsPage({
                   assignments={agentZoneAssignments}
                   agents={members}
                   zones={allZones}
+                  subZones={allSubZones}
                 />
               </CardContent>
             </Card>
@@ -329,20 +353,22 @@ export default async function SettingsPage({
               />
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Piano</CardTitle>
-              <CardDescription>Gestisci il tuo piano e la fatturazione.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Link
-                href="/plans"
-                className="inline-flex items-center gap-2 rounded-xl bg-[oklch(0.57_0.20_33)] text-white px-4 py-2 text-sm font-semibold hover:bg-[oklch(0.52_0.20_33)] transition-colors"
-              >
-                Gestisci piano →
-              </Link>
-            </CardContent>
-          </Card>
+          {showPianoSection && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Piano</CardTitle>
+                <CardDescription>Gestisci il tuo piano e la fatturazione.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Link
+                  href="/plans"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[oklch(0.57_0.20_33)] text-white px-4 py-2 text-sm font-semibold hover:bg-[oklch(0.52_0.20_33)] transition-colors"
+                >
+                  Gestisci piano →
+                </Link>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
     </div>

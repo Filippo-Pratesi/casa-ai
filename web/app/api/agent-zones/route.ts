@@ -66,6 +66,7 @@ export async function POST(req: NextRequest) {
 
   const agentId = typeof body.agent_id === 'string' ? body.agent_id : ''
   const zoneId = typeof body.zone_id === 'string' ? body.zone_id : ''
+  const subZoneId = typeof body.sub_zone_id === 'string' ? body.sub_zone_id : null
 
   if (!agentId) return NextResponse.json({ error: 'agent_id obbligatorio' }, { status: 400 })
   if (!zoneId) return NextResponse.json({ error: 'zone_id obbligatorio' }, { status: 400 })
@@ -91,10 +92,23 @@ export async function POST(req: NextRequest) {
 
   if (!zoneData) return NextResponse.json({ error: 'Zona non trovata' }, { status: 404 })
 
+  // If sub_zone_id provided, verify it belongs to the given zone in this workspace
+  if (subZoneId) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: subZoneData } = await (supabase as any)
+      .from('sub_zones')
+      .select('id')
+      .eq('id', subZoneId)
+      .eq('zone_id', zoneId)
+      .eq('workspace_id', userProfile.workspace_id)
+      .single()
+    if (!subZoneData) return NextResponse.json({ error: 'Sotto-zona non trovata' }, { status: 404 })
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from('agent_zones')
-    .insert({ workspace_id: userProfile.workspace_id, agent_id: agentId, zone_id: zoneId })
+    .insert({ workspace_id: userProfile.workspace_id, agent_id: agentId, zone_id: zoneId, sub_zone_id: subZoneId })
     .select('id')
     .single()
 
