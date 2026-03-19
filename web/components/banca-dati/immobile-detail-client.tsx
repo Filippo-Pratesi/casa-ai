@@ -31,6 +31,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { PropertyStageBadge, type PropertyStage, STAGE_CONFIG } from './property-stage-icon'
+import { ContactTypeBadges } from '@/components/contacts/contact-type-badges'
 import { DispositionIcon, DISPOSITION_CONFIG, type OwnerDisposition } from './disposition-icon'
 import { EventTimeline, type PropertyEvent } from './event-timeline'
 import { PropertyCard } from './property-card'
@@ -79,7 +80,7 @@ interface PropertyContact {
   role: string
   is_primary: boolean
   notes: string | null
-  contact: { id: string; name: string; phone: string | null; email: string | null } | null
+  contact: { id: string; name: string; phone: string | null; email: string | null; type?: string | null; types?: string[] | null } | null
 }
 
 interface NearbyResult {
@@ -725,7 +726,12 @@ export function ImmobileDetailClient({
                           </div>
                           <div className="min-w-0">
                             <p className="text-sm font-medium truncate underline-offset-2 hover:underline">{pc.contact.name ?? 'Sconosciuto'}</p>
-                            <p className="text-xs text-muted-foreground">{ROLE_LABELS[pc.role] ?? pc.role}</p>
+                            <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                              <span className="text-[10px] font-medium rounded bg-muted/80 border border-border/60 px-1.5 py-0.5 text-muted-foreground">{ROLE_LABELS[pc.role] ?? pc.role}</span>
+                              {pc.contact.types || pc.contact.type ? (
+                                <ContactTypeBadges types={pc.contact.types} type={pc.contact.type} size="xs" />
+                              ) : null}
+                            </div>
                           </div>
                         </Link>
                       ) : (
@@ -735,7 +741,12 @@ export function ImmobileDetailClient({
                           </div>
                           <div className="min-w-0">
                             <p className="text-sm font-medium truncate">{pc.contact?.name ?? 'Sconosciuto'}</p>
-                            <p className="text-xs text-muted-foreground">{ROLE_LABELS[pc.role] ?? pc.role}</p>
+                            <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                              <span className="text-[10px] font-medium rounded bg-muted/80 border border-border/60 px-1.5 py-0.5 text-muted-foreground">{ROLE_LABELS[pc.role] ?? pc.role}</span>
+                              {pc.contact?.types || pc.contact?.type ? (
+                                <ContactTypeBadges types={pc.contact?.types} type={pc.contact?.type} size="xs" />
+                              ) : null}
+                            </div>
                           </div>
                         </>
                       )}

@@ -38,11 +38,11 @@ export default async function ImmobileDetailPage({ params }: { params: Promise<{
 
   if (!propertyData) notFound()
 
-  // Load property contacts with roles
+  // Load property contacts with roles (include types for multi-type badges)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: contactsData } = await (admin as any)
     .from('property_contacts')
-    .select('id, role, is_primary, notes, contact:contacts(id, name, phone, email)')
+    .select('id, role, is_primary, notes, contact:contacts(id, name, phone, email, type, types)')
     .eq('property_id', id)
     .order('is_primary', { ascending: false })
 
