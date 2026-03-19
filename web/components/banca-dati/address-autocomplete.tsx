@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useTransition } from 'react'
 import { MapPin, Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
@@ -20,7 +20,7 @@ interface AddressAutocompleteProps {
   placeholder?: string
   disabled?: boolean
   className?: string
-  proximity?: string  // 'lng,lat' format for biasing results to a city
+  proximity?: string
 }
 
 export function AddressAutocomplete({
@@ -32,12 +32,20 @@ export function AddressAutocomplete({
   className,
   proximity,
 }: AddressAutocompleteProps) {
+  // Local state for instant input response — parent state updates are deferred
+  const [localValue, setLocalValue] = useState(value)
   const [suggestions, setSuggestions] = useState<GeocodeSuggestion[]>([])
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
+  const [, startTransition] = useTransition()
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
+
+  // Sync local value when parent changes it externally (e.g. after selection or reset)
+  useEffect(() => {
+    setLocalValue(value)
+  }, [value])
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -49,7 +57,6 @@ export function AddressAutocomplete({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Cleanup debounce and in-flight request on unmount
   useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -58,7 +65,13 @@ export function AddressAutocomplete({
   }, [])
 
   function handleChange(text: string) {
-    onChange(text)
+    // Update local state immediately for a snappy input feel
+    setLocalValue(text)
+    // Defer parent state update so it doesn't block typing
+    startTransition(() => {
+      onChange(text)
+    })
+
     if (debounceRef.current) clearTimeout(debounceRef.current)
 
     if (text.length < 3) {
@@ -73,16 +86,13 @@ export function AddressAutocomplete({
       setLoading(true)
       try {
         const url = `/api/geocode?q=${encodeURIComponent(text)}&country=it${proximity ? `&proximity=${proximity}` : ''}`
-        const res = await fetch(url, {
-          signal: abortRef.current.signal,
-        })
+        const res = await fetch(url, { signal: abortRef.current.signal })
         if (!res.ok) return
         const data = await res.json()
         setSuggestions(data.suggestions ?? [])
         setOpen(true)
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') return
-        // silently fail — user can still type manually
       } finally {
         setLoading(false)
       }
@@ -90,6 +100,7 @@ export function AddressAutocomplete({
   }
 
   function handleSelect(suggestion: GeocodeSuggestion) {
+    setLocalValue(suggestion.address)
     onChange(suggestion.address)
     onSelect(suggestion)
     setSuggestions([])
@@ -101,7 +112,7 @@ export function AddressAutocomplete({
       <div className="relative">
         <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
         <Input
-          value={value}
+          value={localValue}
           onChange={(e) => handleChange(e.target.value)}
           placeholder={placeholder}
           disabled={disabled}

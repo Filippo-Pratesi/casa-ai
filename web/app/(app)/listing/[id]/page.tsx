@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, MapPin, Euro, Maximize2, Home, Bath, Layers, Users, Pencil, Mail, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, MapPin, Euro, Maximize2, Home, Bath, Layers, Users, Pencil, Mail, AlertTriangle, Database, ExternalLink, Phone, User } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Badge } from '@/components/ui/badge'
@@ -90,6 +90,22 @@ export default async function ListingDetailPage({
   if (error || !data) notFound()
 
   const listing = data as Listing
+
+
+  // Fetch linked property + owner contact
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let linkedProperty: { id: string; address: string; city: string; stage: string; owner_contact: { id: string; name: string; phone: string | null; email: string | null } | null } | null = null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const propertyId = (listing as any).property_id
+  if (propertyId) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: propData } = await (admin as any)
+      .from('properties')
+      .select('id, address, city, stage, owner_contact:owner_contact_id(id, name, phone, email)')
+      .eq('id', propertyId)
+      .single()
+    if (propData) linkedProperty = propData as typeof linkedProperty
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: connectionsData } = await (admin as any)
@@ -184,6 +200,16 @@ export default async function ListingDetailPage({
           </div>
           {/* Separator */}
           <div className="h-5 w-px bg-border" />
+          {/* Banca Dati link */}
+          {linkedProperty && (
+            <>
+              <Button nativeButton={false} render={<Link href={`/banca-dati/${linkedProperty.id}`} />} variant="outline" size="sm" className="h-8 gap-1.5 text-blue-700 border-blue-300 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-700 dark:hover:bg-blue-950">
+                <Database className="h-3.5 w-3.5" />
+                Banca Dati
+              </Button>
+              <div className="h-5 w-px bg-border" />
+            </>
+          )}
           {/* Edit & sold cluster */}
           <div className="flex items-center gap-1">
             <Button nativeButton={false} render={<Link href={`/listing/${listing.id}/edit`} />} variant="outline" size="sm" className="h-8 gap-1.5">
@@ -377,6 +403,40 @@ export default async function ListingDetailPage({
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Owner card */}
+      {linkedProperty?.owner_contact && (
+        <div className="rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 px-4 py-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900">
+                <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-0.5">Proprietario</p>
+                <p className="font-semibold text-sm">{linkedProperty.owner_contact.name}</p>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5">
+                  {linkedProperty.owner_contact.phone && (
+                    <a href={`tel:${linkedProperty.owner_contact.phone}`} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                      <Phone className="h-3 w-3" />
+                      {linkedProperty.owner_contact.phone}
+                    </a>
+                  )}
+                  {linkedProperty.owner_contact.email && (
+                    <a href={`mailto:${linkedProperty.owner_contact.email}`} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                      <Mail className="h-3 w-3" />
+                      {linkedProperty.owner_contact.email}
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+            <Link href={`/contacts/${linkedProperty.owner_contact.id}`} className="shrink-0 text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+              Scheda<ExternalLink className="h-3 w-3 ml-0.5" />
+            </Link>
+          </div>
         </div>
       )}
 
