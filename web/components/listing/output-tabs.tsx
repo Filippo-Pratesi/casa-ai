@@ -31,7 +31,7 @@ export function OutputTabs({ listingId, initialContent }: OutputTabsProps) {
       await navigator.clipboard.writeText(content[key])
       setCopied(key)
       toast.success('Copiato negli appunti')
-      setTimeout(() => setCopied(null), 2000)
+      setTimeout(() => setCopied(null), 3000)
     } catch {
       toast.error('Copia non riuscita')
     }

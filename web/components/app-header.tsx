@@ -3,7 +3,7 @@
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
-import { SidebarTrigger } from '@/components/ui/sidebar'
+import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar'
 
 const BREADCRUMB_MAP: Record<string, string> = {
   dashboard: 'Dashboard',
@@ -41,10 +41,12 @@ function getBreadcrumbs(pathname: string) {
 export function AppHeader() {
   const pathname = usePathname()
   const crumbs = getBreadcrumbs(pathname)
+  const { open, openMobile, isMobile } = useSidebar()
+  const isOpen = isMobile ? openMobile : open
 
   return (
     <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b border-border bg-card/90 backdrop-blur-md px-5 shadow-[0_1px_0_0_rgba(0,0,0,0.04)]">
-      <SidebarTrigger className="h-8 w-8 shrink-0 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-150" />
+      <SidebarTrigger aria-expanded={isOpen} className="h-8 w-8 shrink-0 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-150" />
       <div className="h-5 w-px bg-border" />
       <nav className="flex items-center gap-1 text-sm">
         {crumbs.map((crumb, i) => (

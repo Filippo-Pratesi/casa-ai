@@ -45,7 +45,9 @@ export async function POST(req: NextRequest) {
   const price = Number(formData.get('price'))
   const sqm = Number(formData.get('sqm'))
   const rooms = Number(formData.get('rooms'))
-  const bathrooms = Number(formData.get('bathrooms') ?? '1')
+  // A8: normalize bathrooms — default to 1 if missing, zero, or NaN
+  const bathroomsRaw = Number(formData.get('bathrooms') ?? '1')
+  const bathrooms = bathroomsRaw > 0 && !isNaN(bathroomsRaw) ? bathroomsRaw : 1
   const condition = (formData.get('condition') as string) || null
   const notes = (formData.get('notes') as string) || null
   const tone = (formData.get('tone') as string) || 'standard'
@@ -90,26 +92,25 @@ export async function POST(req: NextRequest) {
 
   const photoFiles = formData.getAll('photos') as File[]
 
-  // Upload photos to Supabase Storage
-  const photoUrls: string[] = []
+  // A1: Upload photos in parallel instead of sequentially
+  const uploadPromises = photoFiles
+    .filter(photo => photo.size > 0)
+    .map(async (photo) => {
+      const buffer = await photo.arrayBuffer()
+      const ext = photo.name.split('.').pop() ?? 'jpg'
+      const fileName = `${profile.workspace_id}/${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('listings')
+        .upload(fileName, buffer, { contentType: photo.type || 'image/jpeg' })
+      if (!uploadError && uploadData) {
+        const { data: urlData } = supabase.storage.from('listings').getPublicUrl(uploadData.path)
+        return urlData.publicUrl
+      }
+      return null
+    })
 
-  for (const photo of photoFiles) {
-    if (!photo.size) continue
-
-    const buffer = await photo.arrayBuffer()
-
-    const ext = photo.name.split('.').pop() ?? 'jpg'
-    const fileName = `${profile.workspace_id}/${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('listings')
-      .upload(fileName, buffer, { contentType: photo.type || 'image/jpeg' })
-
-    if (!uploadError && uploadData) {
-      const { data: urlData } = supabase.storage.from('listings').getPublicUrl(uploadData.path)
-      photoUrls.push(urlData.publicUrl)
-    }
-  }
+  const uploadResults = await Promise.all(uploadPromises)
+  const photoUrls: string[] = uploadResults.filter((url): url is string => url !== null)
 
   // Generate content with DeepSeek (text-only, no vision in testing phase)
   const propertyData = {

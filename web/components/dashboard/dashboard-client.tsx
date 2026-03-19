@@ -370,7 +370,7 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
                 value={citySearch}
                 onChange={e => setCitySearch(e.target.value)}
                 placeholder={t('listings.filter.searchPlaceholder')}
-                className="w-full rounded-lg border border-border bg-background pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.3)] text-foreground placeholder:text-muted-foreground"
+                className="w-full rounded-lg border border-border bg-background pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.5)] focus:ring-offset-1 text-foreground placeholder:text-muted-foreground"
               />
             </div>
             <div className="relative min-w-[150px]">
@@ -380,7 +380,7 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
                 value={priceMax}
                 onChange={e => setPriceMax(e.target.value)}
                 placeholder={t('listings.filter.priceMax')}
-                className="w-full rounded-lg border border-border bg-background pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.3)] text-foreground placeholder:text-muted-foreground"
+                className="w-full rounded-lg border border-border bg-background pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.5)] focus:ring-offset-1 text-foreground placeholder:text-muted-foreground"
               />
             </div>
             {/* Tone filter */}

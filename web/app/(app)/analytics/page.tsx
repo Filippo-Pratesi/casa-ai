@@ -83,13 +83,17 @@ export default async function AnalyticsPage({
   }
   const maxCount = Math.max(...Object.values(countByStage), 1)
 
-  // Avg days since updated per stage
+  // A4: Avg days since updated per stage — guard invalid dates
   const now = Date.now()
   const avgDaysByStage: Record<string, number> = {}
   for (const stage of STAGE_ORDER) {
     const stageProps = allProps.filter((p: { stage: string }) => p.stage === stage)
     if (stageProps.length === 0) { avgDaysByStage[stage] = 0; continue }
-    const avgMs = stageProps.reduce((acc: number, p: { updated_at: string }) => acc + (now - new Date(p.updated_at).getTime()), 0) / stageProps.length
+    const validTimes = stageProps
+      .map((p: { updated_at: string }) => new Date(p.updated_at).getTime())
+      .filter((ms: number) => !isNaN(ms))
+    if (validTimes.length === 0) { avgDaysByStage[stage] = 0; continue }
+    const avgMs = validTimes.reduce((acc: number, ms: number) => acc + (now - ms), 0) / validTimes.length
     avgDaysByStage[stage] = Math.round(avgMs / (1000 * 60 * 60 * 24))
   }
 
@@ -146,7 +150,7 @@ export default async function AnalyticsPage({
           </div>
         </div>
         {isAdmin && agents.length > 1 && (
-          <Suspense fallback={null}>
+          <Suspense fallback={<div className="h-9 w-48 rounded-lg bg-muted animate-pulse" />}>
             <AnalyticsAgentFilter agents={agents} selectedAgentId={selectedAgentId} />
           </Suspense>
         )}

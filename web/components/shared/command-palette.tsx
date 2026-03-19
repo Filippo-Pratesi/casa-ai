@@ -30,6 +30,7 @@ export function CommandPalette() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [searching, setSearching] = useState(false)
+  const [searchError, setSearchError] = useState(false)
   const router = useRouter()
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -55,17 +56,25 @@ export function CommandPalette() {
     if (q.length < 2) {
       setResults([])
       setSearching(false)
+      setSearchError(false)
       return
     }
     setSearching(true)
+    setSearchError(false)
     try {
       const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`)
       if (res.ok) {
         const data = await res.json()
         setResults(data.results ?? [])
+      } else {
+        // A5: show error state instead of silent empty results
+        setResults([])
+        setSearchError(true)
       }
     } catch {
-      // ignore
+      // A5: network error — show error state
+      setResults([])
+      setSearchError(true)
     } finally {
       setSearching(false)
     }
@@ -81,6 +90,7 @@ export function CommandPalette() {
     setOpen(false)
     setQuery('')
     setResults([])
+    setSearchError(false)
   }
 
   function navigate(href: string) {
@@ -98,7 +108,7 @@ export function CommandPalette() {
 
   const hasResults = results.length > 0
   const hasNav = filteredNav.length > 0
-  const isEmpty = !searching && !hasResults && !hasNav
+  const isEmpty = !searching && !hasResults && !hasNav && !searchError
 
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) handleClose(); else setOpen(true) }}>
@@ -120,9 +130,19 @@ export function CommandPalette() {
         </div>
 
         <div className="max-h-[400px] overflow-y-auto py-2">
+          {/* A5: error state */}
+          {searchError && !searching && (
+            <p className="text-center text-sm text-destructive py-8">
+              Ricerca non riuscita — controlla la connessione
+            </p>
+          )}
           {isEmpty && (
             <p className="text-center text-sm text-muted-foreground py-8">
-              {query.length > 0 ? 'Nessun risultato' : 'Inizia a digitare per cercare…'}
+              {query.length === 1
+                ? 'Digita almeno 2 caratteri per cercare…'
+                : query.length > 1
+                  ? 'Nessun risultato'
+                  : 'Inizia a digitare per cercare…'}
             </p>
           )}
 

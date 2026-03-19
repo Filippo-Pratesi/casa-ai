@@ -127,8 +127,13 @@ async function callDeepSeek(systemPrompt: string, userMessage: string): Promise<
     throw new Error(`DeepSeek API error ${res.status}`)
   }
 
-  const json = await res.json() as { choices: { message: { content: string } }[] }
-  return json.choices[0].message.content
+  // A7: Validate response shape before accessing nested properties
+  const json = await res.json() as { choices?: { message?: { content?: string } }[] }
+  const content = json.choices?.[0]?.message?.content
+  if (!content) {
+    throw new Error('Risposta AI non valida — struttura inaspettata')
+  }
+  return content
 }
 
 const REQUIRED_CONTENT_KEYS: Array<keyof GeneratedContent> = [
@@ -176,7 +181,14 @@ Restituisci un oggetto JSON con esattamente questi 6 campi:
 IMPORTANTE: Solo JSON valido, nessun testo aggiuntivo.`
 
   const raw = await callDeepSeek(system, user)
-  return validateGeneratedContent(JSON.parse(raw))
+  // A3: Wrap JSON.parse in try/catch — AI may return malformed JSON despite json_object mode
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    throw new Error('Risposta AI non valida — formato JSON non corretto')
+  }
+  return validateGeneratedContent(parsed)
 }
 
 export async function regenerateTab(
@@ -214,8 +226,15 @@ Rispondi con JSON contenente SOLO il campo "${tab}":
 {"${tab}": "..."}`
 
   const raw = await callDeepSeek(system, user)
-  const parsed = JSON.parse(raw) as Record<string, unknown>
-  const updated = typeof parsed[tab] === 'string' && parsed[tab] ? parsed[tab] as string : currentContent[tab]
+  let parsedRegen: Record<string, unknown>
+  try {
+    parsedRegen = JSON.parse(raw) as Record<string, unknown>
+  } catch {
+    throw new Error('Risposta AI non valida — formato JSON non corretto')
+  }
+  if (typeof parsedRegen[tab] !== 'string' || !parsedRegen[tab]) {
+    throw new Error(`Rigenerazione non riuscita — campo "${tab}" mancante nella risposta AI`)
+  }
 
-  return { ...currentContent, [tab]: updated }
+  return { ...currentContent, [tab]: parsedRegen[tab] as string }
 }
