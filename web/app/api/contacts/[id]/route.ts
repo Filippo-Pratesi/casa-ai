@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
-async function getWorkspaceId(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
-  const { data } = await supabase.from('users').select('workspace_id').eq('id', userId).single()
+async function getWorkspaceId(userId: string) {
+  const admin = createAdminClient()
+  const { data } = await admin.from('users').select('workspace_id').eq('id', userId).single()
   return (data as { workspace_id: string } | null)?.workspace_id ?? null
 }
 
@@ -16,7 +18,7 @@ export async function GET(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
-  const workspaceId = await getWorkspaceId(supabase, user.id)
+  const workspaceId = await getWorkspaceId(user.id)
   if (!workspaceId) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 404 })
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -42,7 +44,7 @@ export async function PATCH(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
-  const workspaceId = await getWorkspaceId(supabase, user.id)
+  const workspaceId = await getWorkspaceId(user.id)
   if (!workspaceId) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 404 })
 
   let body: Record<string, unknown>
@@ -102,7 +104,7 @@ export async function DELETE(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
-  const workspaceId = await getWorkspaceId(supabase, user.id)
+  const workspaceId = await getWorkspaceId(user.id)
   if (!workspaceId) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 404 })
 
   // Parse optional body (bought flow)
