@@ -11,6 +11,7 @@ import { AttachmentsSection } from '@/components/shared/attachments-section'
 import { BirthdayCard } from '@/components/contacts/birthday-card'
 import { ContactCronistoria } from '@/components/contacts/contact-cronistoria'
 import { CONTACT_TYPE_COLORS as TYPE_COLORS, CONTACT_TYPE_LABELS as TYPE_LABELS } from '@/lib/contact-utils'
+import { ContactTypeBadges } from '@/components/contacts/contact-type-badges'
 
 interface MatchingListing {
   id: string
@@ -37,6 +38,7 @@ interface Contact {
   email: string | null
   phone: string | null
   type: string
+  types: string[] | null
   notes: string | null
   city_of_residence: string | null
   address_of_residence: string | null
@@ -279,9 +281,7 @@ export default async function ContactDetailPage({
             <div className="flex-1 min-w-0">
               <h1 className="text-2xl font-bold tracking-tight text-foreground leading-tight">{contact.name}</h1>
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                <span className={`rounded-full border px-3 py-0.5 text-xs font-semibold ${TYPE_COLORS[contact.type]}`}>
-                  {TYPE_LABELS[contact.type]}
-                </span>
+                <ContactTypeBadges types={contact.types} type={contact.type} size="sm" />
                 <span className="text-xs text-muted-foreground">
                   Aggiunto il {new Date(contact.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' })}
                   {agentName ? ` · da ${agentName}` : ''}

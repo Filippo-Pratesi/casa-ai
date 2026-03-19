@@ -6,6 +6,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { UserPlus, Users, Phone, Mail, Euro, Home, Cake, LayoutGrid, List, Search, X, MapPin, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useI18n } from '@/lib/i18n/context'
 import { Button } from '@/components/ui/button'
+import { ContactTypeBadges } from './contact-type-badges'
 
 // WhatsApp SVG icon (official brand icon)
 function WhatsAppIcon({ className }: { className?: string }) {
@@ -38,6 +39,7 @@ interface Contact {
   email: string | null
   phone: string | null
   type: string
+  types: string[] | null
   budget_min: number | null
   budget_max: number | null
   preferred_cities: string[]
@@ -390,9 +392,7 @@ function ContactCard({ contact: c, typeLabels }: { contact: Contact; typeLabels:
               <h3 className="font-bold text-base leading-tight tracking-tight group-hover:text-[oklch(0.57_0.20_33)] transition-colors truncate">{c.name}</h3>
             </Link>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
-              <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${TYPE_COLORS[c.type]}`}>
-                {typeLabels[c.type]}
-              </span>
+              <ContactTypeBadges types={c.types} type={c.type} size="xs" />
               {(() => {
                 const days = birthdayDaysLeft(c.date_of_birth)
                 return days !== null ? (
@@ -504,9 +504,9 @@ function ContactRow({ contact: c, typeLabels }: { contact: Contact; typeLabels: 
           <p className="text-xs text-muted-foreground truncate">{(c.preferred_cities ?? []).join(', ')}</p>
         )}
       </div>
-      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium w-fit ${TYPE_COLORS[c.type]}`}>
-        {typeLabels[c.type]}
-      </span>
+      <div className="flex flex-col gap-0.5">
+        <ContactTypeBadges types={c.types} type={c.type} size="xs" />
+      </div>
       <div className="flex items-center gap-1.5 min-w-0" onClick={e => e.stopPropagation()}>
         {c.phone ? (
           <>

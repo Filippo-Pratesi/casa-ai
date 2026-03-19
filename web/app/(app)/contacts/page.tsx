@@ -11,6 +11,7 @@ interface Contact {
   email: string | null
   phone: string | null
   type: string
+  types: string[] | null
   budget_min: number | null
   budget_max: number | null
   preferred_cities: string[]
@@ -48,7 +49,7 @@ export default async function ContactsPage({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, count } = await (admin as any)
     .from('contacts')
-    .select('id, name, email, phone, type, budget_min, budget_max, preferred_cities, min_rooms, date_of_birth, created_at, agent:users!contacts_agent_id_fkey(name)', { count: 'exact' })
+    .select('id, name, email, phone, type, types, budget_min, budget_max, preferred_cities, min_rooms, date_of_birth, created_at, agent:users!contacts_agent_id_fkey(name)', { count: 'exact' })
     .eq('workspace_id', profile.workspace_id)
     .order('created_at', { ascending: false })
     .range((page - 1) * PER_PAGE, page * PER_PAGE - 1)
