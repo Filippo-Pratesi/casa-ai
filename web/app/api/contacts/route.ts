@@ -17,23 +17,25 @@ export async function GET(req: NextRequest) {
   if (!profile) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 404 })
 
   const search = req.nextUrl.searchParams.get('q')
+  const page = Math.max(1, parseInt(req.nextUrl.searchParams.get('page') ?? '1', 10))
+  const perPage = Math.min(200, Math.max(1, parseInt(req.nextUrl.searchParams.get('perPage') ?? '50', 10)))
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let query = (supabase as any)
     .from('contacts')
-    .select('*')
+    .select('*', { count: 'exact' })
     .eq('workspace_id', profile.workspace_id)
     .order('created_at', { ascending: false })
-    .limit(100)
+    .range((page - 1) * perPage, page * perPage - 1)
 
   if (search) {
     query = query.ilike('name', `%${search}%`)
   }
 
-  const { data, error } = await query
+  const { data, error, count } = await query
   if (error) return NextResponse.json({ error: 'Errore nel recupero contatti' }, { status: 500 })
 
-  return NextResponse.json({ contacts: data ?? [] })
+  return NextResponse.json({ contacts: data ?? [], total: count ?? 0, page, perPage })
 }
 
 // POST /api/contacts — create contact

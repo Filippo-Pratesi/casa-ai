@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ContactsClient } from '@/components/contacts/contacts-client'
 
+const PER_PAGE = 50
+
 interface Contact {
   id: string
   name: string
@@ -19,7 +21,11 @@ interface Contact {
   property_addresses: string[]
 }
 
-export default async function ContactsPage() {
+export default async function ContactsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string>>
+}) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -36,14 +42,18 @@ export default async function ContactsPage() {
   if (!profile?.workspace_id) redirect('/auth/setup')
   const isAdmin = profile.role === 'admin' || profile.role === 'group_admin'
 
+  const params = searchParams ? await searchParams : {}
+  const page = Math.max(1, parseInt(params.page ?? '1', 10))
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (admin as any)
+  const { data, count } = await (admin as any)
     .from('contacts')
-    .select('id, name, email, phone, type, budget_min, budget_max, preferred_cities, min_rooms, date_of_birth, created_at, agent:users!contacts_agent_id_fkey(name)')
+    .select('id, name, email, phone, type, budget_min, budget_max, preferred_cities, min_rooms, date_of_birth, created_at, agent:users!contacts_agent_id_fkey(name)', { count: 'exact' })
     .eq('workspace_id', profile.workspace_id)
     .order('created_at', { ascending: false })
-    .limit(500)
+    .range((page - 1) * PER_PAGE, page * PER_PAGE - 1)
 
+  const totalContacts = count ?? 0
   const contactIds = ((data ?? []) as { id: string }[]).map(c => c.id)
 
   // Fetch property addresses linked to these contacts via property_contacts
@@ -73,5 +83,13 @@ export default async function ContactsPage() {
     property_addresses: propAddressMap.get(c.id) ?? [],
   }))
 
-  return <ContactsClient contacts={contacts} isAdmin={isAdmin} />
+  return (
+    <ContactsClient
+      contacts={contacts}
+      isAdmin={isAdmin}
+      total={totalContacts}
+      page={page}
+      perPage={PER_PAGE}
+    />
+  )
 }

@@ -2,9 +2,10 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { UserPlus, Users, Phone, Mail, Euro, Home, Cake, LayoutGrid, List, Search, X, MapPin, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import { useRouter, usePathname } from 'next/navigation'
+import { UserPlus, Users, Phone, Mail, Euro, Home, Cake, LayoutGrid, List, Search, X, MapPin, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useI18n } from '@/lib/i18n/context'
+import { Button } from '@/components/ui/button'
 
 // WhatsApp SVG icon (official brand icon)
 function WhatsAppIcon({ className }: { className?: string }) {
@@ -62,17 +63,30 @@ function birthdayDaysLeft(dob: string | null): number | null {
 interface ContactsClientProps {
   contacts: Contact[]
   isAdmin: boolean
+  total: number
+  page: number
+  perPage: number
 }
 
 type SortKey = 'date_desc' | 'date_asc' | 'budget_desc' | 'budget_asc'
 
-export function ContactsClient({ contacts, isAdmin }: ContactsClientProps) {
+export function ContactsClient({ contacts, isAdmin, total, page, perPage }: ContactsClientProps) {
   const { t } = useI18n()
+  const router = useRouter()
+  const pathname = usePathname()
   const [viewMode, setViewMode] = useState<'card' | 'table'>('table')
   const [activeTypes, setActiveTypes] = useState<Set<string>>(new Set())
   const [citySearch, setCitySearch] = useState('')
   const [budgetMax, setBudgetMax] = useState('')
   const [sortBy, setSortBy] = useState<SortKey>('date_desc')
+
+  const totalPages = Math.ceil(total / perPage)
+
+  function goToPage(p: number) {
+    const params = new URLSearchParams()
+    params.set('page', String(p))
+    router.push(`${pathname}?${params.toString()}`)
+  }
 
   const TYPE_LABELS: Record<string, string> = useMemo(() => ({
     buyer: t('contacts.type.buyer'),
@@ -131,8 +145,10 @@ export function ContactsClient({ contacts, isAdmin }: ContactsClientProps) {
           <h1 className="text-3xl font-extrabold tracking-tight leading-none">{t('contacts.title')}</h1>
           <p className="text-muted-foreground text-sm mt-1">
             {filtered.length !== contacts.length
-              ? `${filtered.length} di ${contacts.length} contatti`
-              : contacts.length > 0 ? `${contacts.length} contatti` : t('contacts.empty.title')}
+              ? `${filtered.length} di ${contacts.length} contatti (pagina ${page} di ${totalPages})`
+              : total > contacts.length
+                ? `${contacts.length} di ${total} contatti — pagina ${page} di ${totalPages}`
+                : contacts.length > 0 ? `${total} contatti` : t('contacts.empty.title')}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -283,6 +299,50 @@ export function ContactsClient({ contacts, isAdmin }: ContactsClientProps) {
             {filtered.map((c) => (
               <ContactRow key={c.id} contact={c} typeLabels={TYPE_LABELS} />
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between border-t border-border/50 pt-4 mt-2">
+          <p className="text-sm text-muted-foreground">
+            {((page - 1) * perPage) + 1}–{Math.min(page * perPage, total)} di {total} contatti
+          </p>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => goToPage(page - 1)}
+              className="h-8 w-8 p-0"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              const pg = Math.max(1, Math.min(page - 2, totalPages - 4)) + i
+              if (pg > totalPages) return null
+              return (
+                <Button
+                  key={pg}
+                  variant={pg === page ? 'default' : 'outline'}
+                  size="sm"
+                  className="h-8 w-8 p-0 text-xs"
+                  onClick={() => pg !== page && goToPage(pg)}
+                >
+                  {pg}
+                </Button>
+              )
+            })}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages}
+              onClick={() => goToPage(page + 1)}
+              className="h-8 w-8 p-0"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       )}
