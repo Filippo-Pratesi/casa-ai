@@ -1,76 +1,24 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { ChevronLeft, ChevronRight, Clock, Phone } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import {
+  type TeamAgent,
+  type TeamAppointment,
+  type ViewMode,
+  AGENT_PALETTE,
+  MONTH_NAMES,
+  DAY_NAMES,
+  getInitials,
+  getMonthDays,
+  getWeekDays,
+  isSameDay,
+  formatTime,
+  formatDate,
+} from './team-calendar-types'
+import { TeamAppointmentCard } from './team-appointment-card'
 
-export interface TeamAgent {
-  id: string
-  name: string
-}
-
-interface TeamAppointment {
-  id: string
-  agent_id: string
-  title: string
-  type: string
-  status: string
-  starts_at: string
-  ends_at: string | null
-  contact_name: string | null
-}
-
-type ViewMode = 'week' | 'month'
-
-const AGENT_PALETTE = [
-  { bg: 'bg-blue-500',    light: 'bg-blue-50 border-blue-200 text-blue-900',    dot: 'bg-blue-500',    chip: 'bg-blue-500 text-white',    chipOff: 'bg-blue-50 text-blue-500 border border-blue-200' },
-  { bg: 'bg-purple-500',  light: 'bg-purple-50 border-purple-200 text-purple-900',  dot: 'bg-purple-500',  chip: 'bg-purple-500 text-white',  chipOff: 'bg-purple-50 text-purple-500 border border-purple-200' },
-  { bg: 'bg-emerald-500', light: 'bg-emerald-50 border-emerald-200 text-emerald-900', dot: 'bg-emerald-500', chip: 'bg-emerald-500 text-white', chipOff: 'bg-emerald-50 text-emerald-600 border border-emerald-200' },
-  { bg: 'bg-amber-500',   light: 'bg-amber-50 border-amber-200 text-amber-900',   dot: 'bg-amber-500',   chip: 'bg-amber-500 text-white',   chipOff: 'bg-amber-50 text-amber-600 border border-amber-200' },
-  { bg: 'bg-rose-500',    light: 'bg-rose-50 border-rose-200 text-rose-900',    dot: 'bg-rose-500',    chip: 'bg-rose-500 text-white',    chipOff: 'bg-rose-50 text-rose-500 border border-rose-200' },
-  { bg: 'bg-cyan-500',    light: 'bg-cyan-50 border-cyan-200 text-cyan-900',    dot: 'bg-cyan-500',    chip: 'bg-cyan-500 text-white',    chipOff: 'bg-cyan-50 text-cyan-600 border border-cyan-200' },
-]
-
-const MONTH_NAMES = [
-  'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
-  'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre',
-]
-const DAY_NAMES = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
-
-function getInitials(name: string) {
-  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-}
-
-function getMonthDays(year: number, month: number): (Date | null)[] {
-  const first = new Date(year, month, 1)
-  const last = new Date(year, month + 1, 0)
-  const startPad = (first.getDay() + 6) % 7
-  const days: (Date | null)[] = Array(startPad).fill(null)
-  for (let d = 1; d <= last.getDate(); d++) days.push(new Date(year, month, d))
-  return days
-}
-
-function getWeekDays(anchor: Date): Date[] {
-  const dow = (anchor.getDay() + 6) % 7 // Mon=0
-  const days: Date[] = []
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(anchor)
-    d.setDate(anchor.getDate() - dow + i)
-    days.push(d)
-  }
-  return days
-}
-
-function isSameDay(a: Date, b: Date) {
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
-}
-
-function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })
-}
+export type { TeamAgent }
 
 export function TeamCalendar({ agents }: { agents: TeamAgent[] }) {
   const today = new Date()
@@ -394,33 +342,12 @@ export function TeamCalendar({ agents }: { agents: TeamAgent[] }) {
                 const palette = agentColorMap.get(appt.agent_id)
                 const agent = agents.find(a => a.id === appt.agent_id)
                 return (
-                  <div
+                  <TeamAppointmentCard
                     key={appt.id}
-                    className={`rounded-xl border px-3 py-2.5 ${palette?.light ?? 'bg-muted/50 border-border'}`}
-                  >
-                    <div className="flex items-start gap-2">
-                      <span className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white ${palette?.bg ?? 'bg-muted-foreground'}`}>
-                        {getInitials(agent?.name ?? '?')}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold truncate">{appt.title}</p>
-                        <div className="flex items-center gap-2 mt-0.5 text-[10px] opacity-70">
-                          <span className="flex items-center gap-0.5">
-                            <Clock className="h-2.5 w-2.5" />
-                            {formatTime(appt.starts_at)}
-                            {appt.ends_at && ` – ${formatTime(appt.ends_at)}`}
-                          </span>
-                        </div>
-                        {appt.contact_name && (
-                          <p className="flex items-center gap-0.5 text-[10px] opacity-60 mt-0.5 truncate">
-                            <Phone className="h-2.5 w-2.5 shrink-0" />
-                            {appt.contact_name}
-                          </p>
-                        )}
-                        <p className="text-[10px] opacity-50 mt-0.5">{agent?.name}</p>
-                      </div>
-                    </div>
-                  </div>
+                    appt={appt}
+                    agent={agent}
+                    palette={palette}
+                  />
                 )
               })}
             </div>
