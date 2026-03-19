@@ -652,7 +652,41 @@ export function ImmobileDetailClient({
                     {property.owner_contact.name?.charAt(0)?.toUpperCase()}
                   </div>
                   <div>
-                    <p className="text-sm font-medium">{property.owner_contact.name}</p>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="text-sm font-medium">{property.owner_contact.name}</p>
+                      {/* V/A badges: Venditore (arancio) / Acquirente (verde) */}
+                      {(() => {
+                        const types: string[] = Array.isArray(property.owner_contact.roles)
+                          ? property.owner_contact.roles
+                          : property.owner_contact.type ? [property.owner_contact.type] : []
+                        const isSeller = types.includes('seller')
+                        const isBuyer = types.includes('buyer')
+                        const tooltip = isSeller && isBuyer ? 'Venditore e acquirente'
+                          : isSeller ? 'Solo venditore'
+                          : isBuyer ? 'Solo acquirente'
+                          : ''
+                        return (
+                          <>
+                            {isSeller && (
+                              <span
+                                title={tooltip}
+                                className="inline-flex items-center justify-center h-4 w-4 rounded text-[9px] font-extrabold bg-orange-100 text-orange-600 border border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800"
+                              >
+                                V
+                              </span>
+                            )}
+                            {isBuyer && (
+                              <span
+                                title={tooltip}
+                                className="inline-flex items-center justify-center h-4 w-4 rounded text-[9px] font-extrabold bg-green-100 text-green-600 border border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800"
+                              >
+                                A
+                              </span>
+                            )}
+                          </>
+                        )
+                      })()}
+                    </div>
                     {property.owner_contact.phone && (
                       <a href={`tel:${property.owner_contact.phone}`} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
                         <Phone className="h-3 w-3" />
