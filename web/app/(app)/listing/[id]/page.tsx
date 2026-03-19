@@ -181,6 +181,77 @@ export default async function ListingDetailPage({
     return true
   }).slice(0, 6)
 
+  // Fetch proposte count (contact_events where event_type = 'immobile_proposto')
+  // Fetch visite count (contact_events where event_type = 'appuntamento')
+  // Fetch cronistoria events for this listing
+  const [
+    { count: proposteCount },
+    { count: visiteCount },
+    { data: cronistoriaListingData },
+  ] = await Promise.all([
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (admin as any)
+      .from('contact_events')
+      .select('contact_id', { count: 'exact', head: true })
+      .eq('workspace_id', listing.workspace_id)
+      .eq('related_listing_id', id)
+      .eq('event_type', 'immobile_proposto'),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (admin as any)
+      .from('contact_events')
+      .select('id', { count: 'exact', head: true })
+      .eq('workspace_id', listing.workspace_id)
+      .eq('related_listing_id', id)
+      .eq('event_type', 'appuntamento'),
+    // Cronistoria: property_events (if linked) + contact_events for this listing
+    propertyId
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ? (admin as any)
+          .from('property_events')
+          .select('id, event_type, title, description, event_date, agent:users!property_events_agent_id_fkey(name)')
+          .eq('property_id', propertyId)
+          .order('event_date', { ascending: false })
+          .limit(30)
+      : Promise.resolve({ data: [] }),
+  ])
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: listingContactEventsData } = await (admin as any)
+    .from('contact_events')
+    .select('id, event_type, title, body, event_date, agent:users!contact_events_agent_id_fkey(name), contact:contacts!contact_events_contact_id_fkey(id, name)')
+    .eq('workspace_id', listing.workspace_id)
+    .eq('related_listing_id', id)
+    .order('event_date', { ascending: false })
+    .limit(30)
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const cronistoriaPropertyEvents = ((cronistoriaListingData ?? []) as any[]).map((e) => ({
+    id: e.id,
+    source: 'property' as const,
+    event_type: e.event_type,
+    title: e.title,
+    description: e.description ?? null,
+    event_date: e.event_date,
+    agent_name: e.agent?.name ?? null,
+    contact_name: null as string | null,
+    contact_id: null as string | null,
+  }))
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const cronistoriaContactEvents = ((listingContactEventsData ?? []) as any[]).map((e) => ({
+    id: e.id,
+    source: 'contact' as const,
+    event_type: e.event_type,
+    title: e.title,
+    description: e.body ?? null,
+    event_date: e.event_date,
+    agent_name: e.agent?.name ?? null,
+    contact_name: e.contact?.name ?? null,
+    contact_id: e.contact?.id ?? null,
+  }))
+  const cronistoriaEvents = [...cronistoriaPropertyEvents, ...cronistoriaContactEvents]
+    .sort((a, b) => new Date(b.event_date).getTime() - new Date(a.event_date).getTime())
+    .slice(0, 50)
+
   // Snapshot linked property as const so TypeScript narrowing works in JSX
   const linkedPropertySnap: LinkedProperty | null = linkedProperty
 
@@ -272,6 +343,26 @@ export default async function ListingDetailPage({
         shareCount={(listing as unknown as { share_count: number }).share_count ?? 0}
         portalClickCount={(listing as unknown as { portal_click_count: number }).portal_click_count ?? 0}
       />
+
+      {/* Proposte e visite */}
+      {((proposteCount ?? 0) > 0 || (visiteCount ?? 0) > 0) && (
+        <div className="grid grid-cols-2 gap-3">
+          {(proposteCount ?? 0) > 0 && (
+            <div className="rounded-xl border border-border bg-teal-50/50 dark:bg-teal-950/20 p-4 text-center">
+              <Users className="h-4 w-4 text-teal-600 dark:text-teal-400 mx-auto mb-1.5" />
+              <p className="text-xl font-semibold text-teal-700 dark:text-teal-300">{proposteCount}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Proposto a {proposteCount} {proposteCount === 1 ? 'persona' : 'persone'}</p>
+            </div>
+          )}
+          {(visiteCount ?? 0) > 0 && (
+            <div className="rounded-xl border border-border bg-blue-50/50 dark:bg-blue-950/20 p-4 text-center">
+              <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400 mx-auto mb-1.5" />
+              <p className="text-xl font-semibold text-blue-700 dark:text-blue-300">{visiteCount}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{visiteCount === 1 ? 'Visita' : 'Visite'}</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Price history */}
       <div className="rounded-xl border border-border bg-muted/30 px-4 py-4">
@@ -531,6 +622,44 @@ export default async function ListingDetailPage({
           <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
           <span>Il prezzo è cambiato dopo l&apos;ultima generazione. Considera di rigenerare il contenuto.</span>
           <span className="ml-auto"><GenerateContentButton listingId={listing.id} /></span>
+        </div>
+      )}
+
+      {/* Cronistoria annuncio */}
+      {cronistoriaEvents.length > 0 && (
+        <div className="rounded-xl border border-border bg-muted/30 px-4 py-4 space-y-3">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Cronistoria annuncio</p>
+          <ul role="list" className="border-l-2 border-border pl-4 space-y-3">
+            {cronistoriaEvents.map((ev) => (
+              <li key={`${ev.source}-${ev.id}`} className="relative">
+                <div className="absolute -left-[21px] top-1 h-3.5 w-3.5 rounded-full border-2 border-background bg-[oklch(0.57_0.20_33)]" />
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium leading-tight">{ev.title}</p>
+                    {ev.description && (
+                      <p className="text-xs text-muted-foreground mt-0.5">{ev.description}</p>
+                    )}
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      <span className="text-[10px] font-medium rounded bg-muted px-1.5 py-0.5 text-muted-foreground">{ev.event_type}</span>
+                      {ev.source === 'contact' && ev.contact_name && (
+                        <Link href={`/contacts/${ev.contact_id}`} className="text-[10px] text-[oklch(0.57_0.20_33)] hover:underline">
+                          {ev.contact_name}
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <time className="text-[10px] text-muted-foreground/60">
+                      {new Date(ev.event_date).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </time>
+                    {ev.agent_name && (
+                      <p className="text-[10px] text-muted-foreground/50">{ev.agent_name}</p>
+                    )}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
