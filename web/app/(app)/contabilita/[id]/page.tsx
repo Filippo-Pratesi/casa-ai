@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, Receipt, Download, CheckCircle, Send, Pencil } from 'lucide-react'
+import { ChevronLeft, Receipt, Download, CheckCircle, Send, Pencil, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { InvoiceStatusBadge } from '@/components/contabilita/invoice-status-badge'
 import { formatCurrency } from '@/components/contabilita/invoice-totals-calculator'
@@ -207,6 +207,20 @@ export default async function InvoiceDetailPage({ params }: Params) {
               </div>
             )}
           </div>
+
+          {/* Proposal link */}
+          {invoice.proposal_id && (
+            <div className="rounded-2xl border border-border bg-card p-5">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Proposta collegata</h2>
+              <Link
+                href={`/proposte/${invoice.proposal_id}`}
+                className="flex items-center gap-2 text-sm font-medium text-[oklch(0.57_0.20_33)] dark:text-[oklch(0.73_0.18_36)] hover:underline"
+              >
+                <FileText className="h-4 w-4" />
+                Visualizza proposta d&apos;acquisto
+              </Link>
+            </div>
+          )}
 
           {/* Actions */}
           {(invoice.status === 'inviata' || invoice.status === 'scaduta' || invoice.status === 'bozza') && (
