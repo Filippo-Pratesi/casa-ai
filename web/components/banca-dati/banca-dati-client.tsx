@@ -411,6 +411,15 @@ export function BancaDatiClient({
               <X className="h-3 w-3 opacity-60" />
             </button>
           ))}
+          {activePills.length > 1 && (
+            <button
+              onClick={clearFilters}
+              className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-0.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+            >
+              <X className="h-3 w-3" />
+              Rimuovi tutti
+            </button>
+          )}
         </div>
       )}
 

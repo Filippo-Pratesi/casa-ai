@@ -158,6 +158,14 @@ export default async function AnalyticsPage({
           <div className="flex items-center gap-2 mb-1">
             <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
             <p className="text-xs text-muted-foreground">Totale immobili</p>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger><Info className="h-3 w-3 text-muted-foreground/60 cursor-help ml-auto" /></TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[200px] text-xs leading-relaxed">
+                  Numero totale di immobili presenti in banca dati, inclusi tutti gli stage.
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           <p className="text-2xl font-bold">{total}</p>
         </Card>
@@ -165,6 +173,14 @@ export default async function AnalyticsPage({
           <div className="flex items-center gap-2 mb-1">
             <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
             <p className="text-xs text-muted-foreground">In incarico</p>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger><Info className="h-3 w-3 text-muted-foreground/60 cursor-help ml-auto" /></TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[200px] text-xs leading-relaxed">
+                  Immobili con mandato di vendita o locazione attivo — il portafoglio gestito attualmente.
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           <p className="text-2xl font-bold">{incaricoCount}</p>
         </Card>
@@ -172,6 +188,14 @@ export default async function AnalyticsPage({
           <div className="flex items-center gap-2 mb-1">
             <TrendingUp className="h-3.5 w-3.5 text-green-500" />
             <p className="text-xs text-muted-foreground">Chiusi</p>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger><Info className="h-3 w-3 text-muted-foreground/60 cursor-help ml-auto" /></TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[200px] text-xs leading-relaxed">
+                  Immobili conclusi (venduti o locati) — ogni chiusura rappresenta una commissione incassata.
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           <p className="text-2xl font-bold">{closedCount}</p>
         </Card>
@@ -179,6 +203,14 @@ export default async function AnalyticsPage({
           <div className="flex items-center gap-2 mb-1">
             <Clock className="h-3.5 w-3.5 text-muted-foreground" />
             <p className="text-xs text-muted-foreground">Tasso chiusura</p>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger><Info className="h-3 w-3 text-muted-foreground/60 cursor-help ml-auto" /></TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[220px] text-xs leading-relaxed">
+                  Percentuale di immobili in incarico che arrivano alla chiusura (vendita o locazione). Indica l&apos;efficienza commerciale complessiva.
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           <p className="text-2xl font-bold">{conversionIncarico}%</p>
         </Card>

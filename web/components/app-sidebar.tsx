@@ -99,13 +99,9 @@ export function AppSidebar({
           />
         ) : (
           <div className="flex items-center gap-3 px-3 py-2.5">
-            {/* Refined logo mark with animated gradient ring */}
-            <div className="relative shrink-0">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[oklch(0.62_0.22_33)] via-[oklch(0.57_0.20_33)] to-[oklch(0.48_0.18_20)] text-white text-xs font-extrabold shadow-lg shadow-[oklch(0.57_0.20_33/0.40)]">
-                CA
-              </div>
-              {/* Subtle ambient glow behind logo */}
-              <div className="absolute inset-0 -z-10 rounded-xl blur-md bg-[oklch(0.57_0.20_33/0.3)] scale-110" />
+            {/* Logo */}
+            <div className="shrink-0">
+              <img src="/logo.png" alt="CasaAI" className="h-11 w-auto object-contain" />
             </div>
             <div className="min-w-0">
               <p

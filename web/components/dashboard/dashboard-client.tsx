@@ -179,6 +179,7 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
       glow: 'shadow-[oklch(0.57_0.20_33/0.25)]',
       bg: 'from-[oklch(0.95_0.055_33)] to-[oklch(0.97_0.02_45)]',
       iconColor: 'text-[oklch(0.57_0.20_33)]',
+      href: '/listing',
     },
     {
       label: t('contacts.title'),
@@ -188,6 +189,7 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
       glow: 'shadow-[oklch(0.66_0.15_188/0.25)]',
       bg: 'from-[oklch(0.94_0.05_188)] to-[oklch(0.96_0.02_195)]',
       iconColor: 'text-[oklch(0.55_0.14_188)]',
+      href: '/contacts',
     },
     {
       label: 'App. imminenti',
@@ -197,6 +199,7 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
       glow: 'shadow-[oklch(0.60_0.18_290/0.25)]',
       bg: 'from-[oklch(0.94_0.055_290)] to-[oklch(0.96_0.025_300)]',
       iconColor: 'text-[oklch(0.55_0.17_290)]',
+      href: '/calendar',
     },
     {
       label: 'Contenuto AI',

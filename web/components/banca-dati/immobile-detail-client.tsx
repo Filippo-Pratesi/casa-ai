@@ -563,7 +563,7 @@ export function ImmobileDetailClient({
       </div>
 
       {/* Main layout: 2 columns — details left, timeline right */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_338px] gap-6">
 
         {/* Column 2 (260px) — cronistoria, sticky */}
         <div className="order-2">
