@@ -90,7 +90,7 @@ export function AppSidebar({
 
   return (
     <Sidebar className="border-r border-sidebar-border">
-      <SidebarHeader className="pb-0">
+      <SidebarHeader className="pb-0 pt-1">
         {isGroupAdmin && groupWorkspaces.length > 0 ? (
           <WorkspaceSwitcher
             workspaces={groupWorkspaces}
@@ -98,7 +98,7 @@ export function AppSidebar({
             groupName={groupName ?? t('sidebar.group')}
           />
         ) : (
-          <div className="flex items-center gap-3 px-3 py-2.5">
+          <div className="flex items-center gap-3 px-3 py-1.5">
             {/* Logo */}
             <div className="shrink-0">
               <img src="/logo.png" alt="CasaAI" className="h-[104px] w-auto object-contain" />
