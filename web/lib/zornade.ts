@@ -1,50 +1,42 @@
 /**
  * Zornade API client — dati catastali e territoriali italiani.
- * Piano gratuito: 5.000 chiamate/mese.
- * Docs: https://zornade.com/documentation/
+ * Endpoint: GET /parcels?lat=X&lng=Y
+ * Auth: x-api-key header
  */
 
-// --- Types ---
-
-export type ZornadeParcelQuery =
-  | { type: 'point'; lat: number; lng: number }
-  | { type: 'bbox'; bbox: [number, number, number, number] } // [minLon, minLat, maxLon, maxLat]
-  | { type: 'fid'; fid: string }
+// --- Types (actual API response shape) ---
 
 export interface ZornadeParcel {
-  fid: string
+  fid: number
   gml_id: string
-  municipality: string
-  province: string
-  region: string
-  geometry: {
-    type: string
-    coordinates: number[][][]
-  }
-  classification: string // e.g. "agriculture", "residential"
-  footprint_area_sqm: number
-  elevation: number | null
-  // Enriched data layers
-  avg_age: number | null
-  avg_family_size: number | null
-  real_estate_potential_index: number | null
-  economic_resilience_index: number | null
-  flood_risk: string | null
-  seismic_risk: string | null
-  // Cadastral identifiers (when available)
-  foglio: string | null
-  particella: string | null
-  categoria_catastale: string | null
+  label: string | null
+  nationalcadastralreference: string | null
+  administrativeunit: string | null // codice comune (es. "D730")
+  footprint_sqm: number | null
+  area_m2: number | null
+  comune_name: string | null
+  comune_id: number | null
+  municipality_name: string | null
+  region_name: string | null
+  province_name: string | null
+  province_code: string | null
+  postal_code: string | null
+  final_class: string | null // "residential", "recreation", "agriculture", ...
+  final_subtype: string | null
+  flood_risk: number | null    // 0 = basso, 1 = alto
+  landslide_risk: number | null
+  seismic_risk: number | null  // 0.0–1.0 (accelerazione sismica)
+  average_family_size: string | null
+  average_age: string | null
+  real_estate_potential_index: string | null
+  economic_resilience_index: string | null
+  elevation_min: number | null
+  elevation_max: number | null
+  geom_geojson: string | null  // GeoJSON string
 }
 
 export interface ZornadeResponse {
-  parcels: ZornadeParcel[]
-  count: number
-}
-
-export interface ZornadeError {
-  error: string
-  message: string
+  data: ZornadeParcel[]
 }
 
 // --- Mapped output for casa-ai ---
@@ -70,16 +62,35 @@ export interface CadastralData {
   regione: string
   geometria: {
     type: string
-    coordinates: number[][][]
+    coordinates: unknown
   } | null
+}
+
+// --- Helpers ---
+
+function floodRiskLabel(value: number | null): string | null {
+  if (value === null) return null
+  if (value >= 1) return 'Alto'
+  if (value >= 0.5) return 'Medio'
+  return 'Basso'
+}
+
+function seismicRiskLabel(value: number | null): string | null {
+  if (value === null) return null
+  // Accelerazione sismica ag (g): zona 1 >0.25, zona 2 0.15–0.25, zona 3 0.05–0.15, zona 4 <0.05
+  if (value > 0.25) return 'Alto (Zona 1)'
+  if (value > 0.15) return 'Medio-alto (Zona 2)'
+  if (value > 0.05) return 'Medio-basso (Zona 3)'
+  return 'Basso (Zona 4)'
 }
 
 // --- Client ---
 
-const ZORNADE_BASE_URL = 'https://app.zornade.com/functions/v1'
+const ZORNADE_BASE_URL = 'https://wupqwfqjfpwrapgnogjv.supabase.co/functions/v1/api-gateway/api/v1'
 
 export async function fetchParcels(
-  query: ZornadeParcelQuery
+  lat: number,
+  lng: number
 ): Promise<{ data: ZornadeResponse | null; error: string | null }> {
   const apiKey = process.env.ZORNADE_API_KEY
   if (!apiKey) {
@@ -87,19 +98,16 @@ export async function fetchParcels(
   }
 
   try {
-    const res = await fetch(`${ZORNADE_BASE_URL}/get-parcels`, {
-      method: 'POST',
+    const res = await fetch(`${ZORNADE_BASE_URL}/parcels?lat=${lat}&lng=${lng}`, {
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
+        'x-api-key': apiKey,
       },
-      body: JSON.stringify(query),
       next: { revalidate: 0 },
     })
 
     if (!res.ok) {
       const text = await res.text()
-      // Truncate HTML error pages to avoid huge error messages
       const shortError = text.startsWith('<!') ? `HTTP ${res.status}` : text.slice(0, 200)
       return { data: null, error: `Errore Zornade API (${res.status}): ${shortError}` }
     }
@@ -120,40 +128,53 @@ export async function getCadastralDataByCoordinates(
   lat: number,
   lng: number
 ): Promise<{ data: CadastralData | null; error: string | null }> {
-  const { data, error } = await fetchParcels({
-    type: 'point',
-    lat,
-    lng,
-  })
+  const { data, error } = await fetchParcels(lat, lng)
 
   if (error || !data) {
     return { data: null, error: error ?? 'Nessuna risposta da Zornade' }
   }
 
-  if (data.parcels.length === 0) {
+  if (!data.data || data.data.length === 0) {
     return { data: null, error: null } // Nessuna particella trovata (non e un errore)
   }
 
-  const parcel = data.parcels[0]
+  const parcel = data.data[0]
+
+  // Parse geometry from GeoJSON string if present
+  let geometria: CadastralData['geometria'] = null
+  if (parcel.geom_geojson) {
+    try {
+      const parsed = JSON.parse(parcel.geom_geojson) as { type: string; coordinates: unknown }
+      geometria = parsed
+    } catch {
+      // ignore parse errors
+    }
+  }
 
   const cadastralData: CadastralData = {
-    foglio: parcel.foglio ?? null,
-    particella: parcel.particella ?? null,
-    categoria_catastale: parcel.categoria_catastale ?? null,
-    superficie_mq: parcel.footprint_area_sqm ?? null,
-    classificazione: parcel.classification ?? null,
-    rischio_idrogeologico: parcel.flood_risk ?? null,
-    rischio_sismico: parcel.seismic_risk ?? null,
-    indice_potenziale_immobiliare: parcel.real_estate_potential_index ?? null,
-    indice_resilienza_economica: parcel.economic_resilience_index ?? null,
-    eta_media_zona: parcel.avg_age ?? null,
-    dimensione_media_famiglia: parcel.avg_family_size ?? null,
-    elevazione: parcel.elevation ?? null,
-    fid: parcel.fid,
-    comune: parcel.municipality,
-    provincia: parcel.province,
-    regione: parcel.region,
-    geometria: parcel.geometry ?? null,
+    foglio: null, // not returned by Zornade API
+    particella: parcel.label ?? null,
+    categoria_catastale: null, // not returned by Zornade API
+    superficie_mq: parcel.footprint_sqm ?? parcel.area_m2 ?? null,
+    classificazione: parcel.final_class ?? null,
+    rischio_idrogeologico: floodRiskLabel(parcel.flood_risk),
+    rischio_sismico: seismicRiskLabel(parcel.seismic_risk),
+    indice_potenziale_immobiliare: parcel.real_estate_potential_index != null
+      ? Number(parcel.real_estate_potential_index)
+      : null,
+    indice_resilienza_economica: parcel.economic_resilience_index != null
+      ? Number(parcel.economic_resilience_index)
+      : null,
+    eta_media_zona: parcel.average_age != null ? Number(parcel.average_age) : null,
+    dimensione_media_famiglia: parcel.average_family_size != null
+      ? Number(parcel.average_family_size)
+      : null,
+    elevazione: parcel.elevation_max ?? parcel.elevation_min ?? null,
+    fid: String(parcel.fid),
+    comune: parcel.municipality_name ?? parcel.comune_name ?? '',
+    provincia: parcel.province_name ?? '',
+    regione: parcel.region_name ?? '',
+    geometria,
   }
 
   return { data: cadastralData, error: null }
