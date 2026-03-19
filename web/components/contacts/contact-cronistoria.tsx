@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { formatDistanceToNow } from 'date-fns'
 import { it } from 'date-fns/locale'
+import { EVENT_COLORS, EVENT_LABELS, EVENT_ICON_NAMES } from '@/lib/contact-event-types'
 
 interface ContactEvent {
   id: string
@@ -25,31 +26,14 @@ interface ContactCronistoriaProps {
   initialEvents: ContactEvent[]
 }
 
-const EVENT_ICONS: Record<string, React.ElementType> = {
-  nota: FileText,
-  chiamata: Phone,
-  email: Mail,
-  appuntamento: Calendar,
-  campagna_inviata: Megaphone,
-  immobile_proposto: Home,
-}
-
-const EVENT_COLORS: Record<string, string> = {
-  nota: 'bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400',
-  chiamata: 'bg-green-100 text-green-600 dark:bg-green-950 dark:text-green-400',
-  email: 'bg-orange-100 text-orange-600 dark:bg-orange-950 dark:text-orange-400',
-  appuntamento: 'bg-purple-100 text-purple-600 dark:bg-purple-950 dark:text-purple-400',
-  campagna_inviata: 'bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400',
-  immobile_proposto: 'bg-teal-100 text-teal-600 dark:bg-teal-950 dark:text-teal-400',
-}
-
-const EVENT_LABELS: Record<string, string> = {
-  nota: 'Nota',
-  chiamata: 'Chiamata',
-  email: 'Email',
-  appuntamento: 'Appuntamento',
-  campagna_inviata: 'Campagna inviata',
-  immobile_proposto: 'Immobile proposto',
+// Map icon names to lucide components
+const ICON_COMPONENTS: Record<string, React.ElementType> = {
+  FileText,
+  Phone,
+  Mail,
+  Calendar,
+  Megaphone,
+  Home,
 }
 
 export function ContactCronistoria({ contactId, initialEvents }: ContactCronistoriaProps) {
@@ -156,7 +140,8 @@ export function ContactCronistoria({ contactId, initialEvents }: ContactCronisto
         ) : (
           <ul role="list" className="border-l-2 border-border pl-4 space-y-3">
             {displayedEvents.map((ev) => {
-              const Icon = EVENT_ICONS[ev.event_type] ?? FileText
+              const iconName = EVENT_ICON_NAMES[ev.event_type as keyof typeof EVENT_ICON_NAMES] ?? 'FileText'
+              const Icon = ICON_COMPONENTS[iconName]
               const colorClass = EVENT_COLORS[ev.event_type] ?? EVENT_COLORS.nota
               return (
                 <li key={ev.id} className="relative">
