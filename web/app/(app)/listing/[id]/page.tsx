@@ -12,6 +12,7 @@ import { PhotoGallery } from '@/components/listing/photo-gallery'
 import { DeleteListingButton } from '@/components/listing/delete-listing-button'
 import { MarkAsSoldButton } from '@/components/listing/mark-as-sold-button'
 import { AttachmentsSection } from '@/components/shared/attachments-section'
+import { ContactTypeBadges } from '@/components/contacts/contact-type-badges'
 import { ShareButton } from '@/components/listing/share-button'
 import { BrochureButton } from '@/components/listing/brochure-button'
 import { ExportButton } from '@/components/listing/export-button'
@@ -582,31 +583,11 @@ export default async function ListingDetailPage({
                 <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-0.5">Proprietario</p>
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <p className="font-semibold text-sm">{linkedPropertySnap!.owner_contact.name}</p>
-                  {(() => {
-                    const oc = linkedPropertySnap!.owner_contact
-                    const ctypes: string[] = Array.isArray(oc.types) ? oc.types : oc.type ? [oc.type] : []
-                    const isSeller = ctypes.includes('seller')
-                    const isBuyer = ctypes.includes('buyer') || ctypes.includes('renter')
-                    if (!isSeller && !isBuyer) return null
-                    const tooltip = isSeller && isBuyer ? 'Venditore e acquirente' : isSeller ? 'Solo venditore' : 'Solo acquirente'
-                    return (
-                      <span
-                        title={tooltip}
-                        className={[
-                          'inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[9px] font-bold border leading-none',
-                          isSeller && isBuyer
-                            ? 'bg-purple-50 text-purple-600 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800'
-                            : isSeller
-                            ? 'bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800'
-                            : 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800',
-                        ].join(' ')}
-                      >
-                        {isSeller && <span>V</span>}
-                        {isSeller && isBuyer && <span className="opacity-40">/</span>}
-                        {isBuyer && <span>A</span>}
-                      </span>
-                    )
-                  })()}
+                  <ContactTypeBadges
+                    types={linkedPropertySnap!.owner_contact.types}
+                    type={linkedPropertySnap!.owner_contact.type}
+                    size="xs"
+                  />
                 </div>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5">
                   {linkedPropertySnap!.owner_contact.phone && (
