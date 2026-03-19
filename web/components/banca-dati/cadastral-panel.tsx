@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, MapPin, RefreshCw, AlertTriangle, TrendingUp, Info } from 'lucide-react'
+import { Loader2, ShieldAlert, RefreshCw, TrendingUp, Info, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // --- Types ---
@@ -47,19 +47,18 @@ interface CadastralPanelProps {
   propertyType: string | null
   codiceComune: string | null
   zonaOmi: string | null
-  // Dati catastali gia salvati nel property
   existingCadastralData: CadastralData | null
   existingFetchedAt: string | null
   onCadastralDataFetched?: (data: CadastralData) => void
 }
 
-// --- Risk level colors ---
+// --- Risk badge ---
 
 function riskBadge(risk: string | null, label: string) {
   if (!risk) return null
   const normalized = risk.toLowerCase()
-  const isHigh = normalized.includes('alto') || normalized.includes('high') || normalized === '3' || normalized === '4'
-  const isMedium = normalized.includes('medio') || normalized.includes('medium') || normalized === '2'
+  const isHigh = normalized.includes('alto') || normalized.includes('high')
+  const isMedium = normalized.includes('medio') || normalized.includes('medium')
   return (
     <div className="flex items-center gap-2">
       <span className="text-xs text-muted-foreground">{label}</span>
@@ -82,7 +81,6 @@ function formatCurrency(value: number) {
 // --- Component ---
 
 export function CadastralPanel({
-  propertyId,
   latitude,
   longitude,
   sqm,
@@ -97,39 +95,32 @@ export function CadastralPanel({
   const [valuation, setValuation] = useState<ValuationData | null>(null)
   const [loadingCadastral, setLoadingCadastral] = useState(false)
   const [loadingValuation, setLoadingValuation] = useState(false)
-  const [cadastralError, setCadastralError] = useState<string | null>(null)
   const [valuationError, setValuationError] = useState<string | null>(null)
 
   const hasCoordinates = latitude != null && longitude != null
 
-  // Fetch cadastral data from Zornade
   const fetchCadastral = useCallback(async () => {
     if (!hasCoordinates) return
     setLoadingCadastral(true)
-    setCadastralError(null)
     try {
       const res = await fetch(`/api/catasto/parcels?lat=${latitude}&lng=${longitude}`)
       const json = await res.json()
-      if (json.error) {
-        setCadastralError(json.error)
-      } else if (json.data) {
+      if (json.data) {
         setCadastralData(json.data)
         onCadastralDataFetched?.(json.data)
       }
     } catch {
-      setCadastralError('Errore nel recupero dei dati catastali')
+      // Silently ignore — panel stays empty
     } finally {
       setLoadingCadastral(false)
     }
   }, [latitude, longitude, hasCoordinates, onCadastralDataFetched])
 
-  // Fetch valuation
   const fetchValuation = useCallback(async () => {
     const comune = codiceComune || cadastralData?.comune
     const zona = zonaOmi
     const tipo = propertyType ?? 'apartment'
     const superficie = sqm
-
     if (!comune || !zona || !superficie) return
 
     setLoadingValuation(true)
@@ -155,14 +146,12 @@ export function CadastralPanel({
     }
   }, [codiceComune, cadastralData?.comune, zonaOmi, propertyType, sqm])
 
-  // Auto-fetch cadastral on mount if we have coordinates but no cached data
   useEffect(() => {
     if (hasCoordinates && !cadastralData && !existingCadastralData) {
       fetchCadastral()
     }
   }, [hasCoordinates, cadastralData, existingCadastralData, fetchCadastral])
 
-  // Auto-fetch valuation when we have enough data
   useEffect(() => {
     const comune = codiceComune || cadastralData?.comune
     if (comune && zonaOmi && sqm && sqm > 0) {
@@ -170,123 +159,76 @@ export function CadastralPanel({
     }
   }, [codiceComune, cadastralData?.comune, zonaOmi, sqm, fetchValuation])
 
-  if (!hasCoordinates) {
-    return null // Non mostrare nulla se non ci sono coordinate
-  }
+  if (!hasCoordinates) return null
+
+  // Determine if we have any useful risk data to show
+  const hasRisks = cadastralData?.rischio_idrogeologico || cadastralData?.rischio_sismico
+  const hasPotenziale = cadastralData?.indice_potenziale_immobiliare != null
+
+  // Only render risk card if we actually have risk data
+  const showRiskCard = hasRisks || hasPotenziale || loadingCadastral
 
   return (
     <div className="space-y-4">
-      {/* Card Dati Catastali */}
-      <Card className="p-5 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <MapPin className="h-4 w-4 text-primary" />
-            <h3 className="font-semibold text-sm">Dati Catastali e Territoriali</h3>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={fetchCadastral}
-            disabled={loadingCadastral}
-            className="h-7 text-xs"
-          >
-            {loadingCadastral ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-            <span className="ml-1">Aggiorna</span>
-          </Button>
-        </div>
-
-        {loadingCadastral && !cadastralData && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Recupero dati catastali...
-          </div>
-        )}
-
-        {cadastralError && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Info className="h-4 w-4" />
-            Dati catastali non disponibili al momento
-          </div>
-        )}
-
-        {cadastralData && (
-          <div className="space-y-3">
-            {/* Identificativi catastali */}
-            <div className="grid grid-cols-3 gap-3">
-              {cadastralData.foglio && (
-                <div>
-                  <p className="text-xs text-muted-foreground">Foglio</p>
-                  <p className="text-sm font-medium">{cadastralData.foglio}</p>
-                </div>
-              )}
-              {cadastralData.particella && (
-                <div>
-                  <p className="text-xs text-muted-foreground">Particella</p>
-                  <p className="text-sm font-medium">{cadastralData.particella}</p>
-                </div>
-              )}
-              {cadastralData.categoria_catastale && (
-                <div>
-                  <p className="text-xs text-muted-foreground">Categoria</p>
-                  <p className="text-sm font-medium">{cadastralData.categoria_catastale}</p>
-                </div>
-              )}
+      {/* Card Rischi Territoriali */}
+      {showRiskCard && (
+        <Card className="p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="h-4 w-4 text-primary" />
+              <h3 className="font-semibold text-sm">Rischi Territoriali</h3>
             </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={fetchCadastral}
+              disabled={loadingCadastral}
+              className="h-7 text-xs"
+            >
+              {loadingCadastral ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+              <span className="ml-1">Aggiorna</span>
+            </Button>
+          </div>
 
-            {/* Superficie e classificazione */}
-            <div className="grid grid-cols-2 gap-3">
-              {cadastralData.superficie_mq && (
-                <div>
-                  <p className="text-xs text-muted-foreground">Superficie particella</p>
-                  <p className="text-sm font-medium">{cadastralData.superficie_mq.toLocaleString('it-IT')} mq</p>
+          {loadingCadastral && !cadastralData && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Recupero dati territoriali...
+            </div>
+          )}
+
+          {cadastralData && (
+            <div className="space-y-3">
+              {/* Rischi */}
+              {hasRisks && (
+                <div className="flex flex-wrap gap-3">
+                  {riskBadge(cadastralData.rischio_idrogeologico, 'Rischio idrogeologico')}
+                  {riskBadge(cadastralData.rischio_sismico, 'Rischio sismico')}
                 </div>
               )}
-              {cadastralData.classificazione && (
-                <div>
-                  <p className="text-xs text-muted-foreground">Classificazione</p>
-                  <p className="text-sm font-medium capitalize">{cadastralData.classificazione}</p>
+
+              {/* Indice potenziale (solo se disponibile) */}
+              {hasPotenziale && (
+                <div className="pt-2 border-t">
+                  <p className="text-xs text-muted-foreground">Potenziale immobiliare zona</p>
+                  <p className="text-sm font-medium">{Math.round(cadastralData.indice_potenziale_immobiliare!)}/100</p>
                 </div>
               )}
-            </div>
 
-            {/* Rischi */}
-            <div className="flex flex-wrap gap-3">
-              {riskBadge(cadastralData.rischio_idrogeologico, 'Rischio idrogeologico')}
-              {riskBadge(cadastralData.rischio_sismico, 'Rischio sismico')}
-            </div>
-
-            {/* Indici zona */}
-            {(cadastralData.indice_potenziale_immobiliare != null || cadastralData.eta_media_zona != null) && (
-              <div className="grid grid-cols-2 gap-3 pt-2 border-t">
-                {cadastralData.indice_potenziale_immobiliare != null && (
-                  <div>
-                    <p className="text-xs text-muted-foreground">Potenziale immobiliare zona</p>
-                    <p className="text-sm font-medium">{cadastralData.indice_potenziale_immobiliare.toFixed(2)}</p>
-                  </div>
-                )}
-                {cadastralData.eta_media_zona != null && (
-                  <div>
-                    <p className="text-xs text-muted-foreground">Eta media zona</p>
-                    <p className="text-sm font-medium">{cadastralData.eta_media_zona.toFixed(0)} anni</p>
-                  </div>
-                )}
+              {/* Fonte e data */}
+              <div className="flex items-center gap-1 text-xs text-muted-foreground pt-1">
+                <Info className="h-3 w-3 shrink-0" />
+                Dati zonali ISPRA — non specifici della singola unita immobiliare
               </div>
-            )}
-
-            {/* Badge dati indicativi */}
-            <div className="flex items-center gap-1 text-xs text-muted-foreground pt-1">
-              <Info className="h-3 w-3" />
-              Dati riferiti alla particella — il subalterno identifica la singola unita
+              {existingFetchedAt && (
+                <p className="text-xs text-muted-foreground">
+                  Aggiornati il {new Date(existingFetchedAt).toLocaleDateString('it-IT')}
+                </p>
+              )}
             </div>
-
-            {existingFetchedAt && (
-              <p className="text-xs text-muted-foreground">
-                Aggiornati il {new Date(existingFetchedAt).toLocaleDateString('it-IT')}
-              </p>
-            )}
-          </div>
-        )}
-      </Card>
+          )}
+        </Card>
+      )}
 
       {/* Card Stima di Valore */}
       {(valuation || loadingValuation || valuationError) && (
@@ -312,7 +254,6 @@ export function CadastralPanel({
 
           {valuation && (
             <div className="space-y-3">
-              {/* Range di valore */}
               <div className="bg-primary/5 rounded-lg p-4 text-center">
                 <p className="text-2xl font-bold text-primary">
                   {formatCurrency(valuation.valore_min)} — {formatCurrency(valuation.valore_max)}
@@ -322,7 +263,6 @@ export function CadastralPanel({
                 </p>
               </div>
 
-              {/* Dettagli */}
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
                   <p className="text-xs text-muted-foreground">Semestre</p>
@@ -342,7 +282,6 @@ export function CadastralPanel({
                 )}
               </div>
 
-              {/* Disclaimer */}
               <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded p-2">
                 <Info className="h-3 w-3 mt-0.5 shrink-0" />
                 <p>{valuation.disclaimer}</p>
