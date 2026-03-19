@@ -37,11 +37,15 @@ interface NearbyResult {
 
 interface NuovoImmobileClientProps {
   agentDefaultZones: { name: string; city: string }[]
+  agents?: { id: string; name: string }[]
+  isAdmin?: boolean
+  currentUserId?: string
 }
 
-export function NuovoImmobileClient({ agentDefaultZones }: NuovoImmobileClientProps) {
+export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = false, currentUserId }: NuovoImmobileClientProps) {
   const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
+  const [selectedAgentId, setSelectedAgentId] = useState<string>(currentUserId ?? '')
 
   // Address is split into street (from autocomplete) + civico (house number)
   // Coordinates are resolved only after both street and civico are set.
@@ -190,6 +194,7 @@ export function NuovoImmobileClient({ agentDefaultZones }: NuovoImmobileClientPr
           initial_note: initialNote.trim() || null,
           transaction_type: transactionType || null,
           property_type: propertyType || null,
+          agent_id: selectedAgentId || null,
         }),
       })
       if (!res.ok) {
@@ -388,6 +393,22 @@ export function NuovoImmobileClient({ agentDefaultZones }: NuovoImmobileClientPr
               </Select>
             </div>
           </div>
+          {/* Agent selector (admin only) */}
+          {isAdmin && agents.length > 1 && (
+            <div className="space-y-1.5">
+              <Label>Agente assegnato</Label>
+              <Select value={selectedAgentId || 'none'} onValueChange={(v) => setSelectedAgentId(!v || v === 'none' ? '' : v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleziona agente" />
+                </SelectTrigger>
+                <SelectContent>
+                  {agents.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </Card>
 
         {/* Nearby properties — shown only when precise coordinates are available */}

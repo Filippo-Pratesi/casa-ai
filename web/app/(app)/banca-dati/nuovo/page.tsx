@@ -13,13 +13,14 @@ export default async function NuovoImmobilePage() {
   const admin = createAdminClient()
   const { data: profileData } = await admin
     .from('users')
-    .select('workspace_id, name')
+    .select('workspace_id, name, role')
     .eq('id', user.id)
     .single()
 
   if (!profileData) redirect('/auth/setup')
 
-  const profile = profileData as { workspace_id: string; name: string }
+  const profile = profileData as { workspace_id: string; name: string; role: string }
+  const isAdmin = profile.role === 'admin' || profile.role === 'group_admin'
 
   // Load agent's default zones
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -33,5 +34,19 @@ export default async function NuovoImmobilePage() {
     .map((az) => az.zones)
     .filter(Boolean) as { name: string; city: string }[]
 
-  return <NuovoImmobileClient agentDefaultZones={agentZones} />
+  // Load workspace agents (for admin agent selector)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: agentsData } = isAdmin
+    ? await (admin as any).from('users').select('id, name').eq('workspace_id', profile.workspace_id).order('name')
+    : { data: [] }
+  const agents = (agentsData ?? []) as { id: string; name: string }[]
+
+  return (
+    <NuovoImmobileClient
+      agentDefaultZones={agentZones}
+      agents={agents}
+      isAdmin={isAdmin}
+      currentUserId={user.id}
+    />
+  )
 }

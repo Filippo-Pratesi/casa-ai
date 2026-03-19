@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // GET /api/properties — list workspace properties with filters
 export async function GET(req: NextRequest) {
@@ -83,14 +84,16 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
-  const { data: profileData } = await supabase
+  const admin = createAdminClient()
+  const { data: profileData } = await admin
     .from('users')
-    .select('workspace_id')
+    .select('workspace_id, role')
     .eq('id', user.id)
     .single()
 
-  const profile = profileData as { workspace_id: string } | null
+  const profile = profileData as { workspace_id: string; role: string } | null
   if (!profile) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 404 })
+  const isAdmin = profile.role === 'admin' || profile.role === 'group_admin'
 
   let body: Record<string, unknown>
   try {
@@ -111,9 +114,34 @@ export async function POST(req: NextRequest) {
   if (latitude === null) return NextResponse.json({ error: 'La latitudine è obbligatoria' }, { status: 400 })
   if (longitude === null) return NextResponse.json({ error: 'La longitudine è obbligatoria' }, { status: 400 })
 
+  // Resolve agent_id: explicit override (admin only) > zone default > current user
+  let resolvedAgentId = user.id
+  const explicitAgentId = typeof body.agent_id === 'string' && body.agent_id ? body.agent_id : null
+  if (explicitAgentId && isAdmin) {
+    resolvedAgentId = explicitAgentId
+  } else {
+    // Look up zone default from agent_zones by matching zone name + city
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: zoneAssignments } = await (admin as any)
+      .from('agent_zones')
+      .select('agent_id, zones!agent_zones_zone_id_fkey(name, city)')
+      .eq('workspace_id', profile.workspace_id)
+    if (zoneAssignments && zoneAssignments.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const match = (zoneAssignments as any[]).find((az) => {
+        const z = az.zones
+        if (!z) return false
+        const nameMatch = zone ? z.name === zone : true
+        const cityMatch = city ? z.city?.toLowerCase() === city.toLowerCase() : true
+        return nameMatch && cityMatch
+      })
+      if (match) resolvedAgentId = match.agent_id
+    }
+  }
+
   const payload = {
     workspace_id: profile.workspace_id,
-    agent_id: user.id,
+    agent_id: resolvedAgentId,
     address,
     city,
     latitude,
@@ -129,7 +157,7 @@ export async function POST(req: NextRequest) {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await (admin as any)
     .from('properties')
     .insert(payload)
     .select('id')
@@ -143,7 +171,7 @@ export async function POST(req: NextRequest) {
   const initialNote = typeof body.initial_note === 'string' ? body.initial_note.trim() : ''
   if (initialNote) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any)
+    await (admin as any)
       .from('property_events')
       .insert({
         workspace_id: profile.workspace_id,

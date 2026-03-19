@@ -13,6 +13,7 @@ import { GoogleCalendarConnect } from '@/components/settings/google-calendar-con
 import { ImportContacts } from '@/components/settings/import-contacts'
 import { NotificationPreferences } from '@/components/settings/notification-preferences'
 import { InvoiceRemindersToggle } from '@/components/settings/invoice-reminders-toggle'
+import { AgentZoneAssignment } from '@/components/settings/agent-zone-assignment'
 import { getPlanConfig } from '@/lib/plan-limits'
 import { getTranslations } from '@/lib/i18n/server'
 import type { Workspace, Group } from '@/lib/supabase/types'
@@ -93,6 +94,44 @@ export default async function SettingsPage({
   }
 
   const planConfig = profile?.workspaces ? getPlanConfig(profile.workspaces.plan) : null
+
+  // Agent zone assignments (for admin Team tab)
+  interface AgentZoneRow {
+    id: string
+    agent_id: string
+    zone_id: string
+    agent_name: string
+    zone_name: string
+    city: string
+  }
+  let agentZoneAssignments: AgentZoneRow[] = []
+  let allZones: { id: string; name: string; city: string }[] = []
+  if (isAdmin && profile?.workspace_id) {
+    const [azRes, zonesRes] = await Promise.all([
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (admin as any)
+        .from('agent_zones')
+        .select('id, agent_id, zone_id, agent:users!agent_zones_agent_id_fkey(name), zone:zones!agent_zones_zone_id_fkey(name, city)')
+        .eq('workspace_id', profile.workspace_id),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (admin as any)
+        .from('zones')
+        .select('id, name, city')
+        .eq('workspace_id', profile.workspace_id)
+        .order('city')
+        .order('name'),
+    ])
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    agentZoneAssignments = ((azRes.data ?? []) as any[]).map((row) => ({
+      id: row.id,
+      agent_id: row.agent_id,
+      zone_id: row.zone_id,
+      agent_name: row.agent?.name ?? 'Agente',
+      zone_name: row.zone?.name ?? '',
+      city: row.zone?.city ?? '',
+    }))
+    allZones = (zonesRes.data ?? []) as { id: string; name: string; city: string }[]
+  }
 
   const TABS = [
     { id: 'generale', label: 'Generale' },
@@ -185,6 +224,25 @@ export default async function SettingsPage({
               />
             </CardContent>
           </Card>
+
+          {/* Agent zone assignments */}
+          {allZones.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Assegnazione agenti per zona</CardTitle>
+                <CardDescription>
+                  Definisci quale agente riceve automaticamente i nuovi immobili per ogni zona.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AgentZoneAssignment
+                  assignments={agentZoneAssignments}
+                  agents={members}
+                  zones={allZones}
+                />
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 
