@@ -140,7 +140,7 @@ export default async function ListingHistoryPage({
         </div>
       ) : (
         <ListingViewToggle mapListings={mapListings}>
-        <div className="animate-in-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="animate-in-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {items.map((listing) => {
             const thumb = Array.isArray(listing.photos_urls) && listing.photos_urls.length > 0
               ? (listing.photos_urls as string[])[0]
