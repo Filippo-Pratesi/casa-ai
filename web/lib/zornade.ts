@@ -7,8 +7,8 @@
 // --- Types ---
 
 export type ZornadeParcelQuery =
-  | { type: 'point'; coordinates: [number, number] } // [lng, lat]
-  | { type: 'bbox'; coordinates: [number, number, number, number] } // [minLng, minLat, maxLng, maxLat]
+  | { type: 'point'; lat: number; lng: number }
+  | { type: 'bbox'; bbox: [number, number, number, number] } // [minLon, minLat, maxLon, maxLat]
   | { type: 'fid'; fid: string }
 
 export interface ZornadeParcel {
@@ -99,7 +99,9 @@ export async function fetchParcels(
 
     if (!res.ok) {
       const text = await res.text()
-      return { data: null, error: `Zornade API error ${res.status}: ${text}` }
+      // Truncate HTML error pages to avoid huge error messages
+      const shortError = text.startsWith('<!') ? `HTTP ${res.status}` : text.slice(0, 200)
+      return { data: null, error: `Errore Zornade API (${res.status}): ${shortError}` }
     }
 
     const data = (await res.json()) as ZornadeResponse
@@ -120,7 +122,8 @@ export async function getCadastralDataByCoordinates(
 ): Promise<{ data: CadastralData | null; error: string | null }> {
   const { data, error } = await fetchParcels({
     type: 'point',
-    coordinates: [lng, lat], // Zornade usa [lng, lat]
+    lat,
+    lng,
   })
 
   if (error || !data) {
