@@ -199,7 +199,7 @@ function DurationBadge({ from, to }: { from: string; to: string }) {
   if (diff < 60_000) return null  // less than 1 minute — skip
   const label = formatDistance(new Date(from), new Date(to), { locale: it })
   return (
-    <div className="flex items-center gap-1 text-[10px] text-muted-foreground/50 pl-11 py-0.5">
+    <div className="flex items-center gap-1 text-[10px] text-muted-foreground/50 pl-8 py-0">
       <Clock className="h-2.5 w-2.5" />
       <span>{label} dopo</span>
     </div>
@@ -240,7 +240,9 @@ export function EventTimeline({ propertyId, events, onEventAdded }: EventTimelin
             <span className="text-xs text-muted-foreground">Filtra:</span>
             <Select value={filterType} onValueChange={(v) => setFilterType(v ?? 'all')}>
               <SelectTrigger className="h-8 w-[150px] text-xs">
-                <SelectValue />
+                <span className="truncate text-xs">
+                  {filterType === 'all' ? `Tutti (${events.length})` : `${EVENT_LABELS[filterType] ?? filterType} (${events.filter(e => e.event_type === filterType).length})`}
+                </span>
               </SelectTrigger>
               <SelectContent align="end">
                 <SelectItem value="all" className="text-xs">Tutti ({events.length})</SelectItem>
@@ -282,46 +284,46 @@ export function EventTimeline({ propertyId, events, onEventAdded }: EventTimelin
 
           return (
             <div key={event.id}>
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 {/* Vertical line + dot */}
                 <div className="flex flex-col items-center">
                   <div className={cn(
-                    'flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-background',
+                    'flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-background',
                     'bg-muted ring-1 ring-border/40'
                   )}>
-                    <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                    <Icon className="h-3 w-3 text-muted-foreground" />
                   </div>
-                  {!isLast && <div className="w-px flex-1 bg-border/50 mt-1 mb-1 min-h-[16px]" />}
+                  {!isLast && <div className="w-px flex-1 bg-border/50 mt-0.5 mb-0.5 min-h-[12px]" />}
                 </div>
 
                 {/* Content */}
-                <div className={cn('pb-4 pt-1 min-w-0 flex-1', isLast && 'pb-0')}>
+                <div className={cn('pb-2.5 pt-0.5 min-w-0 flex-1', isLast && 'pb-0')}>
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
                           {EVENT_LABELS[event.event_type] ?? event.event_type}
                         </span>
                         {event.sentiment && (
-                          <span className={cn('flex items-center gap-1 text-xs', SENTIMENT_CONFIG[event.sentiment]?.color)}>
+                          <span className={cn('flex items-center gap-1 text-[10px]', SENTIMENT_CONFIG[event.sentiment]?.color)}>
                             <span className={cn('h-1.5 w-1.5 rounded-full', SENTIMENT_CONFIG[event.sentiment]?.dot)} />
                             {SENTIMENT_CONFIG[event.sentiment]?.label}
                           </span>
                         )}
                       </div>
-                      <p className="text-sm font-medium mt-0.5">{event.title}</p>
+                      <p className="text-xs font-medium mt-0.5 leading-snug">{event.title}</p>
                       {event.description && (
-                        <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{event.description}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{event.description}</p>
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 mt-1.5">
-                    <span className="text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="text-[10px] text-muted-foreground">
                       {event.agent_name ?? 'Agente'}
                     </span>
-                    <span className="text-muted-foreground/40 text-xs">·</span>
+                    <span className="text-muted-foreground/40 text-[10px]">·</span>
                     <time
-                      className="text-xs text-muted-foreground"
+                      className="text-[10px] text-muted-foreground"
                       title={format(new Date(event.event_date ?? event.created_at), 'dd/MM/yyyy HH:mm')}
                     >
                       {formatDistanceToNow(new Date(event.event_date ?? event.created_at), { addSuffix: true, locale: it })}
@@ -330,8 +332,8 @@ export function EventTimeline({ propertyId, events, onEventAdded }: EventTimelin
                 </div>
               </div>
 
-              {/* Duration between this event and the next */}
-              {!isLast && nextEvent && (
+              {/* Duration between this event and the next (only show if > 1 day) */}
+              {!isLast && nextEvent && Math.abs(new Date(nextEvent.event_date ?? nextEvent.created_at).getTime() - new Date(event.event_date ?? event.created_at).getTime()) > 86_400_000 && (
                 <DurationBadge
                   from={event.event_date ?? event.created_at}
                   to={nextEvent.event_date ?? nextEvent.created_at}

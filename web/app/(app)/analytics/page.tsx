@@ -2,8 +2,9 @@ import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { BarChart3, TrendingUp, Users, Clock, Building2 } from 'lucide-react'
+import { BarChart3, TrendingUp, Users, Clock, Building2, Info } from 'lucide-react'
 import { Card } from '@/components/ui/card'
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip'
 import { AnalyticsAgentFilter } from '@/components/analytics/analytics-agent-filter'
 
 export const metadata = { title: 'Analytics — CasaAI' }
@@ -106,9 +107,20 @@ export default async function AnalyticsPage({
   const maxAgentCount = Math.max(...topAgents.map(a => a.count), 1)
 
   // Conversion rates
+  const sconosciutoCount = countByStage['sconosciuto'] ?? 0
+  const ignotoCount = countByStage['ignoto'] ?? 0
   const conosciutoCount = countByStage['conosciuto'] ?? 0
   const incaricoCount = countByStage['incarico'] ?? 0
   const closedCount = (countByStage['venduto'] ?? 0) + (countByStage['locato'] ?? 0)
+  // Sconosciuto → Ignoto: % of all properties that moved past "sconosciuto"
+  const conversionSconosciuto = total > 0
+    ? Math.round((total - sconosciutoCount) / total * 100)
+    : 0
+  // Ignoto → Conosciuto: % of (ignoto or beyond) that became conosciuto or beyond
+  const ignotoPool = ignotoCount + conosciutoCount + incaricoCount + closedCount
+  const conversionIgnoto = ignotoPool > 0
+    ? Math.round((conosciutoCount + incaricoCount + closedCount) / ignotoPool * 100)
+    : 0
   const conversionConosciuto = (conosciutoCount + incaricoCount + closedCount) > 0
     ? Math.round((incaricoCount + closedCount) / (conosciutoCount + incaricoCount + closedCount) * 100)
     : 0
@@ -203,6 +215,16 @@ export default async function AnalyticsPage({
         <div className="flex items-center gap-2">
           <Clock className="h-4 w-4 text-muted-foreground" />
           <h2 className="text-sm font-semibold">Giorni medi dall&apos;ultimo aggiornamento per Stage</h2>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger>
+                <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help shrink-0" />
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[240px] text-xs leading-relaxed">
+                Indica da quanti giorni in media ogni immobile non riceve aggiornamenti nello stage attuale. Un valore alto segnala stagnazione — considera di ricontattare il proprietario o aggiornare lo stato.
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {STAGE_ORDER.filter(s => (countByStage[s] ?? 0) > 0).map(stage => (
@@ -220,8 +242,26 @@ export default async function AnalyticsPage({
         <div className="flex items-center gap-2">
           <TrendingUp className="h-4 w-4 text-muted-foreground" />
           <h2 className="text-sm font-semibold">Tassi di Conversione</h2>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger>
+                <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help shrink-0" />
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[260px] text-xs leading-relaxed">
+                Percentuale di immobili che avanzano da uno stage al successivo nel funnel. Misura l&apos;efficacia di conversione in ogni fase del processo commerciale.
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="rounded-lg bg-muted/40 p-4 text-center">
+            <p className="text-xs text-muted-foreground mb-1">Sconosciuto → Ignoto</p>
+            <p className="text-3xl font-bold">{conversionSconosciuto}%</p>
+          </div>
+          <div className="rounded-lg bg-muted/40 p-4 text-center">
+            <p className="text-xs text-muted-foreground mb-1">Ignoto → Conosciuto</p>
+            <p className="text-3xl font-bold">{conversionIgnoto}%</p>
+          </div>
           <div className="rounded-lg bg-muted/40 p-4 text-center">
             <p className="text-xs text-muted-foreground mb-1">Conosciuto → Incarico</p>
             <p className="text-3xl font-bold">{conversionConosciuto}%</p>

@@ -3,7 +3,7 @@
 import { useRouter, usePathname } from 'next/navigation'
 import { useState, useCallback, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { Plus, Search, X, ChevronLeft, ChevronRight, ArrowUpDown, Building2, LayoutGrid, LayoutList, HelpCircle } from 'lucide-react'
+import { Plus, Search, X, ChevronLeft, ChevronRight, ArrowUp, ArrowDown, ChevronsUpDown, Building2, LayoutGrid, LayoutList, HelpCircle } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { it } from 'date-fns/locale'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -13,7 +13,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { PropertyCard, type PropertyCardData } from './property-card'
@@ -164,8 +163,6 @@ export function BancaDatiClient({
   const totalAll = Object.values(countByStage).reduce((a, b) => a + b, 0)
 
   // Label lookups for Select triggers (avoids raw value display in shadcn/ui)
-  const currentSortLabel = SORT_OPTIONS.find(o => o.value === (initialFilters.sort || 'updated_at_desc'))?.label ?? 'Recenti prima'
-
   // Active filter pills (Task 7)
   const activePills: ActivePill[] = []
   if (initialFilters.stage) activePills.push({ key: 'stage', label: STAGE_CONFIG[initialFilters.stage as PropertyStage]?.label ?? initialFilters.stage, clear: { stage: '', page: '1' } })
@@ -367,30 +364,10 @@ export function BancaDatiClient({
             </div>
           )}
 
-          {/* Sort control + view toggle + legend — right-aligned */}
+          {/* View toggle + legend — right-aligned */}
           <div className="ml-auto flex items-end gap-1">
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[10px] font-medium text-muted-foreground px-0.5">Ordina</span>
-              <div className="flex items-center gap-1">
-                <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                <Select
-                  value={initialFilters.sort || 'updated_at_desc'}
-                  onValueChange={(v) => updateUrl({ sort: v ?? 'updated_at_desc', page: '1' })}
-                >
-                  <SelectTrigger className="h-8 w-[160px] text-sm border-dashed">
-                    <span className="truncate">{currentSortLabel}</span>
-                  </SelectTrigger>
-                  <SelectContent align="end">
-                    {SORT_OPTIONS.map((o) => (
-                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
             {/* View mode + Legend */}
-            <div className="flex items-center gap-1 ml-1 pl-1 border-l border-border/60">
+            <div className="flex items-center gap-1">
               <button
                 onClick={() => setShowLegend(v => !v)}
                 title="Mostra legenda"
@@ -492,39 +469,63 @@ export function BancaDatiClient({
           <div className="overflow-x-auto">
           {/* Headers */}
           <div className="flex items-center bg-muted/40 border-b border-border/60 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            {[
-              { key: 'city', label: 'Città' },
+            {([
+              { key: 'city', label: 'Città', sortAsc: 'city_asc', sortDesc: 'city_desc' },
               { key: 'zone', label: 'Zona', hiddenBelow: 'lg' },
               { key: 'sub_zone', label: 'SZ', hiddenBelow: 'xl' },
               { key: 'street', label: 'Via' },
               { key: 'civic', label: 'N.' },
               { key: 'agent', label: 'Agente', hiddenBelow: 'xl' },
-              { key: 'price', label: 'Prezzo', hiddenBelow: 'lg' },
+              { key: 'price', label: 'Prezzo', hiddenBelow: 'lg', sortAsc: 'value_asc', sortDesc: 'value_desc' },
               { key: 'owner', label: 'Proprietario', hiddenBelow: 'xl' },
               { key: 'stage', label: 'Stage' },
               { key: 'disposition', label: 'St.' },
               { key: 'op', label: 'Op.', hiddenBelow: 'lg' },
               { key: 'type', label: 'Tipologia', hiddenBelow: 'xl' },
               { key: 'last_event', label: 'Ultima nota', hiddenBelow: 'xl' },
-              { key: 'updated', label: 'Agg.', hiddenBelow: 'md' },
-            ].map(({ key, label, hiddenBelow }) => (
-              <div
-                key={key}
-                style={{ width: colWidths[key], minWidth: colWidths[key] }}
-                className={cn(
-                  'relative shrink-0 px-2 py-2 whitespace-nowrap',
-                  hiddenBelow === 'lg' && 'hidden lg:block',
-                  hiddenBelow === 'xl' && 'hidden xl:block',
-                  hiddenBelow === 'md' && 'hidden md:block',
-                )}
-              >
-                {label}
+              { key: 'updated', label: 'Agg.', hiddenBelow: 'md', sortAsc: 'updated_at_asc', sortDesc: 'updated_at_desc' },
+            ] as { key: string; label: string; hiddenBelow?: string; sortAsc?: string; sortDesc?: string }[]).map(({ key, label, hiddenBelow, sortAsc, sortDesc }) => {
+              const currentSort = initialFilters.sort || 'updated_at_desc'
+              const isSortedAsc = sortAsc && currentSort === sortAsc
+              const isSortedDesc = sortDesc && currentSort === sortDesc
+              const isSortable = !!(sortAsc && sortDesc)
+              function handleSortClick() {
+                if (!isSortable) return
+                if (isSortedDesc) {
+                  updateUrl({ sort: sortAsc!, page: '1' })
+                } else {
+                  updateUrl({ sort: sortDesc!, page: '1' })
+                }
+              }
+              return (
                 <div
-                  className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary/40 active:bg-primary/60 z-10"
-                  onMouseDown={(e) => startResize(key, e)}
-                />
-              </div>
-            ))}
+                  key={key}
+                  style={{ width: colWidths[key], minWidth: colWidths[key] }}
+                  className={cn(
+                    'relative shrink-0 px-2 py-2 whitespace-nowrap',
+                    hiddenBelow === 'lg' && 'hidden lg:block',
+                    hiddenBelow === 'xl' && 'hidden xl:block',
+                    hiddenBelow === 'md' && 'hidden md:block',
+                    isSortable && 'cursor-pointer select-none hover:text-foreground transition-colors',
+                    (isSortedAsc || isSortedDesc) && 'text-foreground',
+                  )}
+                  onClick={isSortable ? handleSortClick : undefined}
+                >
+                  <span className="flex items-center gap-0.5">
+                    {label}
+                    {isSortable && (
+                      isSortedAsc ? <ArrowUp className="h-3 w-3 shrink-0" /> :
+                      isSortedDesc ? <ArrowDown className="h-3 w-3 shrink-0" /> :
+                      <ChevronsUpDown className="h-3 w-3 shrink-0 opacity-40" />
+                    )}
+                  </span>
+                  <div
+                    className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary/40 active:bg-primary/60 z-10"
+                    onMouseDown={(e) => { e.stopPropagation(); startResize(key, e) }}
+                  />
+                </div>
+              )
+            })}
             <div className="w-8 shrink-0" />
           </div>
           {/* Rows — inside shared scroll container */}
@@ -535,7 +536,7 @@ export function BancaDatiClient({
               <Link
                 key={p.id}
                 href={`/banca-dati/${p.id}`}
-                className="group flex items-center border-b border-border/20 last:border-0 hover:bg-[oklch(0.57_0.20_33/0.06)] dark:hover:bg-[oklch(0.57_0.20_33/0.10)] transition-colors cursor-pointer"
+                className="group relative flex items-center border-b border-border/20 last:border-0 hover:bg-[oklch(0.57_0.20_33/0.10)] dark:hover:bg-[oklch(0.57_0.20_33/0.18)] hover:[box-shadow:inset_0_0_0_1.5px_oklch(0.57_0.20_33/0.35)] transition-all cursor-pointer z-0 hover:z-10"
               >
                 <div style={{ width: colWidths.city, minWidth: colWidths.city }} className="shrink-0 px-2 py-2 text-xs text-muted-foreground truncate">{p.city}</div>
                 <div style={{ width: colWidths.zone, minWidth: colWidths.zone }} className="hidden lg:block shrink-0 px-2 py-2 text-xs text-muted-foreground truncate">{p.zone ?? <span className="opacity-30">—</span>}</div>

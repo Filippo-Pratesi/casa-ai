@@ -567,13 +567,15 @@ export function ImmobileDetailClient({
 
         {/* Left column — cronistoria */}
         <div>
-          <Card className="p-5 h-fit">
-            <h2 className="font-semibold text-sm mb-4">Cronistoria</h2>
-            <EventTimeline
-              propertyId={property.id}
-              events={events}
-              onEventAdded={reloadEvents}
-            />
+          <Card className="p-4 h-fit">
+            <h2 className="font-semibold text-sm mb-3">Cronistoria</h2>
+            <div className="max-h-[420px] overflow-y-auto pr-1">
+              <EventTimeline
+                propertyId={property.id}
+                events={events}
+                onEventAdded={reloadEvents}
+              />
+            </div>
           </Card>
         </div>
 
