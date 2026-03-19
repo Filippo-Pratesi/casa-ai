@@ -19,7 +19,7 @@ export function AnalyticsAgentFilter({ agents, selectedAgentId }: Props) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
-  function onChange(value: string) {
+  function onChange(value: string | null) {
     const params = new URLSearchParams(searchParams.toString())
     if (!value || value === 'all') {
       params.delete('agent_id')

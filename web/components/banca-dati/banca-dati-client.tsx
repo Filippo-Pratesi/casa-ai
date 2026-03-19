@@ -165,15 +165,16 @@ export function BancaDatiClient({
   const currentSortLabel = SORT_OPTIONS.find(o => o.value === (initialFilters.sort || 'updated_at_desc'))?.label ?? 'Recenti prima'
 
   // Active filter pills (Task 7)
-  const activePills = [
-    initialFilters.stage && { key: 'stage', label: STAGE_CONFIG[initialFilters.stage as PropertyStage]?.label ?? initialFilters.stage, clear: { stage: '', page: '1' } },
-    initialFilters.city && { key: 'city', label: initialFilters.city, clear: { city: '', zone: '', page: '1' } },
-    initialFilters.zone && { key: 'zone', label: initialFilters.zone, clear: { zone: '', page: '1' } },
-    initialFilters.transaction_type && { key: 'transaction_type', label: initialFilters.transaction_type === 'vendita' ? 'Vendita' : 'Affitto', clear: { transaction_type: '', page: '1' } },
-    initialFilters.disposition && { key: 'disposition', label: DISPOSITION_CONFIG[initialFilters.disposition]?.label ?? initialFilters.disposition, clear: { disposition: '', page: '1' } },
-    initialFilters.agent_id && { key: 'agent_id', label: agents.find(a => a.id === initialFilters.agent_id)?.name ?? 'Agente', clear: { agent_id: '', page: '1' } },
-    searchText && { key: 'q', label: `"${searchText}"`, clear: { q: '', page: '1' } },
-  ].filter((p): p is { key: string; label: string; clear: Record<string, string> } => Boolean(p))
+  type ActivePill = { key: string; label: string; clear: Record<string, string> }
+  const activePills: ActivePill[] = []
+  if (initialFilters.stage) activePills.push({ key: 'stage', label: STAGE_CONFIG[initialFilters.stage as PropertyStage]?.label ?? initialFilters.stage, clear: { stage: '', page: '1' } })
+  if (initialFilters.city) activePills.push({ key: 'city', label: initialFilters.city, clear: { city: '', zone: '', page: '1' } })
+  if (initialFilters.zone) activePills.push({ key: 'zone', label: initialFilters.zone, clear: { zone: '', page: '1' } })
+  if (initialFilters.transaction_type) activePills.push({ key: 'transaction_type', label: initialFilters.transaction_type === 'vendita' ? 'Vendita' : 'Affitto', clear: { transaction_type: '', page: '1' } })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if (initialFilters.disposition) activePills.push({ key: 'disposition', label: (DISPOSITION_CONFIG as any)[initialFilters.disposition]?.label ?? initialFilters.disposition, clear: { disposition: '', page: '1' } })
+  if (initialFilters.agent_id) activePills.push({ key: 'agent_id', label: agents.find(a => a.id === initialFilters.agent_id)?.name ?? 'Agente', clear: { agent_id: '', page: '1' } })
+  if (searchText) activePills.push({ key: 'q', label: `"${searchText}"`, clear: { q: '', page: '1' } })
 
   return (
     <div className="space-y-5">
@@ -331,7 +332,8 @@ export function BancaDatiClient({
             >
               <SelectTrigger className="h-8 w-[160px] text-sm">
                 <span className="truncate">
-                  {initialFilters.disposition ? (DISPOSITION_CONFIG[initialFilters.disposition]?.label ?? initialFilters.disposition) : 'Tutti'}
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  {initialFilters.disposition ? ((DISPOSITION_CONFIG as any)[initialFilters.disposition]?.label ?? initialFilters.disposition) : 'Tutti'}
                 </span>
               </SelectTrigger>
               <SelectContent>
