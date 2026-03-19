@@ -93,10 +93,10 @@ export default async function ListingDetailPage({
 
 
   // Fetch linked property + owner contact
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let linkedProperty: { id: string; address: string; city: string; stage: string; owner_contact: { id: string; name: string; phone: string | null; email: string | null } | null } | null = null
+  type LinkedProperty = { id: string; address: string; city: string; stage: string; owner_contact: { id: string; name: string; phone: string | null; email: string | null } | null }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const propertyId = (listing as any).property_id
+  let linkedProperty: LinkedProperty | null = null
   if (propertyId) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: propData } = await (admin as any)
@@ -104,7 +104,7 @@ export default async function ListingDetailPage({
       .select('id, address, city, stage, owner_contact:owner_contact_id(id, name, phone, email)')
       .eq('id', propertyId)
       .single()
-    if (propData) linkedProperty = propData as typeof linkedProperty
+    if (propData) linkedProperty = propData as LinkedProperty
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -172,7 +172,7 @@ export default async function ListingDetailPage({
     id: string; name: string; phone: string | null; email: string | null
     type: string; budget_max: number | null; preferred_cities: string[] | null
     preferred_types: string[] | null; min_rooms: number | null; min_sqm: number | null
-  }>).filter(c => {
+  }>).map(c => ({ ...c, preferred_cities: c.preferred_cities ?? [] })).filter(c => {
     if (listing.price != null && c.budget_max !== null && c.budget_max < listing.price) return false
     if (listing.city && (c.preferred_cities?.length ?? 0) > 0 && !c.preferred_cities?.map(s => s.toLowerCase()).includes(listing.city.toLowerCase())) return false
     if ((c.preferred_types?.length ?? 0) > 0 && listing.property_type && !c.preferred_types?.includes(listing.property_type)) return false
@@ -180,6 +180,9 @@ export default async function ListingDetailPage({
     if (listing.sqm != null && c.min_sqm !== null && c.min_sqm > listing.sqm) return false
     return true
   }).slice(0, 6)
+
+  // Snapshot linked property as const so TypeScript narrowing works in JSX
+  const linkedPropertySnap: LinkedProperty | null = linkedProperty
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-12">
@@ -201,9 +204,9 @@ export default async function ListingDetailPage({
           {/* Separator */}
           <div className="h-5 w-px bg-border" />
           {/* Banca Dati link */}
-          {linkedProperty && (
+          {linkedPropertySnap && (
             <>
-              <Button nativeButton={false} render={<Link href={`/banca-dati/${linkedProperty.id}`} />} variant="outline" size="sm" className="h-8 gap-1.5 text-blue-700 border-blue-300 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-700 dark:hover:bg-blue-950">
+              <Button nativeButton={false} render={<Link href={`/banca-dati/${linkedPropertySnap.id}`} />} variant="outline" size="sm" className="h-8 gap-1.5 text-blue-700 border-blue-300 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-700 dark:hover:bg-blue-950">
                 <Database className="h-3.5 w-3.5" />
                 Banca Dati
               </Button>
@@ -407,7 +410,7 @@ export default async function ListingDetailPage({
       )}
 
       {/* Owner card */}
-      {linkedProperty?.owner_contact && (
+      {linkedPropertySnap?.owner_contact && (
         <div className="rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 px-4 py-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -416,24 +419,24 @@ export default async function ListingDetailPage({
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-0.5">Proprietario</p>
-                <p className="font-semibold text-sm">{linkedProperty.owner_contact.name}</p>
+                <p className="font-semibold text-sm">{linkedPropertySnap!.owner_contact.name}</p>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5">
-                  {linkedProperty.owner_contact.phone && (
-                    <a href={`tel:${linkedProperty.owner_contact.phone}`} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  {linkedPropertySnap!.owner_contact.phone && (
+                    <a href={`tel:${linkedPropertySnap!.owner_contact.phone}`} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
                       <Phone className="h-3 w-3" />
-                      {linkedProperty.owner_contact.phone}
+                      {linkedPropertySnap!.owner_contact.phone}
                     </a>
                   )}
-                  {linkedProperty.owner_contact.email && (
-                    <a href={`mailto:${linkedProperty.owner_contact.email}`} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  {linkedPropertySnap!.owner_contact.email && (
+                    <a href={`mailto:${linkedPropertySnap!.owner_contact.email}`} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
                       <Mail className="h-3 w-3" />
-                      {linkedProperty.owner_contact.email}
+                      {linkedPropertySnap!.owner_contact.email}
                     </a>
                   )}
                 </div>
               </div>
             </div>
-            <Link href={`/contacts/${linkedProperty.owner_contact.id}`} className="shrink-0 text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+            <Link href={`/contacts/${linkedPropertySnap!.owner_contact.id}`} className="shrink-0 text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
               Scheda<ExternalLink className="h-3 w-3 ml-0.5" />
             </Link>
           </div>

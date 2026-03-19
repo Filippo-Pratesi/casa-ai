@@ -90,7 +90,7 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
   }), [t])
 
   function downloadCSV(data: Listing[]) {
-    const headers = [t('listings.col.property'), t('listings.col.type'), `${t('listings.col.price')} (€)`, 'mq', t('common.rooms'), 'Agente', 'AI', t('listings.col.date')]
+    const headers = [t('listings.col.property'), 'Città', t('listings.col.type'), `${t('listings.col.price')} (€)`, 'mq', t('common.rooms'), 'Agente', 'AI', t('listings.col.date')]
     const rows = data.map(l => [
       l.address,
       l.city,
@@ -229,7 +229,7 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
       <div className="flex items-center justify-between animate-in-1">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-3xl font-extrabold tracking-tight leading-none">{t('listings.title')}</h1>
+            <h1 className="text-3xl font-extrabold tracking-tight leading-none">Dashboard</h1>
             <span
               className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] tracking-widest uppercase font-bold text-white overflow-hidden"
               style={{
@@ -317,17 +317,12 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
                   <div className={`inline-flex rounded-lg bg-gradient-to-br ${s.gradient} p-1.5 shadow-md ${s.glow}`}>
                     {isAI ? <Sparkles className="h-3.5 w-3.5 text-white" /> : <s.icon className="h-3.5 w-3.5 text-white" />}
                   </div>
-                  <ArrowUpRight className={`h-3 w-3 ${s.iconColor} opacity-50`} />
+                  {s.href && <ArrowUpRight className={`h-3 w-3 ${s.iconColor} opacity-50`} />}
                 </div>
                 <p className="font-extrabold leading-none text-xl">{s.value}</p>
                 <p className="mt-0.5 font-medium text-muted-foreground text-xs">{s.label}</p>
-                {s.label === 'App. imminenti' ? (
-                  <p className="text-[10px] text-muted-foreground/70 mt-0.5">30 giorni</p>
-                ) : (
-                  <div className="flex items-center gap-0.5 mt-0.5 text-[10px] text-green-600">
-                    <TrendingUp className="h-2.5 w-2.5" />
-                    <span>mese</span>
-                  </div>
+                {s.label === 'App. imminenti' && (
+                  <p className="text-[10px] text-muted-foreground/70 mt-0.5">prossimi 30 giorni</p>
                 )}
               </div>
             </CardTag>
@@ -346,6 +341,7 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
                 <button
                   key={key}
                   onClick={() => toggleType(key)}
+                  aria-pressed={active}
                   className={`rounded-full border px-3 py-1 text-xs font-medium transition-all duration-150 ${active ? TYPE_ACTIVE[key] : (TYPE_COLORS[key] ?? 'bg-muted text-muted-foreground border-border') + ' hover:opacity-80'}`}
                 >
                   {label}
@@ -451,10 +447,19 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
           </Link>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/30 py-16 text-center">
-          <Search className="h-8 w-8 text-muted-foreground/40 mb-3" />
-          <p className="text-sm text-muted-foreground">{t('listings.noResults')}</p>
-          <button onClick={clearFilters} className="mt-2 text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border mesh-bg py-20 text-center animate-in-4">
+          <div className="mb-4 rounded-2xl bg-muted p-4">
+            <Search className="h-8 w-8 text-muted-foreground/60" />
+          </div>
+          <h2 className="text-base font-bold">{t('listings.noResults')}</h2>
+          <p className="mt-1 text-sm text-muted-foreground max-w-xs">
+            Nessun annuncio corrisponde ai filtri selezionati. Prova a modificare la ricerca.
+          </p>
+          <button
+            onClick={clearFilters}
+            className="mt-6 flex items-center gap-2 rounded-xl border border-border bg-card px-5 py-2.5 text-sm font-semibold hover:bg-muted transition-colors"
+          >
+            <X className="h-4 w-4" />
             {t('listings.filter.clear')}
           </button>
         </div>
@@ -470,6 +475,8 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
       ) : (
         /* List view */
         <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden animate-in-4">
+          <div className="overflow-x-auto">
+          <div className="min-w-[820px]">
           <div className="grid grid-cols-[1fr_100px_90px_90px_70px_90px_80px_50px] gap-2 px-4 py-2 border-b border-border bg-muted/50">
             <button onClick={() => handleSort('address')} className="flex items-center gap-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors">
               {t('listings.col.property')}<SortIcon col="address" />
@@ -492,6 +499,8 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
             {filtered.map((l) => (
               <ListingRow key={l.id} listing={l} typeLabels={TYPE_LABELS} draftLabel={t('listings.badge.draft')} />
             ))}
+          </div>
+          </div>
           </div>
         </div>
       )}
@@ -518,8 +527,8 @@ function ListingCard({ listing: l, typeLabels }: { listing: Listing; typeLabels:
   const placeholderGradient = PLACEHOLDER_GRADIENTS[l.property_type] ?? PLACEHOLDER_GRADIENTS.other
 
   return (
-    <Link href={`/listing/${l.id}`} className="group block hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer hover:border-[oklch(0.57_0.20_33/0.3)] rounded-2xl">
-      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm card-lift">
+    <Link href={`/listing/${l.id}`} className="group block rounded-2xl">
+      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm card-lift min-h-[280px] flex flex-col">
         {/* Image area */}
         <div className="relative h-44 w-full overflow-hidden">
           {thumb ? (
@@ -574,8 +583,8 @@ function ListingCard({ listing: l, typeLabels }: { listing: Listing; typeLabels:
           </div>
         </div>
 
-        <div className="p-4 space-y-2.5">
-          <div>
+        <div className="p-4 space-y-2.5 flex-1 flex flex-col">
+          <div className="flex-1">
             <h3 className="font-bold truncate text-sm leading-snug tracking-tight">{l.address}</h3>
             <p className="text-xs text-muted-foreground mt-0.5">
               {typeLabels[l.property_type]} · {l.city}

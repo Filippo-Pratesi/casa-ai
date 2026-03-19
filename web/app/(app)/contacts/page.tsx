@@ -32,13 +32,15 @@ export default async function ContactsPage() {
     .single()
 
   const profile = profileData as { workspace_id: string; role: string } | null
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'group_admin'
+  // A6: guard against missing profile/workspace — prevents empty-string query
+  if (!profile?.workspace_id) redirect('/auth/setup')
+  const isAdmin = profile.role === 'admin' || profile.role === 'group_admin'
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (admin as any)
     .from('contacts')
     .select('id, name, email, phone, type, budget_min, budget_max, preferred_cities, min_rooms, date_of_birth, created_at, agent:users!contacts_agent_id_fkey(name)')
-    .eq('workspace_id', profile?.workspace_id)
+    .eq('workspace_id', profile.workspace_id)
     .order('created_at', { ascending: false })
     .limit(500)
 
@@ -51,7 +53,7 @@ export default async function ContactsPage() {
         .from('property_contacts')
         .select('contact_id, property:properties!property_contacts_property_id_fkey(address)')
         .in('contact_id', contactIds)
-        .eq('workspace_id', profile?.workspace_id)
+        .eq('workspace_id', profile.workspace_id)
     : { data: [] }
 
   // Build contact_id → addresses map

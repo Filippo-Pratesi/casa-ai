@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -57,6 +57,10 @@ export function AppSidebar({
   const { t } = useI18n()
   const { theme, setTheme } = useTheme()
   const isAdmin = user.role === 'admin' || user.role === 'group_admin'
+  const [isMac, setIsMac] = useState(false)
+  useEffect(() => {
+    setIsMac(/Mac|iPhone|iPad|iPod/.test(navigator.platform))
+  }, [])
   const isGroupAdmin = user.role === 'group_admin'
 
   const initials = user.name
@@ -101,7 +105,7 @@ export function AppSidebar({
           <div className="flex items-center gap-3 px-3 py-1.5">
             {/* Logo */}
             <div className="shrink-0">
-              <img src="/logo.png" alt="CasaAI" className="h-[104px] w-auto object-contain" />
+              <img src="/logo.png" alt="CasaAI" className="h-[52px] w-auto object-contain" />
             </div>
             <div className="min-w-0">
               <p
@@ -127,7 +131,7 @@ export function AppSidebar({
           >
             <Search className="h-4 w-4" />
             <span>Cerca...</span>
-            <kbd className="ml-auto text-[10px] font-mono border border-border/50 rounded px-1.5 py-0.5">Ctrl+K</kbd>
+            <kbd className="ml-auto text-[10px] font-mono border border-border/50 rounded px-1.5 py-0.5">{isMac ? '⌘K' : 'Ctrl+K'}</kbd>
           </button>
         </div>
 
@@ -198,6 +202,8 @@ export function AppSidebar({
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             title={theme === 'dark' ? 'Passa alla modalità chiara' : 'Passa alla modalità scura'}
+            aria-label={theme === 'dark' ? 'Passa alla modalità chiara' : 'Passa alla modalità scura'}
+            aria-pressed={theme === 'dark'}
             className="flex items-center justify-center rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           >
             {theme === 'dark' ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}

@@ -49,11 +49,13 @@ interface Contact {
 
 function birthdayDaysLeft(dob: string | null): number | null {
   if (!dob) return null
-  const today = new Date()
+  const now = new Date()
+  // A1: avoid mutating `now` — compute midnight as a separate value
+  const todayMidnightMs = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
   const [, mm, dd] = dob.split('-').map(Number)
-  let next = new Date(today.getFullYear(), mm - 1, dd)
-  if (next < today) next = new Date(today.getFullYear() + 1, mm - 1, dd)
-  const diff = Math.ceil((next.getTime() - today.setHours(0, 0, 0, 0)) / 86400000)
+  let next = new Date(now.getFullYear(), mm - 1, dd)
+  if (next.getTime() < todayMidnightMs) next = new Date(now.getFullYear() + 1, mm - 1, dd)
+  const diff = Math.ceil((next.getTime() - todayMidnightMs) / 86400000)
   return diff <= 7 ? diff : null
 }
 
@@ -169,6 +171,7 @@ export function ContactsClient({ contacts, isAdmin }: ContactsClientProps) {
                 <button
                   key={key}
                   onClick={() => toggleType(key)}
+                  aria-pressed={active}
                   className={`rounded-full border px-3 py-1 text-xs font-medium transition-all duration-150 ${active ? TYPE_ACTIVE_COLORS[key] : TYPE_COLORS[key] + ' hover:opacity-80'}`}
                 >
                   {label}

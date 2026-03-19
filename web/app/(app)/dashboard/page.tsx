@@ -21,21 +21,28 @@ export default async function DashboardPage() {
 
   const profile = profileData as { role: string; workspace_id: string } | null
 
-  const { data: listingsData } = await admin
-    .from('listings')
-    .select('*, agent:users!agent_id(name)')
-    .eq('workspace_id', profile?.workspace_id ?? '')
-    .order('created_at', { ascending: false })
-    .limit(500)
+  const workspaceId = profile?.workspace_id ?? ''
 
-  const listings = (listingsData ?? []) as ListingWithAgent[]
-
+  // A2: fetch total listings count separately (display grid capped at 500 but stat shows real total)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [{ count: contactsCount }, { count: appointmentsCount }, { count: bancaDatiCount }] = await Promise.all([
-    (admin as any).from('contacts').select('id', { count: 'exact', head: true }).eq('workspace_id', profile?.workspace_id ?? ''),
-    (admin as any).from('appointments').select('id', { count: 'exact', head: true }).eq('workspace_id', profile?.workspace_id ?? '').gte('starts_at', new Date().toISOString()).neq('status', 'cancelled'),
-    (admin as any).from('properties').select('id', { count: 'exact', head: true }).eq('workspace_id', profile?.workspace_id ?? ''),
+  const [listingsDataRes, { count: totalListingsCount }, { count: contactsCount }, { count: appointmentsCount }, { count: bancaDatiCount }] = await Promise.all([
+    admin
+      .from('listings')
+      .select('*, agent:users!agent_id(name)')
+      .eq('workspace_id', workspaceId)
+      .order('created_at', { ascending: false })
+      .limit(500),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (admin as any).from('listings').select('id', { count: 'exact', head: true }).eq('workspace_id', workspaceId),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (admin as any).from('contacts').select('id', { count: 'exact', head: true }).eq('workspace_id', workspaceId),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (admin as any).from('appointments').select('id', { count: 'exact', head: true }).eq('workspace_id', workspaceId).gte('starts_at', new Date().toISOString()).neq('status', 'cancelled'),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (admin as any).from('properties').select('id', { count: 'exact', head: true }).eq('workspace_id', workspaceId),
   ])
+
+  const listings = (listingsDataRes.data ?? []) as ListingWithAgent[]
 
   const isAdmin = profile?.role === 'admin' || profile?.role === 'group_admin'
 
@@ -57,7 +64,7 @@ export default async function DashboardPage() {
         agent: l.agent,
       }))}
       stats={{
-        listings: listings.length,
+        listings: (totalListingsCount as number | null) ?? listings.length,
         contacts: (contactsCount as number | null) ?? 0,
         appointments: (appointmentsCount as number | null) ?? 0,
         aiContent: listings.filter(l => l.generated_content).length,

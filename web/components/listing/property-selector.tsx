@@ -95,7 +95,7 @@ export function PropertySelector({
     fetchProperties()
   }, [workspaceId, selectedPropertyId, supabase])
 
-  const handlePropertyChange = (propertyId: string) => {
+  const handlePropertyChange = (propertyId: string | null) => {
     const property = properties.find((p) => p.id === propertyId)
     setSelectedProperty(property || null)
     onPropertySelect(propertyId || null)
