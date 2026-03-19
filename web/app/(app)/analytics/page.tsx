@@ -1,8 +1,10 @@
 import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { BarChart3, TrendingUp, Users, Clock, Building2 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
+import { AnalyticsAgentFilter } from '@/components/analytics/analytics-agent-filter'
 
 export const metadata = { title: 'Analytics — CasaAI' }
 
@@ -23,7 +25,11 @@ const STAGE_COLORS: Record<string, string> = {
 
 const STAGE_ORDER = ['sconosciuto', 'ignoto', 'conosciuto', 'incarico', 'venduto', 'locato', 'disponibile']
 
-export default async function AnalyticsPage() {
+export default async function AnalyticsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string>>
+}) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -40,12 +46,30 @@ export default async function AnalyticsPage() {
 
   const isAdmin = profile.role === 'admin' || profile.role === 'group_admin'
 
-  // Properties by stage
+  // Agents list (for filter dropdown — admin only)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: propsData } = await (admin as any)
+  const { data: agentsData } = isAdmin ? await (admin as any)
+    .from('users')
+    .select('id, name')
+    .eq('workspace_id', profile.workspace_id)
+    .order('name') : { data: [] }
+  const agents = (agentsData ?? []) as { id: string; name: string }[]
+
+  const params = await searchParams
+  const selectedAgentId = params.agent_id ?? ''
+
+  // Properties — optionally filtered by agent
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let propsQuery = (admin as any)
     .from('properties')
     .select('id, stage, agent_id, updated_at, created_at')
     .eq('workspace_id', profile.workspace_id)
+
+  if (selectedAgentId) {
+    propsQuery = propsQuery.eq('agent_id', selectedAgentId)
+  }
+
+  const { data: propsData } = await propsQuery
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const allProps = (propsData ?? []) as any[]
@@ -68,14 +92,8 @@ export default async function AnalyticsPage() {
     avgDaysByStage[stage] = Math.round(avgMs / (1000 * 60 * 60 * 24))
   }
 
-  // Top agents by property count
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: agentsData } = isAdmin ? await (admin as any)
-    .from('users')
-    .select('id, name')
-    .eq('workspace_id', profile.workspace_id) : { data: [] }
-  const agentMap = new Map<string, string>(((agentsData ?? []) as { id: string; name: string }[]).map(a => [a.id, a.name]))
-
+  // Top agents by property count (only when no agent filter, admin only)
+  const agentMap = new Map<string, string>(agents.map(a => [a.id, a.name]))
   const agentCounts: Record<string, number> = {}
   for (const p of allProps) {
     const id = p.agent_id ?? 'unknown'
@@ -87,7 +105,7 @@ export default async function AnalyticsPage() {
     .map(([id, count]) => ({ name: agentMap.get(id) ?? 'Agente', count }))
   const maxAgentCount = Math.max(...topAgents.map(a => a.count), 1)
 
-  // Conversion rates: conosciuto→incarico, incarico→venduto/locato
+  // Conversion rates
   const conosciutoCount = countByStage['conosciuto'] ?? 0
   const incaricoCount = countByStage['incarico'] ?? 0
   const closedCount = (countByStage['venduto'] ?? 0) + (countByStage['locato'] ?? 0)
@@ -98,17 +116,28 @@ export default async function AnalyticsPage() {
     ? Math.round(closedCount / (incaricoCount + closedCount) * 100)
     : 0
 
+  const selectedAgentName = selectedAgentId ? agentMap.get(selectedAgentId) : null
+
   return (
     <div className="max-w-4xl mx-auto space-y-8 px-4 py-8">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[oklch(0.57_0.20_33)] to-[oklch(0.48_0.18_20)] text-white shadow-md">
-          <BarChart3 className="h-4 w-4" />
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[oklch(0.57_0.20_33)] to-[oklch(0.48_0.18_20)] text-white shadow-md">
+            <BarChart3 className="h-4 w-4" />
+          </div>
+          <div>
+            <h1 className="text-xl font-extrabold tracking-tight">Analytics Pipeline</h1>
+            <p className="text-sm text-muted-foreground">
+              {selectedAgentName ? `${selectedAgentName} · ` : ''}{total} immobili
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-xl font-extrabold tracking-tight">Analytics Pipeline</h1>
-          <p className="text-sm text-muted-foreground">{total} immobili in banca dati</p>
-        </div>
+        {isAdmin && agents.length > 1 && (
+          <Suspense fallback={null}>
+            <AnalyticsAgentFilter agents={agents} selectedAgentId={selectedAgentId} />
+          </Suspense>
+        )}
       </div>
 
       {/* Summary stats */}
@@ -204,8 +233,8 @@ export default async function AnalyticsPage() {
         </div>
       </Card>
 
-      {/* Top agents */}
-      {isAdmin && topAgents.length > 0 && (
+      {/* Top agents — show only when not filtered by single agent */}
+      {isAdmin && !selectedAgentId && topAgents.length > 0 && (
         <Card className="p-5 space-y-4">
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-muted-foreground" />
