@@ -132,7 +132,26 @@ export async function POST(req: NextRequest) {
   const fromName = profile.workspaces.name
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.casaai.it'
+  // Resolve listing info (for cronistoria events)
+  const listingId = typeof body.listing_id === 'string' ? body.listing_id : null
+  let listingTitle: string | null = null
+  let listingPropertyId: string | null = null
+  if (listingId) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: listingData } = await (admin as any)
+      .from('listings')
+      .select('address, property_id')
+      .eq('id', listingId)
+      .eq('workspace_id', profile.workspace_id)
+      .single()
+    if (listingData) {
+      listingTitle = (listingData as { address: string }).address ?? null
+      listingPropertyId = (listingData as { property_id: string | null }).property_id ?? null
+    }
+  }
+
   let sentCount = 0
+  const successfulContactIds: string[] = []
   for (const contact of recipients) {
     try {
       const trackingPixel = `<img src="${appUrl}/api/track/open/${campaignId}/${contact.id}" width="1" height="1" style="display:none" alt="" />`
@@ -147,6 +166,7 @@ export async function POST(req: NextRequest) {
         text: bodyText,
       })
       sentCount++
+      successfulContactIds.push(contact.id)
     } catch {
       // skip failed individual sends
     }
@@ -157,6 +177,39 @@ export async function POST(req: NextRequest) {
     .from('campaigns')
     .update({ status: 'sent', sent_count: sentCount, sent_at: new Date().toISOString() })
     .eq('id', campaignId)
+
+  // Insert contact_events for each recipient that received the campaign
+  if (successfulContactIds.length > 0) {
+    const campaignEvents = successfulContactIds.flatMap((contactId) => {
+      const baseEvent = {
+        workspace_id: profile.workspace_id,
+        contact_id: contactId,
+        agent_id: user.id,
+        event_type: 'campagna_inviata',
+        title: `Campagna: ${subject}`,
+        body: null as string | null,
+        related_listing_id: listingId,
+        related_property_id: listingPropertyId,
+      }
+      if (!listingId) return [baseEvent]
+      // If there is a listing, also create an "immobile_proposto" event
+      return [
+        baseEvent,
+        {
+          workspace_id: profile.workspace_id,
+          contact_id: contactId,
+          agent_id: user.id,
+          event_type: 'immobile_proposto',
+          title: `Proposto: ${listingTitle ?? listingId}`,
+          body: null as string | null,
+          related_listing_id: listingId,
+          related_property_id: listingPropertyId,
+        },
+      ]
+    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (admin as any).from('contact_events').insert(campaignEvents)
+  }
 
   return NextResponse.json({ id: campaignId, sent: sentCount }, { status: 201 })
 }

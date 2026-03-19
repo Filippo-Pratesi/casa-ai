@@ -543,6 +543,16 @@ export function ImmobileDetailClient({
               Vedi annuncio
             </Link>
           )}
+          {/* Crea Campagna — visible when property has an associated listing */}
+          {property.listing_id && (
+            <Link
+              href={`/campaigns/new?listing_id=${property.listing_id}&property_id=${property.id}`}
+              className={buttonVariants({ variant: 'outline', size: 'sm' })}
+            >
+              <Megaphone className="h-4 w-4 mr-1.5" />
+              Crea Campagna
+            </Link>
+          )}
         </div>
       </div>
 
