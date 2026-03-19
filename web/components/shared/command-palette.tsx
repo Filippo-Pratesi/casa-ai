@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { useRouter } from 'next/navigation'
-import { Search, LayoutDashboard, Users, Calendar, Mail, TrendingUp, CheckSquare, Home, Bell, Settings, Loader2, MapPin, UserRound } from 'lucide-react'
+import { Search, LayoutDashboard, Users, Calendar, Mail, TrendingUp, CheckSquare, Home, Bell, Settings, Loader2, MapPin, UserRound, Building2 } from 'lucide-react'
 
 const NAV_COMMANDS = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, sub: 'Tutti gli annunci' },
@@ -11,13 +11,14 @@ const NAV_COMMANDS = [
   { label: 'Calendario', href: '/calendar', icon: Calendar, sub: 'Appuntamenti' },
   { label: 'Campagne', href: '/campaigns', icon: Mail, sub: 'Email marketing' },
   { label: 'Vendite', href: '/archive', icon: TrendingUp, sub: 'Immobili venduti e archiviati' },
+  { label: 'Banca Dati', href: '/banca-dati', icon: Building2, sub: 'Immobili e proprietari' },
   { label: 'To Do', href: '/todos', icon: CheckSquare, sub: 'Attività in sospeso' },
   { label: 'Notifiche', href: '/notifications', icon: Bell, sub: 'Aggiornamenti recenti' },
   { label: 'Impostazioni', href: '/settings', icon: Settings, sub: 'Workspace e account' },
 ]
 
 interface SearchResult {
-  type: 'listing' | 'contact'
+  type: 'listing' | 'contact' | 'property'
   id: string
   label: string
   sub: string
@@ -109,7 +110,7 @@ export function CommandPalette() {
             autoFocus
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Cerca annunci, clienti, pagine..."
+            placeholder="Cerca annunci, clienti, immobili, pagine..."
             className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           />
           {searching
@@ -139,7 +140,9 @@ export function CommandPalette() {
                 >
                   {r.type === 'listing'
                     ? <MapPin className="h-4 w-4 text-[oklch(0.57_0.20_33)] shrink-0" />
-                    : <UserRound className="h-4 w-4 text-blue-500 shrink-0" />
+                    : r.type === 'property'
+                      ? <Building2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                      : <UserRound className="h-4 w-4 text-blue-500 shrink-0" />
                   }
                   <span className="flex-1 min-w-0">
                     <span className="font-medium truncate block">{r.label}</span>

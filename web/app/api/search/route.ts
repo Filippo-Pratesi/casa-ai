@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-// GET /api/search?q=... — full-site search across listings, contacts
+// GET /api/search?q=... — full-site search across listings, contacts, properties
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get('q')?.trim() ?? ''
   if (!q || q.length < 2) return NextResponse.json({ results: [] })
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
 
   const pattern = `%${q}%`
 
-  const [listingsRes, contactsRes] = await Promise.all([
+  const [listingsRes, contactsRes, propertiesRes] = await Promise.all([
     // Search listings by address or city
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (admin as any)
@@ -41,7 +41,21 @@ export async function GET(req: NextRequest) {
       .eq('workspace_id', profile.workspace_id)
       .or(`name.ilike.${pattern},email.ilike.${pattern}`)
       .limit(5),
+
+    // Search properties (banca dati) by address, city, or zone
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (admin as any)
+      .from('properties')
+      .select('id, address, city, zone, stage')
+      .eq('workspace_id', profile.workspace_id)
+      .or(`address.ilike.${pattern},city.ilike.${pattern},zone.ilike.${pattern}`)
+      .limit(5),
   ])
+
+  const STAGE_LABELS: Record<string, string> = {
+    sconosciuto: 'Sconosciuto', ignoto: 'Ignoto', conosciuto: 'Conosciuto',
+    incarico: 'Incarico', venduto: 'Venduto', locato: 'Locato', disponibile: 'Disponibile',
+  }
 
   const listings = ((listingsRes.data ?? []) as Array<{ id: string; address: string; city: string; price: number; property_type: string }>)
     .map(l => ({
@@ -61,5 +75,14 @@ export async function GET(req: NextRequest) {
       href: `/contacts/${c.id}`,
     }))
 
-  return NextResponse.json({ results: [...listings, ...contacts] })
+  const properties = ((propertiesRes.data ?? []) as Array<{ id: string; address: string; city: string; zone: string | null; stage: string }>)
+    .map(p => ({
+      type: 'property' as const,
+      id: p.id,
+      label: `${p.address}, ${p.city}`,
+      sub: `${p.zone ? p.zone + ' · ' : ''}${STAGE_LABELS[p.stage] ?? p.stage}`,
+      href: `/banca-dati/${p.id}`,
+    }))
+
+  return NextResponse.json({ results: [...listings, ...contacts, ...properties] })
 }

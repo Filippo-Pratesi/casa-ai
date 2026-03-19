@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { PlusSquare, FileText, Euro, Maximize2, Home, User } from 'lucide-react'
 import type { Listing } from '@/lib/supabase/types'
 import { ListingTransactionFilter } from '@/components/listing/listing-transaction-filter'
+import { ListingViewToggle } from '@/components/listing/listing-view-toggle'
 
 const TONE_LABELS: Record<string, string> = {
   standard: 'Standard',
@@ -74,6 +75,32 @@ export default async function ListingHistoryPage({
   const { data: listings } = await query
   const items = (listings ?? []) as ListingWithAgent[]
 
+  // Fetch lat/lng for listings that have a property_id
+  const propertyIds = items.map((l: Listing & { property_id?: string }) => l.property_id).filter(Boolean) as string[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: propsGeo } = propertyIds.length > 0
+    ? await (admin as any).from('properties').select('id, lat, lng').in('id', propertyIds)
+    : { data: [] }
+
+  const geoMap = new Map<string, { lat: number; lng: number }>(
+    ((propsGeo ?? []) as { id: string; lat: number | null; lng: number | null }[])
+      .filter(p => p.lat != null && p.lng != null)
+      .map(p => [p.id, { lat: p.lat!, lng: p.lng! }])
+  )
+
+  const mapListings = items
+    .filter((l: Listing & { property_id?: string }) => l.property_id && geoMap.has(l.property_id))
+    .map((l: Listing & { property_id?: string; transaction_type?: string }) => ({
+      id: l.id,
+      address: l.address,
+      city: l.city,
+      price: l.price,
+      sqm: l.sqm,
+      lat: geoMap.get(l.property_id!)!.lat,
+      lng: geoMap.get(l.property_id!)!.lng,
+      transaction_type: l.transaction_type ?? null,
+    }))
+
   return (
     <div className="flex-1 space-y-6 px-4 py-6 sm:px-6 lg:px-8">
       <div className="flex items-start justify-between gap-4 animate-in-1">
@@ -98,6 +125,7 @@ export default async function ListingHistoryPage({
 
       {items.length === 0 ? (
         <div className="animate-in-2 flex flex-col items-center justify-center rounded-2xl border border-dashed border-border mesh-bg py-20 text-center">
+
           <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[oklch(0.57_0.20_33)] to-[oklch(0.66_0.15_188)] shadow-lg shadow-[oklch(0.57_0.20_33/0.3)]">
             <FileText className="h-7 w-7 text-white" />
           </div>
@@ -111,6 +139,7 @@ export default async function ListingHistoryPage({
           </Link>
         </div>
       ) : (
+        <ListingViewToggle mapListings={mapListings}>
         <div className="animate-in-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((listing) => {
             const thumb = Array.isArray(listing.photos_urls) && listing.photos_urls.length > 0
@@ -201,6 +230,7 @@ export default async function ListingHistoryPage({
             )
           })}
         </div>
+        </ListingViewToggle>
       )}
     </div>
   )

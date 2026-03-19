@@ -34,6 +34,7 @@ import { PropertyStageBadge, type PropertyStage, STAGE_CONFIG } from './property
 import { DispositionIcon, DISPOSITION_CONFIG, type OwnerDisposition } from './disposition-icon'
 import { EventTimeline, type PropertyEvent } from './event-timeline'
 import { PropertyCard } from './property-card'
+import { AiMatchPanel } from './ai-match-panel'
 
 const ROLE_LABELS: Record<string, string> = {
   proprietario: 'Proprietario',
@@ -452,6 +453,8 @@ export function ImmobileDetailClient({
     }
   }, [property.id])
 
+  const lastEvent = events[0] ?? null
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -543,10 +546,38 @@ export function ImmobileDetailClient({
         </div>
       </div>
 
-      {/* Main layout: 2 columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
+      {/* Sticky summary bar */}
+      <div className="sticky top-0 z-20 -mx-4 px-4 py-2.5 bg-background/95 backdrop-blur-sm border-b border-border/50 flex items-center gap-3 flex-wrap">
+        <PropertyStageBadge stage={property.stage} />
+        {property.estimated_value && (
+          <span className="text-sm font-semibold">€{property.estimated_value.toLocaleString('it-IT')}</span>
+        )}
+        {property.owner_contact && (
+          <span className="text-sm text-muted-foreground">{property.owner_contact.name}</span>
+        )}
+        {lastEvent && (
+          <span className="text-xs text-muted-foreground ml-auto hidden sm:inline">
+            Ultimo evento: {new Date(lastEvent.event_date ?? lastEvent.created_at).toLocaleDateString('it-IT')}
+          </span>
+        )}
+      </div>
 
-        {/* Left column — property data */}
+      {/* Main layout: 2 columns — timeline left, details right */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
+
+        {/* Left column — cronistoria */}
+        <div>
+          <Card className="p-5 h-fit">
+            <h2 className="font-semibold text-sm mb-4">Cronistoria</h2>
+            <EventTimeline
+              propertyId={property.id}
+              events={events}
+              onEventAdded={reloadEvents}
+            />
+          </Card>
+        </div>
+
+        {/* Right column — property data */}
         <div className="space-y-4">
 
           {/* Details card */}
@@ -788,6 +819,9 @@ export function ImmobileDetailClient({
             </Card>
           )}
 
+          {/* AI Match Engine */}
+          <AiMatchPanel propertyId={property.id} />
+
           {/* Nearby properties */}
           {((nearby.same_building?.length ?? 0) > 0 || (nearby.nearby?.length ?? 0) > 0) && (
             <Card className="p-5 space-y-3">
@@ -816,18 +850,6 @@ export function ImmobileDetailClient({
               )}
             </Card>
           )}
-        </div>
-
-        {/* Right column — cronistoria */}
-        <div>
-          <Card className="p-5 h-fit sticky top-6">
-            <h2 className="font-semibold text-sm mb-4">Cronistoria</h2>
-            <EventTimeline
-              propertyId={property.id}
-              events={events}
-              onEventAdded={reloadEvents}
-            />
-          </Card>
         </div>
       </div>
 

@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTheme } from 'next-themes'
-import { LayoutDashboard, Settings, Users, UserRound, Archive, CreditCard, Megaphone, Bell, CalendarDays, Building2, CheckSquare, Sun, Moon, Search, Receipt, FileText, Database, Euro } from 'lucide-react'
+import { LayoutDashboard, Settings, Users, UserRound, Archive, CreditCard, Megaphone, Bell, CalendarDays, Building2, CheckSquare, Sun, Moon, Search, Receipt, FileText, Database, Euro, BarChart3 } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -144,6 +144,7 @@ export function AppSidebar({
             <SidebarMenu className="space-y-0.5">
               <NavItem href="/dashboard" icon={LayoutDashboard} label={t('nav.listings')} />
               <NavItem href="/banca-dati" icon={Database} label={t('nav.bancaDati')} exact={false} />
+              <NavItem href="/analytics" icon={BarChart3} label="Analytics" exact={false} />
               <NavItem href="/listing" icon={Megaphone} label={t('nav.annunci')} exact={false} />
               <NavItem href="/contacts" icon={UserRound} label={t('nav.contacts')} badge={birthdayCount} exact={false} />
             </SidebarMenu>
