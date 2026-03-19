@@ -90,7 +90,7 @@ export function AppSidebar({
 
   return (
     <Sidebar className="border-r border-sidebar-border">
-      <SidebarHeader className="pb-2">
+      <SidebarHeader className="pb-0">
         {isGroupAdmin && groupWorkspaces.length > 0 ? (
           <WorkspaceSwitcher
             workspaces={groupWorkspaces}
@@ -120,7 +120,7 @@ export function AppSidebar({
 
       <SidebarContent className="px-2">
         {/* Cmd+K search button */}
-        <div className="px-2 pt-2 pb-1">
+        <div className="px-2 pt-0 pb-1">
           <button
             onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
             className="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted/50 transition-colors"
