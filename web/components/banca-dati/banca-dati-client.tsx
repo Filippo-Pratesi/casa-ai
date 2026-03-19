@@ -62,6 +62,8 @@ interface BancaDatiClientProps {
   }
 }
 
+type ActivePill = { key: string; label: string; clear: Record<string, string> }
+
 const SORT_OPTIONS = [
   { value: 'updated_at_desc', label: 'Recenti prima' },
   { value: 'updated_at_asc',  label: 'Meno recenti' },
@@ -165,7 +167,6 @@ export function BancaDatiClient({
   const currentSortLabel = SORT_OPTIONS.find(o => o.value === (initialFilters.sort || 'updated_at_desc'))?.label ?? 'Recenti prima'
 
   // Active filter pills (Task 7)
-  type ActivePill = { key: string; label: string; clear: Record<string, string> }
   const activePills: ActivePill[] = []
   if (initialFilters.stage) activePills.push({ key: 'stage', label: STAGE_CONFIG[initialFilters.stage as PropertyStage]?.label ?? initialFilters.stage, clear: { stage: '', page: '1' } })
   if (initialFilters.city) activePills.push({ key: 'city', label: initialFilters.city, clear: { city: '', zone: '', page: '1' } })
@@ -578,7 +579,8 @@ export function BancaDatiClient({
               </Link>
             )
           })}
-          </div>{/* end overflow-x-auto */}
+          </div>
+          {/* /overflow-x-auto */}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
