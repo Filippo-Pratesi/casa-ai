@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Receipt, Download, Send, CheckCircle, Trash2, ChevronRight, Copy, FileDown, MoreVertical, Pencil, X, FileCode } from 'lucide-react'
+import { Receipt, Download, Send, CheckCircle, Trash2, ChevronRight, Copy, FileDown, MoreVertical, Pencil, X, FileCode, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -251,7 +251,14 @@ export function InvoiceListClient({ invoices: initialInvoices }: InvoiceListClie
               <input
                 type="date"
                 value={dateTo}
-                onChange={e => setDateTo(e.target.value)}
+                onChange={e => {
+                  const v = e.target.value
+                  if (v && dateFrom && v < dateFrom) {
+                    toast.warning("La data 'al' deve essere successiva alla data 'dal'")
+                    return
+                  }
+                  setDateTo(v)
+                }}
                 className="h-7 rounded-lg border border-border bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
               />
             </div>
@@ -337,9 +344,9 @@ export function InvoiceListClient({ invoices: initialInvoices }: InvoiceListClie
                 <p className="text-sm font-medium text-foreground truncate mt-0.5">{inv.cliente_nome}</p>
                 <p className="text-xs text-muted-foreground mt-0.5 truncate">{inv.descrizione}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {new Date(inv.data_emissione).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  <time dateTime={inv.data_emissione}>{new Date(inv.data_emissione).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}</time>
                   {inv.data_scadenza && (
-                    <span className="ml-2">· scad. {new Date(inv.data_scadenza).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}</span>
+                    <span className="ml-2">· scad. <time dateTime={inv.data_scadenza}>{new Date(inv.data_scadenza).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}</time></span>
                   )}
                 </p>
               </Link>
@@ -352,14 +359,14 @@ export function InvoiceListClient({ invoices: initialInvoices }: InvoiceListClie
                 )}
               </div>
 
-              {/* Desktop actions */}
+              {/* Desktop actions — B4: loading spinner on active action */}
               <div className="shrink-0 hidden sm:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button title="PDF" onClick={() => handleDownloadPdf(inv.id, inv.numero_fattura)} disabled={actionLoading === inv.id + '-pdf'} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"><Download className="h-4 w-4" /></button>
-                <button title="XML SDI" onClick={() => handleDownloadXml(inv.id, inv.numero_fattura)} disabled={actionLoading === inv.id + '-xml'} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"><FileCode className="h-4 w-4" /></button>
-                <button title="Duplica" onClick={() => handleDuplicate(inv.id)} disabled={actionLoading === inv.id + '-dup'} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"><Copy className="h-4 w-4" /></button>
-                {inv.status === 'bozza' && <button title="Invia" onClick={() => handleSendEmail(inv.id)} disabled={actionLoading === inv.id + '-send'} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"><Send className="h-4 w-4" /></button>}
-                {(inv.status === 'inviata' || inv.status === 'scaduta') && <button title="Pagata" onClick={() => handleMarkPaid(inv.id)} disabled={actionLoading === inv.id + '-paid'} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-green-500 hover:text-white transition-colors"><CheckCircle className="h-4 w-4" /></button>}
-                {inv.status === 'bozza' && <button title="Elimina" onClick={() => handleDelete(inv.id)} disabled={actionLoading === inv.id + '-del'} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"><Trash2 className="h-4 w-4" /></button>}
+                <button title="PDF" onClick={() => handleDownloadPdf(inv.id, inv.numero_fattura)} disabled={actionLoading === inv.id + '-pdf'} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50">{actionLoading === inv.id + '-pdf' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}</button>
+                <button title="XML SDI" onClick={() => handleDownloadXml(inv.id, inv.numero_fattura)} disabled={actionLoading === inv.id + '-xml'} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50">{actionLoading === inv.id + '-xml' ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCode className="h-4 w-4" />}</button>
+                <button title="Duplica" onClick={() => handleDuplicate(inv.id)} disabled={actionLoading === inv.id + '-dup'} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50">{actionLoading === inv.id + '-dup' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4" />}</button>
+                {inv.status === 'bozza' && <button title="Invia" onClick={() => handleSendEmail(inv.id)} disabled={actionLoading === inv.id + '-send'} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50">{actionLoading === inv.id + '-send' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}</button>}
+                {(inv.status === 'inviata' || inv.status === 'scaduta') && <button title="Pagata" onClick={() => handleMarkPaid(inv.id)} disabled={actionLoading === inv.id + '-paid'} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-green-500 hover:text-white transition-colors disabled:opacity-50">{actionLoading === inv.id + '-paid' ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}</button>}
+                {inv.status === 'bozza' && <button title="Elimina" onClick={() => handleDelete(inv.id)} disabled={actionLoading === inv.id + '-del'} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors disabled:opacity-50">{actionLoading === inv.id + '-del' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}</button>}
                 <Link href={`/contabilita/${inv.id}`} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"><ChevronRight className="h-4 w-4" /></Link>
               </div>
               {/* Mobile dropdown */}

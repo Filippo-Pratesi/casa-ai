@@ -52,6 +52,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Titolo obbligatorio' }, { status: 400 })
   }
 
+  const VALID_PRIORITIES = ['bassa', 'media', 'alta']
+  if (priority && !VALID_PRIORITIES.includes(priority)) {
+    return NextResponse.json({ error: `Priorità non valida. Valori consentiti: ${VALID_PRIORITIES.join(', ')}` }, { status: 400 })
+  }
+  if (due_date && isNaN(new Date(due_date).getTime())) {
+    return NextResponse.json({ error: 'Formato data scadenza non valido' }, { status: 400 })
+  }
+
   const assignedTo = assigned_to || user.id
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

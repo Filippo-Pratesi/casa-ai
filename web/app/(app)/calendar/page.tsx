@@ -23,22 +23,22 @@ export default async function CalendarPage({
   const profile = profileData as { workspace_id: string; role: string; name: string } | null
   if (!profile) redirect('/dashboard')
 
-  // Fetch listings for the "link to listing" dropdown
-  const { data: listingsData } = await admin
-    .from('listings')
-    .select('id, address, city')
-    .eq('workspace_id', profile.workspace_id)
-    .order('created_at', { ascending: false })
-    .limit(100)
-
-  // Fetch contacts
+  // Fetch listings and contacts in parallel
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: contactsData } = await (admin as any)
-    .from('contacts')
-    .select('id, name')
-    .eq('workspace_id', profile.workspace_id)
-    .order('name', { ascending: true })
-    .limit(200)
+  const [{ data: listingsData }, { data: contactsData }] = await Promise.all([
+    admin
+      .from('listings')
+      .select('id, address, city')
+      .eq('workspace_id', profile.workspace_id)
+      .order('created_at', { ascending: false })
+      .limit(100),
+    (admin as any)
+      .from('contacts')
+      .select('id, name')
+      .eq('workspace_id', profile.workspace_id)
+      .order('name', { ascending: true })
+      .limit(200),
+  ])
 
   const listings = (listingsData ?? []) as { id: string; address: string; city: string }[]
   const contacts = (contactsData ?? []) as { id: string; name: string }[]

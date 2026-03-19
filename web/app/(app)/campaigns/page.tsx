@@ -52,12 +52,17 @@ export default async function CampaignsPage() {
 
   const dateLocale = locale === 'en' ? 'en-GB' : 'it-IT'
 
-  const totalSent = campaigns.reduce((acc, c) => acc + (c.sent_count ?? 0), 0)
-  const totalDrafts = campaigns.filter(c => c.status === 'draft').length
-  const totalSentCampaigns = campaigns.filter(c => c.status === 'sent').length
-  const avgOpenRate = totalSentCampaigns > 0
-    ? Math.round(campaigns.filter(c => c.status === 'sent' && c.sent_count > 0).reduce((acc, c) => acc + (c.opened_count / c.sent_count) * 100, 0) / Math.max(totalSentCampaigns, 1))
-    : null
+  const { totalSent, totalDrafts, totalSentCampaigns, openRateSum, openRateN } = campaigns.reduce(
+    (acc, c) => ({
+      totalSent: acc.totalSent + (c.sent_count ?? 0),
+      totalDrafts: acc.totalDrafts + (c.status === 'draft' ? 1 : 0),
+      totalSentCampaigns: acc.totalSentCampaigns + (c.status === 'sent' ? 1 : 0),
+      openRateSum: acc.openRateSum + (c.status === 'sent' && c.sent_count > 0 ? (c.opened_count / c.sent_count) * 100 : 0),
+      openRateN: acc.openRateN + (c.status === 'sent' && c.sent_count > 0 ? 1 : 0),
+    }),
+    { totalSent: 0, totalDrafts: 0, totalSentCampaigns: 0, openRateSum: 0, openRateN: 0 }
+  )
+  const avgOpenRate = openRateN > 0 ? Math.round(openRateSum / openRateN) : null
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-12">
@@ -164,7 +169,7 @@ export default async function CampaignsPage() {
                   </p>
                   <div className="flex items-center gap-2 mt-1">
                     <div className="h-1.5 w-24 rounded-full bg-muted overflow-hidden">
-                      <div className="h-full bg-green-500 rounded-full transition-all"
+                      <div className="h-full bg-gradient-to-r from-[oklch(0.57_0.20_33)] to-[oklch(0.66_0.15_188)] rounded-full transition-all"
                         style={{ width: `${openRate ?? 0}%` }} />
                     </div>
                     <span className="flex items-center gap-1 text-xs text-muted-foreground">

@@ -84,8 +84,14 @@ export async function POST(req: NextRequest) {
     notes: typeof body.notes === 'string' ? body.notes.trim() || null : null,
     budget_min: typeof body.budget_min === 'number' ? body.budget_min : null,
     budget_max: typeof body.budget_max === 'number' ? body.budget_max : null,
-    preferred_cities: Array.isArray(body.preferred_cities) ? body.preferred_cities : [],
-    preferred_types: Array.isArray(body.preferred_types) ? body.preferred_types : [],
+    preferred_cities: Array.isArray(body.preferred_cities)
+      ? (body.preferred_cities as unknown[]).filter((c): c is string => typeof c === 'string')
+      : [],
+    preferred_types: Array.isArray(body.preferred_types)
+      ? (body.preferred_types as unknown[]).filter((t): t is string =>
+          typeof t === 'string' && ['apartment', 'house', 'villa', 'commercial', 'land', 'garage', 'other'].includes(t)
+        )
+      : [],
     min_sqm: typeof body.min_sqm === 'number' ? body.min_sqm : null,
     min_rooms: typeof body.min_rooms === 'number' ? body.min_rooms : null,
     desired_features: Array.isArray(body.desired_features) ? body.desired_features : [],
