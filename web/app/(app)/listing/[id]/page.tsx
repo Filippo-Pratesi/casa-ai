@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, MapPin, Euro, Maximize2, Home, Bath, Layers, Users, Pencil, Mail, AlertTriangle, Database, ExternalLink, Phone, User } from 'lucide-react'
+import { ArrowLeft, MapPin, Euro, Maximize2, Home, Bath, Layers, Users, Pencil, Mail, AlertTriangle, Database, ExternalLink, Phone, User, Megaphone, Calendar, Info } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Badge } from '@/components/ui/badge'
@@ -19,6 +19,7 @@ import { PriceHistory } from '@/components/listing/price-history'
 import { ValuationWidget } from '@/components/listing/valuation-widget'
 import { FloorPlanUploader } from '@/components/listing/floor-plan-uploader'
 import { ListingStats } from '@/components/listing/listing-stats'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { MlsToggle } from '@/components/listing/mls-toggle'
 import { ToneRegenerate } from '@/components/listing/tone-regenerate'
 import type { Listing, GeneratedContent } from '@/lib/supabase/types'
@@ -183,10 +184,11 @@ export default async function ListingDetailPage({
 
   // Fetch proposte count (contact_events where event_type = 'immobile_proposto')
   // Fetch visite count (contact_events where event_type = 'appuntamento')
-  // Fetch cronistoria events for this listing
+  // Fetch campagne count + cronistoria events for this listing
   const [
     { count: proposteCount },
     { count: visiteCount },
+    { count: campagneCount },
     { data: cronistoriaListingData },
   ] = await Promise.all([
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -203,6 +205,14 @@ export default async function ListingDetailPage({
       .eq('workspace_id', listing.workspace_id)
       .eq('related_listing_id', id)
       .eq('event_type', 'appuntamento'),
+    // Count campaigns that sent this listing
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (admin as any)
+      .from('contact_events')
+      .select('id', { count: 'exact', head: true })
+      .eq('workspace_id', listing.workspace_id)
+      .eq('related_listing_id', id)
+      .eq('event_type', 'campagna_inviata'),
     // Cronistoria: property_events (if linked) + contact_events for this listing
     propertyId
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -214,6 +224,9 @@ export default async function ListingDetailPage({
           .limit(30)
       : Promise.resolve({ data: [] }),
   ])
+
+  // Days on market
+  const daysOnMarket = Math.floor((Date.now() - new Date(listing.created_at).getTime()) / 86400000)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: listingContactEventsData } = await (admin as any)
@@ -344,25 +357,78 @@ export default async function ListingDetailPage({
         portalClickCount={(listing as unknown as { portal_click_count: number }).portal_click_count ?? 0}
       />
 
-      {/* Proposte e visite */}
-      {((proposteCount ?? 0) > 0 || (visiteCount ?? 0) > 0) && (
-        <div className="grid grid-cols-2 gap-3">
-          {(proposteCount ?? 0) > 0 && (
-            <div className="rounded-xl border border-border bg-teal-50/50 dark:bg-teal-950/20 p-4 text-center">
-              <Users className="h-4 w-4 text-teal-600 dark:text-teal-400 mx-auto mb-1.5" />
-              <p className="text-xl font-semibold text-teal-700 dark:text-teal-300">{proposteCount}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Proposto a {proposteCount} {proposteCount === 1 ? 'persona' : 'persone'}</p>
+      {/* Performance section */}
+      <TooltipProvider>
+        <div className="rounded-xl border border-border bg-muted/20 px-4 py-4 space-y-3">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Performance</p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {/* Proposte */}
+            <div className="rounded-xl border border-border bg-teal-50/60 dark:bg-teal-950/20 p-3 text-center">
+              <div className="flex items-center justify-center gap-1 mb-1.5">
+                <Users className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-3 w-3 text-muted-foreground/50 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-[220px] text-xs">
+                    Persone a cui è stato proposto questo immobile tramite campagne o manualmente
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+              <p className="text-xl font-semibold text-teal-700 dark:text-teal-300">{proposteCount ?? 0}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Proposte</p>
             </div>
-          )}
-          {(visiteCount ?? 0) > 0 && (
-            <div className="rounded-xl border border-border bg-blue-50/50 dark:bg-blue-950/20 p-4 text-center">
-              <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400 mx-auto mb-1.5" />
-              <p className="text-xl font-semibold text-blue-700 dark:text-blue-300">{visiteCount}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{visiteCount === 1 ? 'Visita' : 'Visite'}</p>
+            {/* Visite */}
+            <div className="rounded-xl border border-border bg-blue-50/60 dark:bg-blue-950/20 p-3 text-center">
+              <div className="flex items-center justify-center gap-1 mb-1.5">
+                <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-3 w-3 text-muted-foreground/50 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-[220px] text-xs">
+                    Appuntamenti di visita registrati per questo immobile
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+              <p className="text-xl font-semibold text-blue-700 dark:text-blue-300">{visiteCount ?? 0}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Visite</p>
             </div>
-          )}
+            {/* Campagne */}
+            <div className="rounded-xl border border-border bg-purple-50/60 dark:bg-purple-950/20 p-3 text-center">
+              <div className="flex items-center justify-center gap-1 mb-1.5">
+                <Megaphone className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-3 w-3 text-muted-foreground/50 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-[220px] text-xs">
+                    Numero di invii campagna marketing che includono questo annuncio
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+              <p className="text-xl font-semibold text-purple-700 dark:text-purple-300">{campagneCount ?? 0}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Campagne</p>
+            </div>
+            {/* Giorni in portafoglio */}
+            <div className="rounded-xl border border-border bg-amber-50/60 dark:bg-amber-950/20 p-3 text-center">
+              <div className="flex items-center justify-center gap-1 mb-1.5">
+                <Home className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-3 w-3 text-muted-foreground/50 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-[220px] text-xs">
+                    Giorni da quando l&apos;annuncio è stato aggiunto al portafoglio
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+              <p className="text-xl font-semibold text-amber-700 dark:text-amber-300">{daysOnMarket}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Giorni</p>
+            </div>
+          </div>
         </div>
-      )}
+      </TooltipProvider>
 
       {/* Price history */}
       <div className="rounded-xl border border-border bg-muted/30 px-4 py-4">
