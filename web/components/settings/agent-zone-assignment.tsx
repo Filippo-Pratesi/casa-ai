@@ -140,7 +140,7 @@ export function AgentZoneAssignment({ assignments: initialAssignments, agents, z
         <div className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
           <div className="space-y-1">
             <span className="text-xs text-muted-foreground">Agente</span>
-            <Select value={newAgentId || 'none'} onValueChange={(v) => setNewAgentId(v === 'none' ? '' : v)}>
+            <Select value={newAgentId || 'none'} onValueChange={(v) => setNewAgentId(!v || v === 'none' ? '' : v)}>
               <SelectTrigger className="h-8 text-sm">
                 <SelectValue placeholder="Seleziona agente" />
               </SelectTrigger>
@@ -154,7 +154,7 @@ export function AgentZoneAssignment({ assignments: initialAssignments, agents, z
           </div>
           <div className="space-y-1">
             <span className="text-xs text-muted-foreground">Zona</span>
-            <Select value={newZoneId || 'none'} onValueChange={(v) => setNewZoneId(v === 'none' ? '' : v)}>
+            <Select value={newZoneId || 'none'} onValueChange={(v) => setNewZoneId(!v || v === 'none' ? '' : v)}>
               <SelectTrigger className="h-8 text-sm">
                 <SelectValue placeholder="Seleziona zona" />
               </SelectTrigger>
