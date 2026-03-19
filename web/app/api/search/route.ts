@@ -33,14 +33,20 @@ export async function GET(req: NextRequest) {
       .or(`address.ilike.${pattern},city.ilike.${pattern}`)
       .limit(5),
 
-    // Search contacts by name, email or phone
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (admin as any)
-      .from('contacts')
-      .select('id, name, email, type')
-      .eq('workspace_id', profile.workspace_id)
-      .or(`name.ilike.${pattern},email.ilike.${pattern}`)
-      .limit(5),
+    // Search contacts by name, email or phone (normalized digits for phone lookup)
+    (() => {
+      const digits = q.replace(/\D/g, '')
+      const phoneFilter = digits.length >= 4
+        ? `,phone_normalized.ilike.%${digits}%`
+        : `,phone.ilike.${pattern}`
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (admin as any)
+        .from('contacts')
+        .select('id, name, email, type, phone')
+        .eq('workspace_id', profile.workspace_id)
+        .or(`name.ilike.${pattern},email.ilike.${pattern}${phoneFilter}`)
+        .limit(5)
+    })(),
 
     // Search properties (banca dati) by address, city, or zone
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -66,12 +72,12 @@ export async function GET(req: NextRequest) {
       href: `/listing/${l.id}`,
     }))
 
-  const contacts = ((contactsRes.data ?? []) as Array<{ id: string; name: string; email: string | null; type: string }>)
+  const contacts = ((contactsRes.data ?? []) as Array<{ id: string; name: string; email: string | null; type: string; phone: string | null }>)
     .map(c => ({
       type: 'contact' as const,
       id: c.id,
       label: c.name,
-      sub: c.email ?? c.type,
+      sub: c.email ?? c.phone ?? c.type,
       href: `/contacts/${c.id}`,
     }))
 

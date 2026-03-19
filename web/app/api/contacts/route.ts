@@ -29,7 +29,14 @@ export async function GET(req: NextRequest) {
     .range((page - 1) * perPage, page * perPage - 1)
 
   if (search) {
-    query = query.ilike('name', `%${search}%`)
+    const digits = search.replace(/\D/g, '')
+    if (digits.length >= 4) {
+      // Digit-heavy query: search by name OR normalized phone
+      query = query.or(`name.ilike.%${search}%,phone_normalized.ilike.%${digits}%`)
+    } else {
+      // Generic query: search by name, phone, or email
+      query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%,email.ilike.%${search}%`)
+    }
   }
 
   const { data, error, count } = await query
