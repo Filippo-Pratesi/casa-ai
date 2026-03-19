@@ -74,7 +74,7 @@ export default async function BancaDatiPage({
       sqm, rooms, estimated_value, updated_at,
       owner_contact:contacts!properties_owner_contact_id_fkey(name),
       agent:users!properties_agent_id_fkey(name)
-    `, { count: 'estimated' })
+    `, { count: 'exact' })
     .eq('workspace_id', profile.workspace_id)
     .order(sortOpt.col, { ascending: sortOpt.asc })
     .range((page - 1) * per_page, page * per_page - 1)
@@ -99,21 +99,37 @@ export default async function BancaDatiPage({
   // Replaces the previous pattern that loaded ALL events then deduplicated in JS.
   const propertyIds = (data ?? []).map((p: { id: string }) => p.id)
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [lastEventsResult, stageCountsResult] = await Promise.all([
-    // Last event per property via DB-level DISTINCT ON
+    // Last event per property via DB-level DISTINCT ON (requires migration 050)
     propertyIds.length > 0
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ? (admin as any).rpc('get_last_events', { p_property_ids: propertyIds })
-      : Promise.resolve({ data: [] }),
+      : Promise.resolve({ data: [], error: null }),
 
-    // FIX: stage counts via GROUP BY in DB instead of full property scan in JS
+    // Stage counts via GROUP BY in DB (requires migration 050)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (admin as any).rpc('get_stage_counts', { p_workspace_id: profile.workspace_id }),
   ])
 
   const lastEventMap: Record<string, { event_type: string; title: string; event_date: string }> = {}
-  for (const ev of ((lastEventsResult.data ?? []) as { property_id: string; event_type: string; title: string; event_date: string }[])) {
-    lastEventMap[ev.property_id] = ev
+
+  if (!lastEventsResult.error && lastEventsResult.data) {
+    // Fast path: RPC available (migration 050 applied)
+    for (const ev of (lastEventsResult.data as { property_id: string; event_type: string; title: string; event_date: string }[])) {
+      lastEventMap[ev.property_id] = ev
+    }
+  } else if (propertyIds.length > 0) {
+    // Fallback: load all events and deduplicate in JS (pre-migration 050)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: fallbackEvents } = await (admin as any)
+      .from('property_events')
+      .select('property_id, event_type, title, event_date')
+      .in('property_id', propertyIds)
+      .order('event_date', { ascending: false })
+    for (const ev of ((fallbackEvents ?? []) as { property_id: string; event_type: string; title: string; event_date: string }[])) {
+      if (!lastEventMap[ev.property_id]) lastEventMap[ev.property_id] = ev
+    }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -125,11 +141,26 @@ export default async function BancaDatiPage({
     last_event: lastEventMap[p.id] ?? null,
   }))
 
-  const countByStage = ((stageCountsResult.data ?? []) as { stage: string; cnt: number }[])
-    .reduce<Record<string, number>>((acc, row) => {
-      acc[row.stage] = Number(row.cnt)
+  let countByStage: Record<string, number>
+  if (!stageCountsResult.error && stageCountsResult.data?.length > 0) {
+    // Fast path: RPC available (migration 050 applied)
+    countByStage = (stageCountsResult.data as { stage: string; cnt: number }[])
+      .reduce<Record<string, number>>((acc, row) => {
+        acc[row.stage] = Number(row.cnt)
+        return acc
+      }, {})
+  } else {
+    // Fallback: full scan + JS reduce (pre-migration 050)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: stageCounts } = await (admin as any)
+      .from('properties')
+      .select('stage')
+      .eq('workspace_id', profile.workspace_id)
+    countByStage = ((stageCounts ?? []) as { stage: string }[]).reduce<Record<string, number>>((acc, p) => {
+      acc[p.stage] = (acc[p.stage] ?? 0) + 1
       return acc
     }, {})
+  }
 
   // Zones for filter dropdown
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
