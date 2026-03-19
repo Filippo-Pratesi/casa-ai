@@ -73,19 +73,21 @@ async function getFromLocalCsv(
     return null // Nessun CSV caricato
   }
 
-  // Query quotazioni
+  // Query quotazioni — match by comune_nome (case-insensitive) + zona_omi + tipo
+  const operazione = params.operazione ?? 'acquisto'
   let query = supabase
     .from('omi_quotations')
     .select('valore_min_mq, valore_max_mq, semestre, stato_conservazione')
-    .eq('codice_comune', params.codice_comune)
+    .ilike('comune_nome', params.codice_comune.trim())
     .eq('zona_omi', params.zona_omi)
     .eq('tipo_immobile', omiType)
+    .eq('operazione', operazione)
     .eq('fonte', 'csv')
     .order('semestre', { ascending: false })
     .limit(1)
 
   if (params.stato_conservazione) {
-    query = query.eq('stato_conservazione', params.stato_conservazione)
+    query = query.eq('stato_conservazione', params.stato_conservazione.toLowerCase())
   }
 
   const { data, error } = await query

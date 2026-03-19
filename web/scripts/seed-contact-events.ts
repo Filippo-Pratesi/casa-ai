@@ -45,13 +45,13 @@ const EVENT_TEMPLATES = {
   seller: {
     nota: [
       'Proprietario interessato a vendere. Contatto iniziale molto promettente. Visita preliminare consigliata.',
-      'Visione preliminare dell''immobile concordata. Proprietario organizzato. Quotazione di mercato discussa.',
+      "Visione preliminare dell'immobile concordata. Proprietario organizzato. Quotazione di mercato discussa.",
       'Valutazione preliminare completata. Prezzo di mercato concordato. Proprietario pronto per pubblicare.',
       'Annuncio pubblicato su 5 piattaforme. Già ricevute 4 richieste di visita.',
       'Due visite proprietà programmate per il weekend. Proprietario molto disponibile.',
     ],
     chiamata: [
-      'Prima telefonata per concordare visione preliminare dell''immobile',
+      "Prima telefonata per concordare visione preliminare dell'immobile",
       'Telefonata per discutere valutazione e strategia di marketing',
       'Aggiornamento settimanale su visite ricevute e feedback potenziali acquirenti',
     ],
@@ -74,9 +74,9 @@ const EVENT_TEMPLATES = {
     nota: [
       'Proprietario che desidera affittare. Immobile in buone condizioni. Interesse alto.',
       'Discussione su condizioni di locazione, costi di gestione, e profilo inquilino ideale.',
-      'Proprietario soddisfatto dell''agenzia e documentazione fornita. Pronto a procedere.',
+      "Proprietario soddisfatto dell'agenzia e documentazione fornita. Pronto a procedere.",
       'Inquilino identificato e approvato dopo screening. Documentazione completa raccolta.',
-      'Contattare per confermare data esatta trasloco dell''inquilino.',
+      "Contattare per confermare data esatta trasloco dell'inquilino.",
     ],
     chiamata: [
       'Prima telefonata di consultazione su gestione della proprietà',
@@ -209,7 +209,9 @@ async function seedContactEvents() {
         .limit(1)
         .single()
 
-      if (listing) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const listingAny = listing as any
+      if (listingAny) {
         eventDate = new Date(baseDate)
         eventDate.setDate(eventDate.getDate() + 12)
         allEvents.push({
@@ -217,9 +219,9 @@ async function seedContactEvents() {
           contact_id: contact.id,
           agent_id: contact.agent_id,
           event_type: EVENT_TYPES.immobile_proposto,
-          title: `Nuova proposta: ${listing.address}`,
+          title: `Nuova proposta: ${listingAny.address}`,
           body: 'Immobile che soddisfa perfettamente i criteri espressi. Visita consigliata.',
-          related_listing_id: listing.id,
+          related_listing_id: listingAny.id,
           event_date: eventDate.toISOString(),
         })
       }
@@ -299,7 +301,8 @@ async function seedContactEvents() {
     const batchSize = 100
     for (let i = 0; i < allEvents.length; i += batchSize) {
       const batch = allEvents.slice(i, i + batchSize)
-      const { error } = await admin.from('contact_events').insert(batch)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (admin as any).from('contact_events').insert(batch)
       if (error) throw error
       console.log(`✓ Inserted batch ${Math.floor(i / batchSize) + 1} (${batch.length} events)`)
     }

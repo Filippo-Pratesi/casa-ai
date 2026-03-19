@@ -16,3 +16,39 @@ Vie + Civici
 Quello sopra si riferisce agli immobili che non ho in gestione. Devo poter costruire un database
 
 gestire in autonomia compilazione delle vie + ogni civico deve potersi estendaere a piu proprietary (condiminio + campanello)
+
+--------------------------------------
+--------------------------------------
+--------------------------------------
+
+- filtro per via banca dati e filtra anche per civico
+- filtro per stage
+
+Aggiungere api visura + quotazione anche in fase di modifica
+
+Rimuovere match AI dalla pagina immobile banca dati ma inserirlo solamente in annuncio. In banca dati devo poter cliccare sul AI Match Engine e richiamare l'engine manualmente. Mantenere immbili compatibili nella scheda cliente. Call match AI cron alle 3 di notte ma anche all'inserimento.
+
+Construire cronistoria anche per contatto oltre che per immobile. Aggiungere lista di immobili proposti. Collegre cronistoria immobile a contatto ??? (ragiona come fare)
+
+In pagina immobile permetti di crare campagna - Quando invii campagna aggiungi immobile proposto alla scheda contatto.
+
+In annuncio mostra a quante persone e stato proposto e quante visite sono state effettuate. Inoltre mostra la cronistoria dell'immobile.
+
+Nella banca dati - immobile, accanto al proprietario mostra segnale se lui e solo venditore oppure ache acquirente
+
+Rivedere aggiunta contatto quando si aggiunge immobile. Aggiungi possibilita di assegnare immobile ad un agente.
+
+Ricerca in alto a sinistra e nella scheda contatti anche per il numero di telefono e email stessa cosa in banca dati
+
+33000 immobili in censimento
+
+Contatti devo poterli condividere con il network. 
+
+Contruire struttura database multiagenzia network. Tabelle agenzia aggiornano tabelle network la notte e permetto ricercare avanzata dei contatti e degli immobili se permessa da admin network.
+
+Ogni volta che agenzia non proprietaria del dato vuole effettuare modifica dato contatto o immobile
+
+
+
+
+

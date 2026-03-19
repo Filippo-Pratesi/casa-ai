@@ -21,8 +21,8 @@ export function OmiUpload({ lastSemestre, lastUploadDate, recordCount }: OmiUplo
     const file = e.target.files?.[0]
     if (!file) return
 
-    if (!file.name.endsWith('.csv')) {
-      setResult({ success: false, message: 'Il file deve essere in formato CSV' })
+    if (!file.name.endsWith('.csv') && !file.name.endsWith('.zip')) {
+      setResult({ success: false, message: 'Il file deve essere in formato CSV o ZIP' })
       return
     }
 
@@ -85,12 +85,12 @@ export function OmiUpload({ lastSemestre, lastUploadDate, recordCount }: OmiUplo
           onClick={() => fileRef.current?.click()}
         >
           {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
-          {uploading ? 'Importazione in corso...' : 'Carica CSV OMI'}
+          {uploading ? 'Importazione in corso...' : 'Carica ZIP / CSV OMI'}
         </Button>
         <input
           ref={fileRef}
           type="file"
-          accept=".csv"
+          accept=".csv,.zip"
           className="hidden"
           onChange={handleUpload}
         />
@@ -134,7 +134,7 @@ export function OmiUpload({ lastSemestre, lastUploadDate, recordCount }: OmiUplo
             <li>Nel menu laterale, clicca &quot;Servizi ipotecari e catastali&quot; &rarr; &quot;Osservatorio Mercato Immobiliare&quot;</li>
             <li>Clicca &quot;Forniture OMI – Quotazioni Immobiliari&quot;</li>
             <li>Seleziona &quot;Intero territorio nazionale&quot; e il semestre piu recente</li>
-            <li>Scarica il file CSV e caricalo qui sopra</li>
+            <li>Scarica il file ZIP e caricalo qui sopra (sono accettati anche i singoli file CSV *_VALORI.csv)</li>
           </ol>
           <p className="text-xs text-muted-foreground/70 pt-1">
             I dati vengono pubblicati ogni 6 mesi (solitamente giugno e dicembre).

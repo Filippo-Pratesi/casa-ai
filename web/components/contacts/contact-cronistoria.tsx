@@ -142,7 +142,7 @@ export function ContactCronistoria({ contactId, initialEvents }: ContactCronisto
             {displayedEvents.map((ev) => {
               const iconName = EVENT_ICON_NAMES[ev.event_type as keyof typeof EVENT_ICON_NAMES] ?? 'FileText'
               const Icon = ICON_COMPONENTS[iconName]
-              const colorClass = EVENT_COLORS[ev.event_type] ?? EVENT_COLORS.nota
+              const colorClass = EVENT_COLORS[ev.event_type as keyof typeof EVENT_COLORS] ?? EVENT_COLORS.nota
               return (
                 <li key={ev.id} className="relative">
                   <div className={`absolute -left-[21px] top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full ${colorClass}`}>
@@ -156,7 +156,7 @@ export function ContactCronistoria({ contactId, initialEvents }: ContactCronisto
                       )}
                       <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                         <span className={`text-[10px] font-medium rounded px-1.5 py-0.5 ${colorClass}`}>
-                          {EVENT_LABELS[ev.event_type] ?? ev.event_type}
+                          {EVENT_LABELS[ev.event_type as keyof typeof EVENT_LABELS] ?? ev.event_type}
                         </span>
                         {ev.related_listing_id && (
                           <Link

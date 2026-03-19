@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { unzipSync } from 'fflate'
 
-// POST /api/settings/omi-upload — Upload CSV OMI quotations
+// POST /api/settings/omi-upload — Upload CSV OMI quotations (ZIP or single CSV)
 export async function POST(req: NextRequest) {
   // Auth check
   const supabase = await createClient()
@@ -29,167 +30,262 @@ export async function POST(req: NextRequest) {
   const formData = await req.formData()
   const file = formData.get('file') as File | null
 
-  if (!file || !file.name.endsWith('.csv')) {
-    return NextResponse.json({ error: 'File CSV obbligatorio' }, { status: 400 })
+  if (!file) {
+    return NextResponse.json({ error: 'File obbligatorio' }, { status: 400 })
   }
 
-  const text = await file.text()
-  const lines = text.split('\n').filter((line) => line.trim().length > 0)
-
-  if (lines.length < 2) {
-    return NextResponse.json({ error: 'File CSV vuoto o non valido' }, { status: 400 })
+  const name = file.name.toLowerCase()
+  if (!name.endsWith('.csv') && !name.endsWith('.zip')) {
+    return NextResponse.json({ error: 'Il file deve essere in formato CSV o ZIP' }, { status: 400 })
   }
 
-  // Parse CSV header
-  const separator = lines[0].includes(';') ? ';' : ','
-  const headers = lines[0].split(separator).map((h) => h.trim().replace(/"/g, '').toLowerCase())
+  // Extract VALORI CSV text from ZIP or read directly
+  let csvText: string
+  let sourceFilename = name
 
-  // Detect column mapping (AdE OMI CSV format)
-  // Common column names in AdE exports: Codice_comune, Comune, Provincia, Zona, Tipo_Immobile,
-  // Stato_conservazione, Val_Mercato_min, Val_Mercato_max, Semestre
-  const colMap = detectColumns(headers)
+  if (name.endsWith('.zip')) {
+    const buf = new Uint8Array(await file.arrayBuffer())
+    let zipFiles: Record<string, Uint8Array>
+    try {
+      zipFiles = unzipSync(buf)
+    } catch {
+      return NextResponse.json({ error: 'File ZIP non valido o corrotto' }, { status: 400 })
+    }
 
-  if (!colMap.codice_comune || !colMap.zona_omi || !colMap.tipo_immobile || !colMap.valore_min || !colMap.valore_max) {
-    return NextResponse.json({
-      error: `Formato CSV non riconosciuto. Colonne trovate: ${headers.join(', ')}. Servono: codice comune, zona OMI, tipo immobile, valore min, valore max.`
-    }, { status: 400 })
+    // Find the VALORI csv inside the ZIP (case-insensitive)
+    const valoriEntry = Object.entries(zipFiles).find(([k]) =>
+      k.toUpperCase().includes('VALORI') && k.toUpperCase().endsWith('.CSV')
+    )
+    if (!valoriEntry) {
+      return NextResponse.json({
+        error: 'Nessun file *_VALORI.csv trovato nello ZIP. Assicurati di caricare il file scaricato dal portale OMI.'
+      }, { status: 400 })
+    }
+    sourceFilename = valoriEntry[0]
+    csvText = new TextDecoder('utf-8').decode(valoriEntry[1])
+  } else {
+    csvText = await file.text()
   }
 
-  // Parse rows
-  const rows: Array<{
-    codice_comune: string
-    comune_nome: string
-    provincia: string
-    zona_omi: string
-    tipo_immobile: string
-    stato_conservazione: string | null
-    valore_min_mq: number
-    valore_max_mq: number
-    semestre: string
-  }> = []
-
-  let detectedSemestre = ''
-
-  for (let i = 1; i < lines.length; i++) {
-    const cols = parseCsvLine(lines[i], separator)
-    if (cols.length < headers.length) continue
-
-    const minVal = parseFloat(cols[colMap.valore_min]?.replace(',', '.') ?? '')
-    const maxVal = parseFloat(cols[colMap.valore_max]?.replace(',', '.') ?? '')
-
-    if (isNaN(minVal) || isNaN(maxVal) || minVal <= 0 || maxVal <= 0) continue
-
-    const semestre = cols[colMap.semestre ?? -1]?.trim() ?? ''
-    if (semestre && !detectedSemestre) detectedSemestre = semestre
-
-    rows.push({
-      codice_comune: cols[colMap.codice_comune]?.trim() ?? '',
-      comune_nome: cols[colMap.comune_nome ?? -1]?.trim() ?? '',
-      provincia: cols[colMap.provincia ?? -1]?.trim() ?? '',
-      zona_omi: cols[colMap.zona_omi]?.trim() ?? '',
-      tipo_immobile: cols[colMap.tipo_immobile]?.trim() ?? '',
-      stato_conservazione: cols[colMap.stato_conservazione ?? -1]?.trim() || null,
-      valore_min_mq: minVal,
-      valore_max_mq: maxVal,
-      semestre: semestre || detectedSemestre || 'sconosciuto',
-    })
+  // Parse the OMI CSV
+  const result = parseOmiValoriCsv(csvText, sourceFilename)
+  if ('error' in result) {
+    return NextResponse.json({ error: result.error }, { status: 400 })
   }
+
+  const { rows, semestre } = result
 
   if (rows.length === 0) {
-    return NextResponse.json({ error: 'Nessun record valido trovato nel CSV' }, { status: 400 })
+    return NextResponse.json({ error: 'Nessun record valido trovato nel file VALORI' }, { status: 400 })
   }
 
-  // Batch insert (upsert) in chunks of 500
+  // Batch upsert in chunks of 500
   const BATCH_SIZE = 500
   let insertedCount = 0
 
   for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-    const batch = rows.slice(i, i + BATCH_SIZE).map((r) => ({
-      ...r,
-      fonte: 'csv',
-    }))
+    const batch = rows.slice(i, i + BATCH_SIZE)
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (admin as any)
       .from('omi_quotations')
       .upsert(batch, {
-        onConflict: 'codice_comune,zona_omi,tipo_immobile,stato_conservazione,semestre',
+        onConflict: 'codice_comune,zona_omi,tipo_immobile,stato_conservazione,semestre,operazione',
         ignoreDuplicates: false,
       })
 
     if (error) {
       console.error('OMI upsert error:', error)
-      // Continue with remaining batches
     } else {
       insertedCount += batch.length
     }
   }
 
-  // Update app_config
+  // Update app_config metadata
   const now = new Date().toISOString()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (admin as any).from('app_config').upsert([
-    { key: 'last_omi_semestre', value: JSON.stringify(detectedSemestre || 'sconosciuto'), updated_at: now },
+    { key: 'last_omi_semestre', value: JSON.stringify(semestre), updated_at: now },
     { key: 'last_omi_upload_date', value: JSON.stringify(now), updated_at: now },
     { key: 'omi_record_count', value: JSON.stringify(insertedCount), updated_at: now },
   ], { onConflict: 'key' })
 
   return NextResponse.json({
     count: insertedCount,
-    semestre: detectedSemestre || 'sconosciuto',
-    message: `Importati ${insertedCount} record quotazioni OMI`,
+    semestre,
+    message: `Importati ${insertedCount} record quotazioni OMI (${semestre})`,
   })
 }
 
-// --- CSV column detection ---
+// --- OMI CSV parsing ---
 
-function detectColumns(headers: string[]): {
-  codice_comune: number
-  comune_nome: number | null
-  provincia: number | null
-  zona_omi: number
-  tipo_immobile: number
-  stato_conservazione: number | null
-  valore_min: number
-  valore_max: number
-  semestre: number | null
-} {
-  const find = (patterns: string[]) =>
-    headers.findIndex((h) => patterns.some((p) => h.includes(p)))
+interface OmiRow {
+  codice_comune: string
+  comune_nome: string
+  provincia: string
+  zona_omi: string
+  tipo_immobile: string
+  stato_conservazione: string
+  valore_min_mq: number
+  valore_max_mq: number
+  semestre: string
+  operazione: string
+  fonte: string
+}
 
-  return {
-    codice_comune: find(['codice_comune', 'cod_comune', 'comune_catastale', 'codcomune']),
-    comune_nome: nullIfMissing(find(['comune', 'nome_comune', 'denominazione'])),
-    provincia: nullIfMissing(find(['provincia', 'prov', 'sigla_prov'])),
-    zona_omi: find(['zona', 'zona_omi', 'cod_zona', 'codzona']),
-    tipo_immobile: find(['tipo', 'tipo_immobile', 'tipologia', 'descr_tipologia']),
-    stato_conservazione: nullIfMissing(find(['stato', 'conservazione', 'stato_conservazione'])),
-    valore_min: find(['val_mercato_min', 'valore_min', 'min', 'compr_min', 'loc_min']),
-    valore_max: find(['val_mercato_max', 'valore_max', 'max', 'compr_max', 'loc_max']),
-    semestre: nullIfMissing(find(['semestre', 'periodo', 'sem'])),
+function parseOmiValoriCsv(
+  text: string,
+  filename: string
+): { rows: OmiRow[]; semestre: string } | { error: string } {
+  // Normalize line endings
+  const rawLines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n')
+  const lines = rawLines.filter((l) => l.trim().length > 0)
+
+  if (lines.length < 2) {
+    return { error: 'File CSV vuoto o non valido' }
   }
-}
 
-function nullIfMissing(idx: number): number | null {
-  return idx === -1 ? null : idx
-}
+  // Row 0: title row — extract semestre
+  // e.g. "Quotazioni Immobiliari : Valori di Mercato - Semestre 2025/2 - elaborazione del 19-MAR-26"
+  const titleRow = lines[0]
+  const semestre = extractSemestre(titleRow, filename)
 
-function parseCsvLine(line: string, separator: string): string[] {
-  const result: string[] = []
-  let current = ''
-  let inQuotes = false
+  // Row 1: header row
+  const headerRow = lines[1]
+  if (!headerRow.includes(';')) {
+    return { error: 'Formato CSV non riconosciuto: separatore ";" non trovato nell\'header' }
+  }
 
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i]
-    if (char === '"') {
-      inQuotes = !inQuotes
-    } else if (char === separator && !inQuotes) {
-      result.push(current.trim())
-      current = ''
-    } else {
-      current += char
+  const headers = headerRow.split(';').map((h) => h.trim().toLowerCase())
+
+  // Locate required columns by name
+  const idx = (name: string) => headers.indexOf(name)
+
+  const colComuneCat = idx('comune_cat')        // catasto code (A2AA, F205...)
+  const colComuneDescr = idx('comune_descrizione') // city name
+  const colProv = idx('prov')
+  const colZona = idx('zona')                   // OMI zone code (B1, C1...)
+  const colTipologia = idx('descr_tipologia')   // type description
+  const colStato = idx('stato')                 // NORMALE / OTTIMO / SCADENTE
+  const colStatoPrev = idx('stato_prev')        // P = previsionale (kept for reference)
+  const colComprMin = idx('compr_min')
+  const colComprMax = idx('compr_max')
+  const colLocMin = idx('loc_min')
+  const colLocMax = idx('loc_max')
+
+  if (colComuneDescr === -1 || colZona === -1 || colTipologia === -1 || colComprMin === -1 || colComprMax === -1) {
+    return {
+      error: `Colonne OMI non trovate. Colonne presenti: ${headers.join(', ')}. Assicurati di caricare il file *_VALORI.csv (non _ZONE.csv).`
     }
   }
-  result.push(current.trim())
-  return result
+
+  const rows: OmiRow[] = []
+
+  for (let i = 2; i < lines.length; i++) {
+    const cols = lines[i].split(';')
+    if (cols.length < headers.length - 2) continue // allow trailing empty cols
+
+    // Note: Stato_prev=P (previsionale) rows are included — the 2025/2 dataset is entirely previsionale
+
+    const comuneNome = (cols[colComuneDescr]?.trim() ?? '').toLowerCase()
+    if (!comuneNome) continue
+
+    const zona = cols[colZona]?.trim() ?? ''
+    if (!zona) continue
+
+    const tipologiaRaw = cols[colTipologia]?.trim() ?? ''
+    const tipo = normalizeOmiType(tipologiaRaw)
+    if (!tipo) continue // skip types we don't map (agricultural land etc.)
+
+    const stato = (cols[colStato]?.trim() ?? '').toLowerCase()
+
+    // Purchase prices (Compr_min/max)
+    const comprMin = parseItalianNumber(cols[colComprMin])
+    const comprMax = parseItalianNumber(cols[colComprMax])
+    if (comprMin > 0 && comprMax > 0) {
+      rows.push({
+        codice_comune: comuneNome,
+        comune_nome: comuneNome,
+        provincia: cols[colProv]?.trim() ?? '',
+        zona_omi: zona,
+        tipo_immobile: tipo,
+        stato_conservazione: stato,
+        valore_min_mq: comprMin,
+        valore_max_mq: comprMax,
+        semestre,
+        operazione: 'acquisto',
+        fonte: 'csv',
+      })
+    }
+
+    // Rental prices (Loc_min/max) — if columns present
+    if (colLocMin !== -1 && colLocMax !== -1) {
+      const locMin = parseItalianNumber(cols[colLocMin])
+      const locMax = parseItalianNumber(cols[colLocMax])
+      if (locMin > 0 && locMax > 0) {
+        rows.push({
+          codice_comune: comuneNome,
+          comune_nome: comuneNome,
+          provincia: cols[colProv]?.trim() ?? '',
+          zona_omi: zona,
+          tipo_immobile: tipo,
+          stato_conservazione: stato,
+          valore_min_mq: locMin,
+          valore_max_mq: locMax,
+          semestre,
+          operazione: 'affitto',
+          fonte: 'csv',
+        })
+      }
+    }
+  }
+
+  // Attach comune_cat if available (for reference)
+  if (colComuneCat !== -1) {
+    // Not stored separately — comune_nome is used for lookup
+    void colComuneCat
+  }
+
+  return { rows, semestre }
+}
+
+// Extract semestre string from title row or filename
+function extractSemestre(titleRow: string, filename: string): string {
+  // From title: "Semestre 2025/2" → "2025_2"
+  const fromTitle = titleRow.match(/Semestre\s+(\d{4})\/(\d)/i)
+  if (fromTitle) return `${fromTitle[1]}_${fromTitle[2]}`
+
+  // From filename: "QI_1350045_1_20252_VALORI.csv" → "2025_2"
+  const fromFile = filename.match(/_(\d{4})(\d)_/)
+  if (fromFile) return `${fromFile[1]}_${fromFile[2]}`
+
+  return 'sconosciuto'
+}
+
+// Parse Italian decimal format: "1.234,56" → 1234.56 or "520" → 520
+function parseItalianNumber(raw: string | undefined): number {
+  if (!raw) return 0
+  const cleaned = raw.trim().replace(/\./g, '').replace(',', '.')
+  const n = parseFloat(cleaned)
+  return isNaN(n) ? 0 : n
+}
+
+// Map OMI Descr_Tipologia to internal type names (matching PROPERTY_TYPE_TO_OMI targets)
+const OMI_TYPE_MAP: Record<string, string> = {
+  'abitazioni civili': 'abitazioni_civili',
+  'ville e villini': 'ville_e_villini',
+  'box': 'box',
+  'negozi': 'negozi',
+  'uffici': 'uffici',
+  'magazzini': 'magazzini',
+  'capannoni industriali': 'capannoni_industriali',
+  'capannoni tipici': 'capannoni_tipici',
+  'posti auto coperti': 'posti_auto_coperti',
+  'posti auto scoperti': 'posti_auto_scoperti',
+  'laboratori': 'laboratori',
+}
+
+function normalizeOmiType(raw: string): string | null {
+  const lower = raw.toLowerCase().trim()
+  return OMI_TYPE_MAP[lower] ?? null
 }
