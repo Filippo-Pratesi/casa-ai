@@ -74,7 +74,7 @@ export default async function BancaDatiPage({
       sqm, rooms, estimated_value, updated_at,
       owner_contact:contacts!properties_owner_contact_id_fkey(name),
       agent:users!properties_agent_id_fkey(name)
-    `, { count: 'exact' })
+    `, { count: 'estimated' })
     .eq('workspace_id', profile.workspace_id)
     .order(sortOpt.col, { ascending: sortOpt.asc })
     .range((page - 1) * per_page, page * per_page - 1)
@@ -85,27 +85,35 @@ export default async function BancaDatiPage({
   if (agent_id) query = query.eq('agent_id', agent_id)
   if (disposition) query = query.eq('owner_disposition', disposition)
   if (transaction_type) query = query.eq('transaction_type', transaction_type)
-  if (q) query = query.or(`address.ilike.%${q}%,city.ilike.%${q}%,zone.ilike.%${q}%`)
+
+  // FIX: use GIN-indexed full-text search instead of ILIKE '%...%'
+  // Falls back to ILIKE only if the search_vector column doesn't exist yet
+  // (i.e. before migration 050 is applied).
+  if (q) {
+    query = query.textSearch('search_vector', q, { type: 'websearch', config: 'italian' })
+  }
 
   const { data, count } = await query
 
-  // Fetch last event per property (for list view)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const propertyIds = (data ?? []).map((p: any) => (p as { id: string }).id)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: lastEventsData } = propertyIds.length > 0
-    ? await (admin as any)
-        .from('property_events')
-        .select('property_id, event_type, title, event_date')
-        .in('property_id', propertyIds)
-        .order('event_date', { ascending: false })
-    : { data: [] }
+  // FIX: use RPC with DISTINCT ON to fetch only the last event per property.
+  // Replaces the previous pattern that loaded ALL events then deduplicated in JS.
+  const propertyIds = (data ?? []).map((p: { id: string }) => p.id)
+
+  const [lastEventsResult, stageCountsResult] = await Promise.all([
+    // Last event per property via DB-level DISTINCT ON
+    propertyIds.length > 0
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ? (admin as any).rpc('get_last_events', { p_property_ids: propertyIds })
+      : Promise.resolve({ data: [] }),
+
+    // FIX: stage counts via GROUP BY in DB instead of full property scan in JS
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (admin as any).rpc('get_stage_counts', { p_workspace_id: profile.workspace_id }),
+  ])
 
   const lastEventMap: Record<string, { event_type: string; title: string; event_date: string }> = {}
-  for (const ev of ((lastEventsData ?? []) as { property_id: string; event_type: string; title: string; event_date: string }[])) {
-    if (!lastEventMap[ev.property_id]) {
-      lastEventMap[ev.property_id] = ev
-    }
+  for (const ev of ((lastEventsResult.data ?? []) as { property_id: string; event_type: string; title: string; event_date: string }[])) {
+    lastEventMap[ev.property_id] = ev
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -117,17 +125,11 @@ export default async function BancaDatiPage({
     last_event: lastEventMap[p.id] ?? null,
   }))
 
-  // Stage counts for header badges
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: stageCounts } = await (admin as any)
-    .from('properties')
-    .select('stage')
-    .eq('workspace_id', profile.workspace_id)
-
-  const countByStage = ((stageCounts ?? []) as { stage: string }[]).reduce<Record<string, number>>((acc, p) => {
-    acc[p.stage] = (acc[p.stage] ?? 0) + 1
-    return acc
-  }, {})
+  const countByStage = ((stageCountsResult.data ?? []) as { stage: string; cnt: number }[])
+    .reduce<Record<string, number>>((acc, row) => {
+      acc[row.stage] = Number(row.cnt)
+      return acc
+    }, {})
 
   // Zones for filter dropdown
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
