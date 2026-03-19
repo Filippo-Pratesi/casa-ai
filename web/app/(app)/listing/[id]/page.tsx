@@ -371,7 +371,7 @@ export default async function ListingDetailPage({
               <div className="flex items-center justify-center gap-1 mb-1.5">
                 <Users className="h-4 w-4 text-teal-600 dark:text-teal-400" />
                 <Tooltip>
-                  <TooltipTrigger asChild>
+                  <TooltipTrigger>
                     <Info className="h-3 w-3 text-muted-foreground/50 cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent side="top" className="max-w-[220px] text-xs">
@@ -387,7 +387,7 @@ export default async function ListingDetailPage({
               <div className="flex items-center justify-center gap-1 mb-1.5">
                 <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                 <Tooltip>
-                  <TooltipTrigger asChild>
+                  <TooltipTrigger>
                     <Info className="h-3 w-3 text-muted-foreground/50 cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent side="top" className="max-w-[220px] text-xs">
@@ -403,7 +403,7 @@ export default async function ListingDetailPage({
               <div className="flex items-center justify-center gap-1 mb-1.5">
                 <Megaphone className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                 <Tooltip>
-                  <TooltipTrigger asChild>
+                  <TooltipTrigger>
                     <Info className="h-3 w-3 text-muted-foreground/50 cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent side="top" className="max-w-[220px] text-xs">
@@ -419,7 +419,7 @@ export default async function ListingDetailPage({
               <div className="flex items-center justify-center gap-1 mb-1.5">
                 <Home className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                 <Tooltip>
-                  <TooltipTrigger asChild>
+                  <TooltipTrigger>
                     <Info className="h-3 w-3 text-muted-foreground/50 cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent side="top" className="max-w-[220px] text-xs">
