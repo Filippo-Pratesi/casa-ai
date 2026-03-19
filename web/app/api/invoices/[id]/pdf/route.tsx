@@ -232,7 +232,7 @@ function InvoicePdf({ invoice }: { invoice: Record<string, any> }) {
             {invoice.emittente_partita_iva && <Text style={styles.partyDetail}>P.IVA {invoice.emittente_partita_iva}</Text>}
           </View>
           <View>
-            <Text style={styles.invoiceTitle}>FATTURA</Text>
+            <Text style={styles.invoiceTitle}>{invoice.document_type === 'nota_credito' ? 'NOTA DI CREDITO' : 'FATTURA'}</Text>
             <Text style={styles.invoiceNumber}>N. {invoice.numero_fattura}</Text>
             <Text style={{ ...styles.invoiceNumber, marginTop: 4 }}>
               {new Date(invoice.data_emissione).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' })}
@@ -358,7 +358,7 @@ function InvoicePdf({ invoice }: { invoice: Record<string, any> }) {
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>{invoice.emittente_nome}</Text>
-          <Text style={styles.footerText}>Fattura n. {invoice.numero_fattura} — {new Date(invoice.data_emissione).toLocaleDateString('it-IT')}</Text>
+          <Text style={styles.footerText}>{invoice.document_type === 'nota_credito' ? 'Nota di credito' : 'Fattura'} n. {invoice.numero_fattura} — {new Date(invoice.data_emissione).toLocaleDateString('it-IT')}</Text>
           <Text style={styles.footerText}>Generata con CasaAI</Text>
         </View>
       </Page>

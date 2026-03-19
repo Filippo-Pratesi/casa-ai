@@ -16,11 +16,13 @@ interface Invoice {
   cliente_nome: string
   data_emissione: string
   data_scadenza: string | null
+  data_pagamento: string | null
   totale_documento: number
   netto_a_pagare: number
   status: InvoiceStatus
   descrizione: string
   listing_id: string | null
+  document_type?: 'fattura' | 'nota_credito'
 }
 
 interface InvoiceListClientProps {
@@ -62,6 +64,7 @@ export function InvoiceListClient({ invoices: initialInvoices }: InvoiceListClie
   const [invoices, setInvoices] = useState(initialInvoices)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<InvoiceStatus | 'all'>('all')
+  const [docFilter, setDocFilter] = useState<'all' | 'fattura' | 'nota_credito'>('all')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [actionLoading, setActionLoading] = useState<string | null>(null)
@@ -71,9 +74,10 @@ export function InvoiceListClient({ invoices: initialInvoices }: InvoiceListClie
       inv.numero_fattura.toLowerCase().includes(search.toLowerCase()) ||
       inv.cliente_nome.toLowerCase().includes(search.toLowerCase())
     const matchesStatus = statusFilter === 'all' || inv.status === statusFilter
+    const matchesDoc = docFilter === 'all' || (inv.document_type ?? 'fattura') === docFilter
     const matchDateFrom = !dateFrom || inv.data_emissione >= dateFrom
     const matchDateTo = !dateTo || inv.data_emissione <= dateTo
-    return matchesSearch && matchesStatus && matchDateFrom && matchDateTo
+    return matchesSearch && matchesStatus && matchesDoc && matchDateFrom && matchDateTo
   })
 
   async function handleMarkPaid(id: string) {
@@ -264,6 +268,27 @@ export function InvoiceListClient({ invoices: initialInvoices }: InvoiceListClie
         ))}
       </div>
 
+      {/* Document type filter pills */}
+      <div className="flex gap-2 flex-wrap">
+        {([
+          { value: 'all', label: 'Tutti i documenti' },
+          { value: 'fattura', label: 'Solo fatture' },
+          { value: 'nota_credito', label: 'Solo note di credito' },
+        ] as const).map(({ value, label }) => (
+          <button
+            key={value}
+            onClick={() => setDocFilter(value)}
+            className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+              docFilter === value
+                ? 'bg-foreground text-background'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {/* List */}
       {filtered.length === 0 ? (
         <div className="py-12 text-center text-muted-foreground text-sm">Nessuna fattura corrisponde ai filtri</div>
@@ -283,6 +308,9 @@ export function InvoiceListClient({ invoices: initialInvoices }: InvoiceListClie
               <Link href={`/contabilita/${inv.id}`} className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-sm font-semibold text-foreground">{inv.numero_fattura}</span>
+                  {inv.document_type === 'nota_credito' && (
+                    <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-bold text-orange-700 dark:bg-orange-950 dark:text-orange-300">NC</span>
+                  )}
                   <InvoiceStatusBadge status={inv.status} />
                 </div>
                 <p className="text-sm font-medium text-foreground truncate mt-0.5">{inv.cliente_nome}</p>
