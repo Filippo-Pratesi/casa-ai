@@ -2,9 +2,9 @@
 active: true
 iteration: 1
 session_id: 
-max_iterations: 18
+max_iterations: 0
 completion_promise: null
-started_at: "2026-03-18T17:50:13Z"
+started_at: "2026-03-19T01:29:22Z"
 ---
 
-Sprint I Banca Dati: implementa fase 4 incarico PDF, fase 5 integrazioni, fase 6 testing
+Esegui le seguenti 10 tasks in sequenza, una alla volta, con commit dopo ogni task completata:

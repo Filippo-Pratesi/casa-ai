@@ -1,5 +1,16 @@
 {
   "permissions": {
+    "allow": [
+      "mcp__Claude_Preview__preview_start",
+      "Bash(ls \"/c/Users/User/Desktop/Claude/Claude Code/casa-ai/.claude/worktrees/contabilita-v2/web/app/\\(app\\)/\")",
+      "Bash(ls \"/c/Users/User/Desktop/Claude/Claude Code/casa-ai/.claude/worktrees/contabilita-v2/web/app/\\(app\\)/settings/\")",
+      "Bash(npm run:*)",
+      "Bash(ls \"/c/Users/User/Desktop/Claude/Claude Code/casa-ai/.claude/worktrees/contabilita-v2/web/app/\\(app\\)/proposte/\")",
+      "Bash(ls \"/c/Users/User/Desktop/Claude/Claude Code/casa-ai/.claude/worktrees/contabilita-v2/web/app/\\(app\\)/proposte/[id]/\")",
+      "Bash(ls \"/c/Users/User/Desktop/Claude/Claude Code/casa-ai/.claude/worktrees/contabilita-v2/web/app/\\(app\\)/contabilita/[id]/\")",
+      "Skill(update-config)",
+      "Skill(update-config:*)"
+    ],
     "defaultMode": "bypassPermissions"
   }
 }

@@ -1,23 +1,151 @@
-I want you to create a ralph loop that does the following tasks:
+Analisi dello Stato Attuale
+Punti di forza
+Lifecycle completo: 7 stadi, transizioni validate, cronistoria append-only
+Multi-contatto: 11 ruoli per proprietà (proprietario, vicino, avvocato, etc.)
+Geocoding + vicinanza: Haversine per trovare immobili nello stesso palazzo
+Campi AI-ready: ai_score, ai_notes, labels[], metadata JSONB
+FK bidirezionale Properties ↔ Listings: flessibile, permette entrambi i flussi
+Lacune identificate
+Nessun matching automatico contatto-acquirente ↔ immobile
+Nessuna dashboard analytics su pipeline/conversione
+Nessun sistema di scoring AI operativo (campi presenti ma vuoti)
+Nessuna vista mappa — coordinate presenti ma non visualizzate
+Cronistoria non filtrata — nessuna ricerca full-text negli eventi
+Nessun sistema di alert proattivo (scadenza incarico, follow-up)
+Nessuna integrazione AI per suggerimenti automatici agli agenti
+Proposte Feature — Banca Dati come Cuore di Client Discovery
+
+Updated todo list
+Updated todo list
+
+1. AI Match Engine — "Chi cerca questo immobile?"
+Problema: L'agente ha 400+ immobili e 200+ contatti. Oggi il matching e mentale.
+
+Soluzione: Per ogni immobile, calcolare un match score con ogni contatto-acquirente basato su:
+
+Sovrapposizione budget (budget_min/max vs estimated_value)
+Citta preferite vs citta immobile
+Tipo immobile vs preferred_types
+Locali minimi vs rooms
+Metri quadri minimi vs sqm
+UI: Nella pagina dettaglio immobile, sezione "Potenziali acquirenti" con card ordinate per score. Un click → invia WhatsApp/email con dettagli immobile.
+
+Impatto AI: Gemini puo raffinare lo scoring considerando note testuali, sentimenti dalla cronistoria, e preferenze implicite.
+
+2. Vista Mappa Interattiva
+Problema: Le coordinate lat/lng esistono ma non sono visualizzate.
+
+Soluzione: Mappa Mapbox con:
+
+Pin colorati per stage (verde=incarico, rosso=sconosciuto, etc.)
+Cluster zoom per zone dense
+Click su pin → card immobile
+Filtri identici alla vista lista
+Cerchio "vicinanza" quando selezionato un immobile
+UI: Terza tab nella Banca Dati (Lista | Griglia | Mappa)
+
+3. Pipeline Analytics Dashboard
+Problema: Nessuna visione d'insieme sulla conversione.
+
+Soluzione: Dashboard con:
+
+Funnel: Sconosciuto → Ignoto → Conosciuto → Incarico → Venduto (con % conversione)
+Tempo medio per passaggio di stage
+Performance agente: quanti immobili per stage, velocita di conversione
+Mappa di calore delle zone piu attive
+Trend mensili: nuovi immobili scoperti vs venduti
+UI: Sezione in cima alla Banca Dati o pagina dedicata /banca-dati/analytics
+
+4. Smart Alerts & Follow-up System
+Problema: Gli agenti dimenticano follow-up, incarichi in scadenza, contratti locazione.
+
+Soluzione: Sistema di notifiche proattive:
+
+Incarico in scadenza (30/15/7 giorni prima)
+Nessuna interazione da X giorni (immobile "dormiente")
+Follow-up suggerito: dopo telefonata con sentiment "sta pensando", suggerire richiamo dopo 7gg
+Contratto locazione in scadenza (90/60/30/0 giorni)
+Compleanno proprietario (gia presente per contatti, estendere a property_contacts)
+Cambio mercato: se immobili simili nella zona cambiano prezzo, notificare
+UI: Badge nella sidebar + feed nella dashboard
+
+5. AI Property Valuation & Insights
+Problema: ai_score e ai_notes esistono nel DB ma sono vuoti.
+
+Soluzione: Batch job che per ogni immobile:
+
+Stima valore basato su immobili simili (zona, tipo, mq, locali, condizione)
+Score opportunita (0-100): combinazione di disposition, tempo nello stage, prezzo vs mercato
+Suggerimenti: "Questo proprietario sta pensando da 45gg → ricontattare", "Prezzo sotto mercato del 15% → alta probabilita di vendita rapida"
+Labels automatiche: "urgente", "sotto_mercato", "dormiente", "hot_lead"
+UI: Badge score sulla card immobile, sezione "Insight AI" nel dettaglio
+
+6. Quick Actions & Bulk Operations
+Problema: Azioni ripetitive (aggiungere nota, cambiare disposizione) richiedono troppi click.
+
+Soluzione:
+
+Selezione multipla nella lista → azioni bulk (cambia agente, cambia disposizione, aggiungi etichetta)
+Quick-add nota senza aprire il dettaglio (popup inline)
+Drag & drop tra colonne Kanban (vista stage come colonne)
+Shortcut tastiera: N nuova nota, T telefonata, V visita
+UI: Checkbox nella lista, toolbar azioni bulk, vista Kanban alternativa
+
+7. Ricerca Full-Text & Smart Search
+Problema: La ricerca attuale cerca solo address/city/zone. Non cerca nelle note, eventi, contatti collegati.
+
+Soluzione:
+
+Ricerca globale che include: indirizzo, citta, zona, nome proprietario, note immobile, titoli eventi, nomi contatti collegati
+Filtri combinabili con AND/OR
+Suggerimenti AI: "Cerca immobili dove il proprietario e indeciso da piu di 30 giorni in zona Centro"
+Ricerca salvata: salvare combinazioni di filtri frequenti come "preset"
+8. Property Timeline Enhancements
+Problema: La cronistoria e una lista piatta senza contesto.
+
+Soluzione:
+
+Filtro per tipo evento (solo telefonate, solo visite, etc.)
+Sentiment timeline: grafico del sentiment nel tempo
+AI summary: "Ultimo mese: 3 telefonate positive, 1 visita, proprietario passato da sta_pensando a vende_sicuramente"
+Collegamento documenti: allegare foto, PDF, documenti alla cronistoria
+Template eventi: per visite standard, auto-compilare titolo/descrizione
+9. Layout Changes Suggerite
+Area	Attuale	Proposta
+Header Banca Dati	Solo conteggi stage	+ Funnel mini-chart + valore pipeline totale
+Filtri	Dropdown standard	+ Filtri salvati + combinazioni preset
+Lista immobili	Tabella flat	+ Colonna "Score" con barra colorata + badge "hot"
+Dettaglio immobile	2 colonne	+ Sezione "Match acquirenti" + "Insight AI"
+Vista alternativa	Lista / Griglia	+ Mappa + Kanban (stage come colonne)
+Sidebar	Link statico	+ Badge conteggio alert (incarichi in scadenza, follow-up)
+Priorita consigliata
+#	Feature	Effort	Impatto	Priorita
+1	AI Match Engine	Medio	Altissimo	P0
+2	Smart Alerts	Medio	Alto	P0
+3	Pipeline Analytics	Medio	Alto	P1
+4	Vista Mappa	Basso	Alto	P1
+5	AI Valuation & Score	Alto	Altissimo	P1
+6	Quick Actions & Bulk	Basso	Medio	P2
+7	Smart Search	Medio	Medio	P2
+8	Timeline Enhancements	Basso	Medio	P2
+9	Layout Changes	Basso	Medio	P2
 
 
+1. AI Match Engine - Concordo con implementarlo ma utilizzando Deepseek per ridurre i costi operativi e ottimizza le call in modo da usare meno token possibili (es. non creare una nuova call ogni volta)
 
-Start by checking if there are unmerged commits from any branch and if there are then you need to handle them.
+2. Vista Mappa Interattiva - Solamente per gli annunci - non mostrare mappa in banca dati
 
+3. Pipeline Analytics Dashboard - Mi piace l'idea ma non mi interessa la mappa di calore delle zone piu attive. Crea pagina dedicata fuori dalla banca dati
 
+4. Smart Alerts & Follow-up System- Mi interessa
 
-1. Use Opus 4.6 and navigate the CasaAI project website at __http://localhost:3000/dashboard__ . Navigate each tab and find min 10 improvements to make to the layout better but also to improve the logic or add  functionalities. The app should look premium, modern and built in 2026.
+5. AI Property Valuation & Insights - Verra implementato successivamente quando ricevo info per una API di valutazione immobiliare. Rimandare questa feature
 
-2. Generate a new REDESIGN PROMPT.md file and save it
+6. Quick Actions & Bulk Operations - Non mi interessa
 
-3. Use Sonnet 4.6 and use file in point 2. as a prompt and make the relevant adjustments
+7. Ricerca Full-Text & Smart Search - va bene ma non usare suggerimenti AI
 
-4. Once step 3 is completed, use Opus 4.6. Navigate each tab in the CasaAI website project and find min 10 improvements to make to the layout better but also add to the logic or functionality.
+8. Property Timeline Enhancements - Soluzione da implementare - AI summary non necessario per il momento
 
-5. Generate a new EDESIGN PROMPT - 2.md and save it
+9. Layout Changes Suggerite - Ok
 
-6. Use Sonnet 4.6 and use file in point 5. as a prompt and make the relevant adjustments
-
-
-
-Loop until all the above 7 tasks are completed. When done, use Haiku 4.5 to generate a .md file with the changes implemented. Commit the changes and push them.

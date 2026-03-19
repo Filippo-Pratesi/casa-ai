@@ -154,12 +154,12 @@ export default async function ListingDetailPage({
 
   const matchingContacts: MatchingContact[] = ((allBuyerContacts ?? []) as Array<{
     id: string; name: string; phone: string | null; email: string | null
-    type: string; budget_max: number | null; preferred_cities: string[]
-    preferred_types: string[]; min_rooms: number | null; min_sqm: number | null
+    type: string; budget_max: number | null; preferred_cities: string[] | null
+    preferred_types: string[] | null; min_rooms: number | null; min_sqm: number | null
   }>).filter(c => {
     if (listing.price != null && c.budget_max !== null && c.budget_max < listing.price) return false
-    if (listing.city && c.preferred_cities.length > 0 && !c.preferred_cities.map(s => s.toLowerCase()).includes(listing.city.toLowerCase())) return false
-    if (c.preferred_types.length > 0 && listing.property_type && !c.preferred_types.includes(listing.property_type)) return false
+    if (listing.city && (c.preferred_cities?.length ?? 0) > 0 && !c.preferred_cities?.map(s => s.toLowerCase()).includes(listing.city.toLowerCase())) return false
+    if ((c.preferred_types?.length ?? 0) > 0 && listing.property_type && !c.preferred_types?.includes(listing.property_type)) return false
     if (listing.rooms != null && c.min_rooms !== null && c.min_rooms > listing.rooms) return false
     if (listing.sqm != null && c.min_sqm !== null && c.min_sqm > listing.sqm) return false
     return true
