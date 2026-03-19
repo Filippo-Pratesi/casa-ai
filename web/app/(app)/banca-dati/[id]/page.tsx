@@ -27,7 +27,7 @@ export default async function ImmobileDetailPage({ params }: { params: Promise<{
     .from('properties')
     .select(`
       *,
-      owner_contact:contacts!properties_owner_contact_id_fkey(id, name, phone, email, type, roles),
+      owner_contact:contacts!properties_owner_contact_id_fkey(id, name, phone, email, type, types),
       tenant_contact:contacts!properties_tenant_contact_id_fkey(id, name, phone, email),
       agent:users!properties_agent_id_fkey(id, name),
       listing:listings!properties_listing_id_fkey(id, address, status)

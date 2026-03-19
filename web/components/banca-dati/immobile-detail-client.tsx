@@ -473,36 +473,38 @@ export function ImmobileDetailClient({
                   <div>
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <p className="text-sm font-medium">{property.owner_contact.name}</p>
-                      {/* V/A badges: Venditore (arancio) / Acquirente (verde) */}
+                      {/* Badge V/A: Venditore (arancio) / Acquirente (verde) */}
                       {(() => {
-                        const types: string[] = Array.isArray(property.owner_contact.roles)
-                          ? property.owner_contact.roles
+                        const contactTypes: string[] = Array.isArray(property.owner_contact.types)
+                          ? property.owner_contact.types
                           : property.owner_contact.type ? [property.owner_contact.type] : []
-                        const isSeller = types.includes('seller')
-                        const isBuyer = types.includes('buyer')
-                        const tooltip = isSeller && isBuyer ? 'Venditore e acquirente'
-                          : isSeller ? 'Solo venditore'
-                          : isBuyer ? 'Solo acquirente'
-                          : ''
+                        const isSeller = contactTypes.includes('seller')
+                        const isBuyer = contactTypes.includes('buyer') || contactTypes.includes('renter')
+                        const isOnlySeller = isSeller && !isBuyer
+                        const tooltip = isSeller && isBuyer
+                          ? 'Venditore e acquirente'
+                          : isOnlySeller
+                          ? 'Solo venditore'
+                          : isBuyer
+                          ? 'Solo acquirente'
+                          : null
+                        if (!tooltip) return null
                         return (
-                          <>
-                            {isSeller && (
-                              <span
-                                title={tooltip}
-                                className="inline-flex items-center justify-center h-4 w-4 rounded text-[9px] font-extrabold bg-orange-100 text-orange-600 border border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800"
-                              >
-                                V
-                              </span>
+                          <span
+                            title={tooltip}
+                            className={cn(
+                              'inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[9px] font-bold border leading-none',
+                              isSeller && isBuyer
+                                ? 'bg-purple-50 text-purple-600 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800'
+                                : isOnlySeller
+                                ? 'bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800'
+                                : 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800'
                             )}
-                            {isBuyer && (
-                              <span
-                                title={tooltip}
-                                className="inline-flex items-center justify-center h-4 w-4 rounded text-[9px] font-extrabold bg-green-100 text-green-600 border border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800"
-                              >
-                                A
-                              </span>
-                            )}
-                          </>
+                          >
+                            {isSeller && <span>V</span>}
+                            {isSeller && isBuyer && <span className="opacity-40">/</span>}
+                            {isBuyer && <span>A</span>}
+                          </span>
                         )
                       })()}
                     </div>
@@ -701,10 +703,17 @@ export function ImmobileDetailClient({
             longitude={property.longitude}
             sqm={property.sqm}
             propertyType={property.property_type}
-            codiceComune={null}
+            codiceComune={property.city ?? null}
             zonaOmi={property.zone}
             existingCadastralData={property.cadastral_data ?? null}
             existingFetchedAt={property.cadastral_data_fetched_at ?? null}
+            onCadastralDataFetched={async (data) => {
+              await fetch('/api/catasto/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ property_id: property.id, cadastral_data: data }),
+              })
+            }}
           />
 
           {/* AI Match Engine */}
