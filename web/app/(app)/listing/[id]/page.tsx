@@ -94,7 +94,7 @@ export default async function ListingDetailPage({
 
 
   // Fetch linked property + owner contact
-  type LinkedProperty = { id: string; address: string; city: string; stage: string; owner_contact: { id: string; name: string; phone: string | null; email: string | null } | null }
+  type LinkedProperty = { id: string; address: string; city: string; stage: string; owner_contact: { id: string; name: string; phone: string | null; email: string | null; type: string | null; types: string[] | null } | null }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const propertyId = (listing as any).property_id
   let linkedProperty: LinkedProperty | null = null
@@ -102,7 +102,7 @@ export default async function ListingDetailPage({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: propData } = await (admin as any)
       .from('properties')
-      .select('id, address, city, stage, owner_contact:owner_contact_id(id, name, phone, email)')
+      .select('id, address, city, stage, owner_contact:owner_contact_id(id, name, phone, email, type, types)')
       .eq('id', propertyId)
       .single()
     if (propData) linkedProperty = propData as LinkedProperty
@@ -580,7 +580,34 @@ export default async function ListingDetailPage({
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-0.5">Proprietario</p>
-                <p className="font-semibold text-sm">{linkedPropertySnap!.owner_contact.name}</p>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <p className="font-semibold text-sm">{linkedPropertySnap!.owner_contact.name}</p>
+                  {(() => {
+                    const oc = linkedPropertySnap!.owner_contact
+                    const ctypes: string[] = Array.isArray(oc.types) ? oc.types : oc.type ? [oc.type] : []
+                    const isSeller = ctypes.includes('seller')
+                    const isBuyer = ctypes.includes('buyer') || ctypes.includes('renter')
+                    if (!isSeller && !isBuyer) return null
+                    const tooltip = isSeller && isBuyer ? 'Venditore e acquirente' : isSeller ? 'Solo venditore' : 'Solo acquirente'
+                    return (
+                      <span
+                        title={tooltip}
+                        className={[
+                          'inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[9px] font-bold border leading-none',
+                          isSeller && isBuyer
+                            ? 'bg-purple-50 text-purple-600 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800'
+                            : isSeller
+                            ? 'bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800'
+                            : 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800',
+                        ].join(' ')}
+                      >
+                        {isSeller && <span>V</span>}
+                        {isSeller && isBuyer && <span className="opacity-40">/</span>}
+                        {isBuyer && <span>A</span>}
+                      </span>
+                    )
+                  })()}
+                </div>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5">
                   {linkedPropertySnap!.owner_contact.phone && (
                     <a href={`tel:${linkedPropertySnap!.owner_contact.phone}`} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
