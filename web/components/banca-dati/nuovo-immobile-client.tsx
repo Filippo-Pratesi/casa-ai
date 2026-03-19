@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AddressAutocomplete } from './address-autocomplete'
 import { CityAutocomplete } from './city-autocomplete'
 import { ZoneSelector } from './zone-selector'
-import { PropertyCard } from './property-card'
+import { NearbyPropertiesPanel } from './nearby-properties-panel'
 import { toast } from 'sonner'
 
 interface NearbyProperty {
@@ -243,7 +243,6 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
     }
   }
 
-  const hasNearby = nearby && (nearby.same_building.length > 0 || nearby.nearby.length > 0)
   const hasPreciseAddress = !!(street.trim() && civico.trim())
 
   return (
@@ -412,42 +411,7 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
         </Card>
 
         {/* Nearby properties — shown only when precise coordinates are available */}
-        {(loadingNearby || hasNearby) && (
-          <Card className="p-5 space-y-3">
-            <h2 className="font-semibold text-sm">Immobili già noti nelle vicinanze</h2>
-            {loadingNearby ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Cercando immobili vicini...
-              </div>
-            ) : (
-              <>
-                {(nearby?.same_building ?? []).length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Stesso edificio</p>
-                    <div className="grid gap-2">
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {(nearby?.same_building ?? []).map((p: any) => (
-                        <PropertyCard key={p.id} property={p} compact />
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {(nearby?.nearby ?? []).length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Entro 100 metri</p>
-                    <div className="grid gap-2">
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {(nearby?.nearby ?? []).map((p: any) => (
-                        <PropertyCard key={p.id} property={p} compact />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </Card>
-        )}
+        <NearbyPropertiesPanel nearby={nearby} loading={loadingNearby} />
 
         {/* Optional initial note */}
         <Card className="p-5 space-y-3">

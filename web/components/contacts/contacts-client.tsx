@@ -3,10 +3,13 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
-import { UserPlus, Users, Phone, Mail, Euro, Home, Cake, LayoutGrid, List, Search, X, MapPin, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from 'lucide-react'
+import { UserPlus, Users, Phone, Mail, Euro, Home, Cake, LayoutGrid, List, Search, MapPin, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useI18n } from '@/lib/i18n/context'
 import { Button } from '@/components/ui/button'
 import { ContactTypeBadges } from './contact-type-badges'
+import { ContactsFilters } from './contacts-filters'
+import { ContactsTable } from './contacts-table'
+import type { SortKey } from './contacts-filters'
 
 // WhatsApp SVG icon (official brand icon)
 function WhatsAppIcon({ className }: { className?: string }) {
@@ -17,20 +20,20 @@ function WhatsAppIcon({ className }: { className?: string }) {
   )
 }
 
-const TYPE_COLORS: Record<string, string> = {
-  buyer: 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800',
-  seller: 'bg-green-50 text-green-700 border-green-100 dark:bg-green-950 dark:text-green-300 dark:border-green-800',
-  renter: 'bg-purple-50 text-purple-700 border-purple-100 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800',
-  landlord: 'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800',
-  other: 'bg-muted text-muted-foreground border-border',
+const TYPE_BORDER_CLASS: Record<string, string> = {
+  buyer: 'contact-card-buyer',
+  seller: 'contact-card-seller',
+  renter: 'contact-card-renter',
+  landlord: 'contact-card-landlord',
+  other: 'contact-card-other',
 }
 
-const TYPE_ACTIVE_COLORS: Record<string, string> = {
-  buyer: 'bg-blue-600 text-white border-blue-600',
-  seller: 'bg-green-600 text-white border-green-600',
-  renter: 'bg-purple-600 text-white border-purple-600',
-  landlord: 'bg-amber-500 text-white border-amber-500',
-  other: 'bg-[oklch(0.57_0.20_33)] text-white border-[oklch(0.57_0.20_33)]',
+const TYPE_AVATAR_GRADIENT: Record<string, string> = {
+  buyer: 'from-blue-500/15 to-blue-400/10 text-blue-700 ring-blue-200',
+  seller: 'from-emerald-500/15 to-emerald-400/10 text-emerald-700 ring-emerald-200',
+  renter: 'from-purple-500/15 to-purple-400/10 text-purple-700 ring-purple-200',
+  landlord: 'from-amber-500/15 to-amber-400/10 text-amber-700 ring-amber-200',
+  other: 'from-[oklch(0.57_0.20_33/0.15)] to-[oklch(0.66_0.15_188/0.10)] text-[oklch(0.50_0.18_33)] ring-[oklch(0.57_0.20_33/0.2)]',
 }
 
 interface Contact {
@@ -70,8 +73,6 @@ interface ContactsClientProps {
   perPage: number
 }
 
-type SortKey = 'date_desc' | 'date_asc' | 'budget_desc' | 'budget_asc'
-
 export function ContactsClient({ contacts, isAdmin, total, page, perPage }: ContactsClientProps) {
   const { t } = useI18n()
   const router = useRouter()
@@ -90,14 +91,6 @@ export function ContactsClient({ contacts, isAdmin, total, page, perPage }: Cont
     router.push(`${pathname}?${params.toString()}`)
   }
 
-  const TYPE_LABELS: Record<string, string> = useMemo(() => ({
-    buyer: t('contacts.type.buyer'),
-    seller: t('contacts.type.seller'),
-    renter: t('contacts.type.renter'),
-    landlord: t('contacts.type.landlord'),
-    other: t('contacts.type.other'),
-  }), [t])
-
   function toggleType(type: string) {
     setActiveTypes(prev => {
       const next = new Set(prev)
@@ -106,8 +99,6 @@ export function ContactsClient({ contacts, isAdmin, total, page, perPage }: Cont
       return next
     })
   }
-
-  const hasFilters = activeTypes.size > 0 || citySearch.trim() || budgetMax
 
   function clearFilters() {
     setActiveTypes(new Set())
@@ -181,66 +172,17 @@ export function ContactsClient({ contacts, isAdmin, total, page, perPage }: Cont
 
       {/* Filter bar */}
       {contacts.length > 0 && (
-        <div className="animate-in-2 rounded-2xl border border-border bg-card p-4 space-y-3 shadow-sm">
-          <div className="flex flex-wrap gap-1.5">
-            {Object.entries(TYPE_LABELS).map(([key, label]) => {
-              const active = activeTypes.has(key)
-              return (
-                <button
-                  key={key}
-                  onClick={() => toggleType(key)}
-                  aria-pressed={active}
-                  className={`rounded-full border px-3 py-1 text-xs font-medium transition-all duration-150 ${active ? TYPE_ACTIVE_COLORS[key] : TYPE_COLORS[key] + ' hover:opacity-80'}`}
-                >
-                  {label}
-                </button>
-              )
-            })}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <div className="relative flex-1 min-w-[160px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-              <input
-                value={citySearch}
-                onChange={e => setCitySearch(e.target.value)}
-                placeholder={t('contacts.filter.searchPlaceholder')}
-                className="w-full rounded-lg border border-border bg-background pl-8 pr-3 py-2 text-sm placeholder-muted-foreground"
-              />
-            </div>
-            <div className="relative min-w-[140px]">
-              <Euro className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-              <input
-                type="number"
-                value={budgetMax}
-                onChange={e => setBudgetMax(e.target.value)}
-                placeholder={t('contacts.filter.budgetMax')}
-                className="w-full rounded-lg border border-border bg-background pl-8 pr-3 py-2 text-sm placeholder-muted-foreground"
-              />
-            </div>
-            <div className="relative min-w-[160px]">
-              <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-              <select
-                value={sortBy}
-                onChange={e => setSortBy(e.target.value as SortKey)}
-                className="w-full rounded-lg border border-border bg-background pl-8 pr-3 py-2 text-sm text-foreground appearance-none cursor-pointer"
-              >
-                <option value="date_desc">Più recenti</option>
-                <option value="date_asc">Meno recenti</option>
-                <option value="budget_desc">Budget alto</option>
-                <option value="budget_asc">Budget basso</option>
-              </select>
-            </div>
-            {hasFilters && (
-              <button
-                onClick={clearFilters}
-                className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-muted transition-colors"
-              >
-                <X className="h-3.5 w-3.5" />
-                {t('contacts.filter.clear')}
-              </button>
-            )}
-          </div>
-        </div>
+        <ContactsFilters
+          activeTypes={activeTypes}
+          citySearch={citySearch}
+          budgetMax={budgetMax}
+          sortBy={sortBy}
+          onToggleType={toggleType}
+          onCitySearchChange={setCitySearch}
+          onBudgetMaxChange={setBudgetMax}
+          onSortByChange={setSortBy}
+          onClearFilters={clearFilters}
+        />
       )}
 
       {/* Empty state */}
@@ -270,39 +212,16 @@ export function ContactsClient({ contacts, isAdmin, total, page, perPage }: Cont
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((c, i) => (
             <div key={c.id} className={`animate-in-${Math.min(i + 3, 8)}`}>
-              <ContactCard contact={c} typeLabels={TYPE_LABELS} />
+              <ContactCard contact={c} />
             </div>
           ))}
         </div>
       ) : (
-        <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
-          <div className="grid grid-cols-[1fr_80px_120px_120px_80px_110px_110px] gap-2 px-4 py-2.5 border-b border-border bg-muted/50">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('contacts.col.name')}</p>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('contacts.col.type')}</p>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('contacts.col.phone')}</p>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('contacts.col.email')}</p>
-            <button
-              onClick={() => setSortBy(s => s === 'budget_desc' ? 'budget_asc' : 'budget_desc')}
-              className="flex items-center gap-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
-            >
-              {t('contacts.col.budget')}
-              {sortBy === 'budget_desc' ? <ArrowDown className="h-3 w-3" /> : sortBy === 'budget_asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowUpDown className="h-3 w-3 opacity-40" />}
-            </button>
-            <button
-              onClick={() => setSortBy(s => s === 'date_desc' ? 'date_asc' : 'date_desc')}
-              className="flex items-center gap-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
-            >
-              Aggiunto
-              {sortBy === 'date_desc' ? <ArrowDown className="h-3 w-3" /> : sortBy === 'date_asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowUpDown className="h-3 w-3 opacity-40" />}
-            </button>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Da chi</p>
-          </div>
-          <div className="divide-y divide-border">
-            {filtered.map((c) => (
-              <ContactRow key={c.id} contact={c} typeLabels={TYPE_LABELS} />
-            ))}
-          </div>
-        </div>
+        <ContactsTable
+          contacts={filtered}
+          sortBy={sortBy}
+          onSortByChange={setSortBy}
+        />
       )}
 
       {/* Pagination */}
@@ -352,27 +271,9 @@ export function ContactsClient({ contacts, isAdmin, total, page, perPage }: Cont
   )
 }
 
-// Type-colored left border accents
-const TYPE_BORDER_CLASS: Record<string, string> = {
-  buyer: 'contact-card-buyer',
-  seller: 'contact-card-seller',
-  renter: 'contact-card-renter',
-  landlord: 'contact-card-landlord',
-  other: 'contact-card-other',
-}
-
-// Avatar gradient per type
-const TYPE_AVATAR_GRADIENT: Record<string, string> = {
-  buyer: 'from-blue-500/15 to-blue-400/10 text-blue-700 ring-blue-200',
-  seller: 'from-emerald-500/15 to-emerald-400/10 text-emerald-700 ring-emerald-200',
-  renter: 'from-purple-500/15 to-purple-400/10 text-purple-700 ring-purple-200',
-  landlord: 'from-amber-500/15 to-amber-400/10 text-amber-700 ring-amber-200',
-  other: 'from-[oklch(0.57_0.20_33/0.15)] to-[oklch(0.66_0.15_188/0.10)] text-[oklch(0.50_0.18_33)] ring-[oklch(0.57_0.20_33/0.2)]',
-}
-
 // ── Card component ─────────────────────────────────────────────────────────────
 
-function ContactCard({ contact: c, typeLabels }: { contact: Contact; typeLabels: Record<string, string> }) {
+function ContactCard({ contact: c }: { contact: Contact }) {
   const { t } = useI18n()
   const initials = c.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
   const borderClass = TYPE_BORDER_CLASS[c.type] ?? 'contact-card-other'
@@ -472,86 +373,6 @@ function ContactCard({ contact: c, typeLabels }: { contact: Contact; typeLabels:
           )}
         </div>
       )}
-    </div>
-  )
-}
-
-// ── Row component (table view) ─────────────────────────────────────────────────
-// Note: uses div+onClick instead of Link to avoid nested <a> hydration error
-// (WhatsApp and mailto links are <a> tags inside, so outer must NOT be <a>)
-
-function ContactRow({ contact: c, typeLabels }: { contact: Contact; typeLabels: Record<string, string> }) {
-  const router = useRouter()
-  const { t } = useI18n()
-  const days = birthdayDaysLeft(c.date_of_birth)
-
-  return (
-    <div
-      onClick={() => router.push(`/contacts/${c.id}`)}
-      className="grid grid-cols-[1fr_80px_120px_120px_80px_110px_110px] gap-2 items-center px-4 py-3 hover:bg-muted/40 transition-colors cursor-pointer group"
-    >
-      <div className="min-w-0">
-        <div className="flex items-center gap-1.5">
-          <p className="text-sm font-medium truncate group-hover:text-[oklch(0.57_0.20_33)] transition-colors">{c.name}</p>
-          {days !== null && (
-            <span className="flex items-center gap-0.5 rounded-full bg-pink-50 border border-pink-200 px-1.5 py-0.5 text-[9px] font-medium text-pink-700 shrink-0">
-              <Cake className="h-2 w-2" />
-              {days === 0 ? t('common.today') : `${days}${t('common.days')}`}
-            </span>
-          )}
-        </div>
-        {(c.preferred_cities ?? []).length > 0 && (
-          <p className="text-xs text-muted-foreground truncate">{(c.preferred_cities ?? []).join(', ')}</p>
-        )}
-      </div>
-      <div className="flex flex-col gap-0.5">
-        <ContactTypeBadges types={c.types} type={c.type} size="xs" />
-      </div>
-      <div className="flex items-center gap-1.5 min-w-0" onClick={e => e.stopPropagation()}>
-        {c.phone ? (
-          <>
-            <span className="text-xs text-muted-foreground truncate flex-1">{c.phone}</span>
-            <a
-              href={`https://wa.me/${c.phone.replace(/\D/g, '')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              title={t('common.whatsapp')}
-              className="text-green-600 hover:text-green-700 transition-colors shrink-0"
-            >
-              <WhatsAppIcon className="h-3.5 w-3.5" />
-            </a>
-          </>
-        ) : (
-          <span className="text-xs text-muted-foreground/30">—</span>
-        )}
-      </div>
-      <div className="flex items-center gap-1.5 min-w-0" onClick={e => e.stopPropagation()}>
-        {c.email ? (
-          <>
-            <span className="text-xs text-muted-foreground truncate flex-1">{c.email}</span>
-            <a
-              href={`mailto:${c.email}`}
-              title={t('common.sendEmail')}
-              className="text-[oklch(0.57_0.20_33)] hover:opacity-80 transition-opacity shrink-0"
-            >
-              <Mail className="h-3.5 w-3.5" />
-            </a>
-          </>
-        ) : (
-          <span className="text-xs text-muted-foreground/30">—</span>
-        )}
-      </div>
-      <p className="text-xs text-muted-foreground">
-        {(c.budget_min || c.budget_max)
-          ? `€${(c.budget_max ?? c.budget_min)!.toLocaleString('it-IT')}`
-          : '—'}
-      </p>
-      <p className="text-xs text-muted-foreground">
-        {new Date(c.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' })}
-      </p>
-      <p className="text-xs text-muted-foreground truncate" title={c.agent_name ?? undefined}>
-        {c.agent_name ?? '—'}
-      </p>
     </div>
   )
 }

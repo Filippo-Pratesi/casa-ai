@@ -9,15 +9,6 @@ import {
 } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
 import {
   Select,
   SelectContent,
@@ -25,9 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { PropertyStageBadge, type PropertyStage, STAGE_CONFIG } from './property-stage-icon'
@@ -37,6 +25,10 @@ import { EventTimeline, type PropertyEvent } from './event-timeline'
 import { PropertyCard } from './property-card'
 import { AiMatchPanel } from './ai-match-panel'
 import { CadastralPanel } from './cadastral-panel'
+import { EditDetailsDialog } from './edit-details-dialog'
+import { AddContactDialog } from './add-contact-dialog'
+import { IncaricoDialog } from './incarico-dialog'
+import { LocatoDialog } from './locato-dialog'
 
 const ROLE_LABELS: Record<string, string> = {
   proprietario: 'Proprietario',
@@ -144,73 +136,12 @@ export function ImmobileDetailClient({
 
   // Incarico dialog
   const [incaricoOpen, setIncaricoOpen] = useState(false)
-  const [incaricoType, setIncaricoType] = useState<string>('esclusivo')
-  const [incaricoDate, setIncaricoDate] = useState('')
-  const [incaricoExpiry, setIncaricoExpiry] = useState('')
-  const [incaricoCommission, setIncaricoCommission] = useState('')
-  const [incaricoNotes, setIncaricoNotes] = useState('')
 
   // Locato dialog
   const [locatoOpen, setLocatoOpen] = useState(false)
-  const [leaseType, setLeaseType] = useState<string>('4_plus_4')
-  const [leaseStart, setLeaseStart] = useState('')
-  const [leaseEnd, setLeaseEnd] = useState('')
-  const [monthlyRent, setMonthlyRent] = useState('')
-  const [deposit, setDeposit] = useState('')
-  const [leaseNotes, setLeaseNotes] = useState('')
 
   // Edit details dialog
   const [editDetailsOpen, setEditDetailsOpen] = useState(false)
-  const [editForm, setEditForm] = useState({
-    property_type: property.property_type ?? '',
-    transaction_type: property.transaction_type ?? '',
-    sqm: property.sqm ? String(property.sqm) : '',
-    rooms: property.rooms ? String(property.rooms) : '',
-    bathrooms: property.bathrooms ? String(property.bathrooms) : '',
-    floor: property.floor != null ? String(property.floor) : '',
-    total_floors: property.total_floors ? String(property.total_floors) : '',
-    condition: property.condition ?? '',
-    estimated_value: property.estimated_value ? String(property.estimated_value) : '',
-    doorbell: property.doorbell ?? '',
-    building_notes: property.building_notes ?? '',
-  })
-  const [savingDetails, setSavingDetails] = useState(false)
-
-  async function handleSaveDetails() {
-    setSavingDetails(true)
-    try {
-      const payload: Record<string, unknown> = {
-        property_type: editForm.property_type || null,
-        transaction_type: editForm.transaction_type || null,
-        sqm: editForm.sqm ? parseInt(editForm.sqm, 10) : null,
-        rooms: editForm.rooms ? parseInt(editForm.rooms, 10) : null,
-        bathrooms: editForm.bathrooms ? parseInt(editForm.bathrooms, 10) : null,
-        floor: editForm.floor !== '' ? parseInt(editForm.floor, 10) : null,
-        total_floors: editForm.total_floors ? parseInt(editForm.total_floors, 10) : null,
-        condition: editForm.condition || null,
-        estimated_value: editForm.estimated_value ? parseInt(editForm.estimated_value, 10) : null,
-        doorbell: editForm.doorbell.trim() || null,
-        building_notes: editForm.building_notes.trim() || null,
-      }
-      const res = await fetch(`/api/properties/${property.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({ error: 'Errore' }))
-        throw new Error(data.error || 'Errore salvataggio')
-      }
-      const { property: updated } = await res.json()
-      setProperty(updated)
-      setEditDetailsOpen(false)
-      toast.success('Dettagli aggiornati')
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Errore')
-    } finally {
-      setSavingDetails(false)
-    }
-  }
 
   // Disposition change
   const [changingDisposition, setChangingDisposition] = useState(false)
@@ -243,12 +174,6 @@ export function ImmobileDetailClient({
 
   // Add contact dialog
   const [addContactOpen, setAddContactOpen] = useState(false)
-  const [contactSearch, setContactSearch] = useState('')
-  const [contactRole, setContactRole] = useState('altro')
-  const [contactNotes, setContactNotes] = useState('')
-  const [contactResults, setContactResults] = useState<{ id: string; name: string; phone: string | null }[]>([])
-  const [selectedContact, setSelectedContact] = useState<{ id: string; name: string } | null>(null)
-  const [addingContact, setAddingContact] = useState(false)
 
   const canAdvance = isAdmin || isOwner
   // For incarico stage, next step depends on transaction_type: affitto → locato, else → venduto
@@ -303,51 +228,6 @@ export function ImmobileDetailClient({
     }
   }
 
-  async function handleConfirmIncarico() {
-    if (!incaricoDate || !incaricoCommission) {
-      toast.error('Data e provvigione sono obbligatorie')
-      return
-    }
-    const commission = parseFloat(incaricoCommission)
-    if (isNaN(commission) || commission <= 0 || commission > 20) {
-      toast.error('Provvigione deve essere tra 0% e 20%')
-      return
-    }
-    setIncaricoOpen(false)
-    await doAdvanceStage('incarico', {
-      incarico_type: incaricoType,
-      incarico_date: incaricoDate,
-      incarico_expiry: incaricoExpiry || null,
-      incarico_commission_percent: commission,
-      incarico_notes: incaricoNotes || null,
-    })
-  }
-
-  async function handleConfirmLocato() {
-    if (!leaseType || !leaseStart || !leaseEnd || !monthlyRent) {
-      toast.error('Tipo contratto, date e canone sono obbligatori')
-      return
-    }
-    const rent = parseInt(monthlyRent, 10)
-    if (isNaN(rent) || rent <= 0) {
-      toast.error('Canone mensile deve essere > 0')
-      return
-    }
-    if (leaseEnd <= leaseStart) {
-      toast.error('La data di fine deve essere successiva alla data di inizio')
-      return
-    }
-    setLocatoOpen(false)
-    await doAdvanceStage('locato', {
-      lease_type: leaseType,
-      lease_start_date: leaseStart,
-      lease_end_date: leaseEnd,
-      monthly_rent: rent,
-      deposit: deposit ? parseInt(deposit, 10) : null,
-      lease_notes: leaseNotes || null,
-    })
-  }
-
   async function handleDownloadIncaricoPdf() {
     setGeneratingPdf(true)
     try {
@@ -367,54 +247,6 @@ export function ImmobileDetailClient({
       toast.error(err instanceof Error ? err.message : 'Errore generazione PDF')
     } finally {
       setGeneratingPdf(false)
-    }
-  }
-
-  async function searchContacts(q: string) {
-    setContactSearch(q)
-    if (q.length < 2) { setContactResults([]); return }
-    const res = await fetch(`/api/contacts?q=${encodeURIComponent(q)}`)
-    if (res.ok) {
-      const data = await res.json()
-      setContactResults((data.contacts ?? []).slice(0, 8))
-    }
-  }
-
-  async function handleAddContact() {
-    if (!selectedContact) return
-    setAddingContact(true)
-    try {
-      const res = await fetch(`/api/properties/${property.id}/contacts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contact_id: selectedContact.id,
-          role: contactRole,
-          notes: contactNotes.trim() || null,
-        }),
-      })
-      if (!res.ok) {
-        const { error } = await res.json()
-        throw new Error(error)
-      }
-      toast.success('Contatto aggiunto')
-      setAddContactOpen(false)
-      setSelectedContact(null)
-      setContactSearch('')
-      setContactRole('altro')
-      setContactNotes('')
-      // Reload contacts
-      const cRes = await fetch(`/api/properties/${property.id}/contacts`)
-      if (cRes.ok) {
-        const cData = await cRes.json()
-        setContacts(Array.isArray(cData.contacts) ? cData.contacts : [])
-      } else {
-        toast.error('Contatto aggiunto ma impossibile ricaricare la lista')
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Errore')
-    } finally {
-      setAddingContact(false)
     }
   }
 
@@ -603,22 +435,7 @@ export function ImmobileDetailClient({
                   variant="ghost"
                   size="sm"
                   className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-                  onClick={() => {
-                    setEditForm({
-                      property_type: property.property_type ?? '',
-                      transaction_type: property.transaction_type ?? '',
-                      sqm: property.sqm ? String(property.sqm) : '',
-                      rooms: property.rooms ? String(property.rooms) : '',
-                      bathrooms: property.bathrooms ? String(property.bathrooms) : '',
-                      floor: property.floor != null ? String(property.floor) : '',
-                      total_floors: property.total_floors ? String(property.total_floors) : '',
-                      condition: property.condition ?? '',
-                      estimated_value: property.estimated_value ? String(property.estimated_value) : '',
-                      doorbell: property.doorbell ?? '',
-                      building_notes: property.building_notes ?? '',
-                    })
-                    setEditDetailsOpen(true)
-                  }}
+                  onClick={() => setEditDetailsOpen(true)}
                   title="Modifica dettagli"
                 >
                   <Pencil className="h-3.5 w-3.5" />
@@ -924,305 +741,44 @@ export function ImmobileDetailClient({
         </div>
       </div>
 
-      {/* Add contact dialog */}
-      <Dialog open={addContactOpen} onOpenChange={setAddContactOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Aggiungi contatto</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <div className="space-y-1.5">
-              <Label>Cerca contatto</Label>
-              <Input
-                placeholder="Nome, telefono..."
-                value={contactSearch}
-                onChange={(e) => searchContacts(e.target.value)}
-              />
-              {contactResults.length > 0 && (
-                <div className="rounded-lg border border-border max-h-40 overflow-auto">
-                  {contactResults.map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => { setSelectedContact(c); setContactSearch(c.name); setContactResults([]) }}
-                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/50"
-                    >
-                      <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">
-                        {c.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="font-medium">{c.name}</p>
-                        {c.phone && <p className="text-xs text-muted-foreground">{c.phone}</p>}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-              {selectedContact && (
-                <p className="text-xs text-green-600 dark:text-green-400">✓ Selezionato: {selectedContact.name}</p>
-              )}
-            </div>
+      <AddContactDialog
+        open={addContactOpen}
+        onOpenChange={setAddContactOpen}
+        propertyId={property.id}
+        onAdded={async () => {
+          const cRes = await fetch(`/api/properties/${property.id}/contacts`)
+          if (cRes.ok) {
+            const cData = await cRes.json()
+            setContacts(Array.isArray(cData.contacts) ? cData.contacts : [])
+          } else {
+            toast.error('Contatto aggiunto ma impossibile ricaricare la lista')
+          }
+        }}
+      />
 
-            <div className="space-y-1.5">
-              <Label>Ruolo *</Label>
-              <Select value={contactRole} onValueChange={(v) => setContactRole(v ?? '')}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(ROLE_LABELS).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+      <EditDetailsDialog
+        open={editDetailsOpen}
+        onOpenChange={setEditDetailsOpen}
+        property={property}
+        onSaved={(updated) => {
+          setProperty(updated as typeof property)
+          setEditDetailsOpen(false)
+        }}
+      />
 
-            <div className="space-y-1.5">
-              <Label>Note (opzionale)</Label>
-              <Input
-                value={contactNotes}
-                onChange={(e) => setContactNotes(e.target.value)}
-                placeholder="Es. Ha le chiavi, contattare dopo le 18..."
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAddContactOpen(false)}>Annulla</Button>
-            <Button onClick={handleAddContact} disabled={!selectedContact || addingContact}>
-              {addingContact ? 'Aggiungendo...' : 'Aggiungi'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <IncaricoDialog
+        open={incaricoOpen}
+        onOpenChange={setIncaricoOpen}
+        advancing={advancing}
+        onConfirm={(payload) => doAdvanceStage('incarico', payload)}
+      />
 
-      {/* Edit details dialog */}
-      <Dialog open={editDetailsOpen} onOpenChange={setEditDetailsOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Modifica dettagli immobile</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Tipo immobile</Label>
-                <Select value={editForm.property_type || 'none'} onValueChange={(v) => setEditForm(f => ({ ...f, property_type: v === 'none' ? '' : v }))}>
-                  <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">— Non specificato —</SelectItem>
-                    <SelectItem value="apartment">Appartamento</SelectItem>
-                    <SelectItem value="house">Casa</SelectItem>
-                    <SelectItem value="villa">Villa</SelectItem>
-                    <SelectItem value="commercial">Commerciale</SelectItem>
-                    <SelectItem value="land">Terreno</SelectItem>
-                    <SelectItem value="garage">Garage</SelectItem>
-                    <SelectItem value="other">Altro</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Tipo operazione</Label>
-                <Select value={editForm.transaction_type || 'none'} onValueChange={(v) => setEditForm(f => ({ ...f, transaction_type: v === 'none' ? '' : v }))}>
-                  <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">— Non specificato —</SelectItem>
-                    <SelectItem value="vendita">Vendita</SelectItem>
-                    <SelectItem value="affitto">Affitto</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1.5">
-                <Label>Superficie (mq)</Label>
-                <Input type="number" min="0" value={editForm.sqm} onChange={(e) => setEditForm(f => ({ ...f, sqm: e.target.value }))} placeholder="Es. 85" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Locali</Label>
-                <Input type="number" min="0" value={editForm.rooms} onChange={(e) => setEditForm(f => ({ ...f, rooms: e.target.value }))} placeholder="Es. 3" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Bagni</Label>
-                <Input type="number" min="0" value={editForm.bathrooms} onChange={(e) => setEditForm(f => ({ ...f, bathrooms: e.target.value }))} placeholder="Es. 1" />
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1.5">
-                <Label>Piano</Label>
-                <Input type="number" value={editForm.floor} onChange={(e) => setEditForm(f => ({ ...f, floor: e.target.value }))} placeholder="Es. 2" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Piani totali</Label>
-                <Input type="number" min="1" value={editForm.total_floors} onChange={(e) => setEditForm(f => ({ ...f, total_floors: e.target.value }))} placeholder="Es. 4" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Condizioni</Label>
-                <Select value={editForm.condition || 'none'} onValueChange={(v) => setEditForm(f => ({ ...f, condition: v === 'none' ? '' : v }))}>
-                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">— —</SelectItem>
-                    <SelectItem value="nuovo">Nuovo</SelectItem>
-                    <SelectItem value="ottimo">Ottimo</SelectItem>
-                    <SelectItem value="buono">Buono</SelectItem>
-                    <SelectItem value="da_ristrutturare">Da ristrutturare</SelectItem>
-                    <SelectItem value="in_costruzione">In costruzione</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Valutazione (€)</Label>
-                <Input type="number" min="0" value={editForm.estimated_value} onChange={(e) => setEditForm(f => ({ ...f, estimated_value: e.target.value }))} placeholder="Es. 180000" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Campanello</Label>
-                <Input value={editForm.doorbell} onChange={(e) => setEditForm(f => ({ ...f, doorbell: e.target.value }))} placeholder="Es. Rossi / Int. 4" />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Note palazzo</Label>
-              <Textarea value={editForm.building_notes} onChange={(e) => setEditForm(f => ({ ...f, building_notes: e.target.value }))} rows={2} placeholder="Es. Palazzo anni '60, 4 piani, no ascensore..." />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDetailsOpen(false)} disabled={savingDetails}>Annulla</Button>
-            <Button onClick={handleSaveDetails} disabled={savingDetails}>
-              {savingDetails ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-              Salva
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Incarico dialog */}
-      <Dialog open={incaricoOpen} onOpenChange={setIncaricoOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Avvia Incarico</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <div className="space-y-1.5">
-              <Label>Tipo incarico *</Label>
-              <Select value={incaricoType} onValueChange={(v) => setIncaricoType(v ?? 'esclusivo')}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="esclusivo">Esclusivo</SelectItem>
-                  <SelectItem value="non_esclusivo">Non esclusivo</SelectItem>
-                  <SelectItem value="mediazione">Mediazione</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Data firma *</Label>
-                <Input type="date" value={incaricoDate} onChange={(e) => setIncaricoDate(e.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Scadenza incarico</Label>
-                <Input type="date" value={incaricoExpiry} onChange={(e) => setIncaricoExpiry(e.target.value)} />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Provvigione (%) *</Label>
-              <Input
-                type="number"
-                step="0.5"
-                min="0"
-                max="10"
-                value={incaricoCommission}
-                onChange={(e) => setIncaricoCommission(e.target.value)}
-                placeholder="Es. 3"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Note incarico</Label>
-              <Textarea
-                value={incaricoNotes}
-                onChange={(e) => setIncaricoNotes(e.target.value)}
-                placeholder="Condizioni particolari, accordi..."
-                rows={2}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIncaricoOpen(false)}>Annulla</Button>
-            <Button onClick={handleConfirmIncarico} disabled={advancing}>
-              {advancing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-              Conferma incarico
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Locato dialog */}
-      <Dialog open={locatoOpen} onOpenChange={setLocatoOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Registra Locazione</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <div className="space-y-1.5">
-              <Label>Tipo contratto *</Label>
-              <Select value={leaseType} onValueChange={(v) => setLeaseType(v ?? '4_plus_4')}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="4_plus_4">4+4</SelectItem>
-                  <SelectItem value="3_plus_2">3+2</SelectItem>
-                  <SelectItem value="transitorio">Transitorio</SelectItem>
-                  <SelectItem value="foresteria">Foresteria</SelectItem>
-                  <SelectItem value="altro">Altro</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Data inizio *</Label>
-                <Input type="date" value={leaseStart} onChange={(e) => setLeaseStart(e.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Data fine *</Label>
-                <Input type="date" value={leaseEnd} onChange={(e) => setLeaseEnd(e.target.value)} />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Canone mensile (€) *</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  value={monthlyRent}
-                  onChange={(e) => setMonthlyRent(e.target.value)}
-                  placeholder="Es. 800"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Deposito cauzionale (€)</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  value={deposit}
-                  onChange={(e) => setDeposit(e.target.value)}
-                  placeholder="Es. 2400"
-                />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Note locazione</Label>
-              <Textarea
-                value={leaseNotes}
-                onChange={(e) => setLeaseNotes(e.target.value)}
-                placeholder="Condizioni particolari, clausole..."
-                rows={2}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setLocatoOpen(false)}>Annulla</Button>
-            <Button onClick={handleConfirmLocato} disabled={advancing}>
-              {advancing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-              Registra locazione
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <LocatoDialog
+        open={locatoOpen}
+        onOpenChange={setLocatoOpen}
+        advancing={advancing}
+        onConfirm={(payload) => doAdvanceStage('locato', payload)}
+      />
     </div>
   )
 }

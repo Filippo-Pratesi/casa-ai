@@ -3,34 +3,16 @@
 import { useRouter, usePathname } from 'next/navigation'
 import { useState, useCallback, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { Plus, Search, X, ChevronLeft, ChevronRight, ArrowUp, ArrowDown, ChevronsUpDown, Building2, LayoutGrid, LayoutList, HelpCircle } from 'lucide-react'
-import { formatDistanceToNow } from 'date-fns'
-import { it } from 'date-fns/locale'
+import { Plus, X, ChevronLeft, ChevronRight, Building2 } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-} from '@/components/ui/select'
 import { cn } from '@/lib/utils'
-import { PropertyCard, type PropertyCardData } from './property-card'
-import { PropertyStageBadge, STAGE_CONFIG, type PropertyStage } from './property-stage-icon'
-import { DispositionIcon, DISPOSITION_CONFIG } from './disposition-icon'
+import { type PropertyCardData } from './property-card'
+import { STAGE_CONFIG, type PropertyStage } from './property-stage-icon'
+import { DISPOSITION_CONFIG } from './disposition-icon'
+import { BancaDatiFilters } from './banca-dati-filters'
+import { BancaDatiTable } from './banca-dati-table'
 
 const STAGES: PropertyStage[] = ['sconosciuto', 'ignoto', 'conosciuto', 'incarico', 'venduto', 'locato', 'disponibile']
-
-const PROPERTY_TYPE_IT: Record<string, string> = {
-  apartment: 'Apt.', house: 'Casa', villa: 'Villa',
-  commercial: 'Comm.', land: 'Terreno', garage: 'Garage', other: 'Altro',
-}
-
-function splitAddress(address: string): { street: string; civic: string } {
-  const match = address.match(/^(.+?)\s+(\d+[a-zA-Z0-9\/]*)$/)
-  if (match) return { street: match[1], civic: match[2] }
-  return { street: address, civic: '' }
-}
 
 const DEFAULT_WIDTHS: Record<string, number> = {
   city: 90, zone: 90, sub_zone: 70, street: 160, civic: 52,
@@ -73,6 +55,8 @@ const SORT_OPTIONS = [
   { value: 'value_desc',      label: 'Prezzo decrescente' },
   { value: 'value_asc',       label: 'Prezzo crescente' },
 ]
+// SORT_OPTIONS kept for potential future use (e.g. a sort dropdown)
+void SORT_OPTIONS
 
 export function BancaDatiClient({
   properties,
@@ -267,222 +251,45 @@ export function BancaDatiClient({
       </div>
 
       {/* Filter bar */}
-      <div className="rounded-xl border border-border/60 bg-muted/20 p-3 space-y-2">
-        {/* Row 1: Search */}
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-          <Input
-            ref={searchInputRef}
-            placeholder="Cerca via, città, zona…"
-            value={searchText}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                if (debounceRef.current) clearTimeout(debounceRef.current)
-                updateUrl({ q: searchText, page: '1' })
-              }
-            }}
-            className="pl-8 h-8 text-sm bg-background"
-          />
-          {searchText && (
-            <button
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              onClick={() => handleSearchChange('')}
-            >
-              <X className="h-3 w-3" />
-            </button>
-          )}
-        </div>
-
-        {/* Row 2: Filters */}
-        <div className="flex flex-wrap gap-2">
-          {/* Città filter */}
-          {cities.length > 0 && (
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[10px] font-medium text-muted-foreground px-0.5">Città</span>
-              <Select
-                value={initialFilters.city || 'all'}
-                onValueChange={(v) => {
-                  // When city changes, clear zone too
-                  updateUrl({ city: !v || v === 'all' ? '' : v, zone: '', page: '1' })
-                }}
-              >
-                <SelectTrigger className="h-8 w-[130px] text-sm">
-                  <span className="truncate">{initialFilters.city || 'Tutte'}</span>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tutte</SelectItem>
-                  {cities.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* Zona filter — cascades from city */}
-          {filteredZones.length > 0 && (
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[10px] font-medium text-muted-foreground px-0.5">Zona</span>
-              <Select
-                value={initialFilters.zone || 'all'}
-                onValueChange={(v) => updateUrl({ zone: !v || v === 'all' ? '' : v, page: '1' })}
-              >
-                <SelectTrigger className="h-8 w-[140px] text-sm">
-                  <span className="truncate">{initialFilters.zone || 'Tutte'}</span>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tutte</SelectItem>
-                  {filteredZones.map((z) => <SelectItem key={`${z.city}:${z.name}`} value={z.name}>{z.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* Operazione */}
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-medium text-muted-foreground px-0.5">Operazione</span>
-            <Select
-              value={initialFilters.transaction_type || 'all'}
-              onValueChange={(v) => updateUrl({ transaction_type: !v || v === 'all' ? '' : v, page: '1' })}
-            >
-              <SelectTrigger className="h-8 w-[120px] text-sm">
-                <span className="truncate">
-                  {initialFilters.transaction_type === 'vendita' ? 'Vendita' : initialFilters.transaction_type === 'affitto' ? 'Affitto' : 'Tutte'}
-                </span>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tutte</SelectItem>
-                <SelectItem value="vendita">Vendita</SelectItem>
-                <SelectItem value="affitto">Affitto</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Stato proprietario */}
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-medium text-muted-foreground px-0.5">Stato proprietario</span>
-            <Select
-              value={initialFilters.disposition || 'all'}
-              onValueChange={(v) => updateUrl({ disposition: !v || v === 'all' ? '' : v, page: '1' })}
-            >
-              <SelectTrigger className="h-8 w-[160px] text-sm">
-                <span className="truncate">
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {initialFilters.disposition ? ((DISPOSITION_CONFIG as any)[initialFilters.disposition]?.label ?? initialFilters.disposition) : 'Tutti'}
-                </span>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tutti</SelectItem>
-                {Object.entries(DISPOSITION_CONFIG).map(([key, cfg]) => (
-                  <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Agente (admin only) */}
-          {isAdmin && agents.length > 1 && (
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[10px] font-medium text-muted-foreground px-0.5">Agente</span>
-              <Select
-                value={initialFilters.agent_id || 'all'}
-                onValueChange={(v) => updateUrl({ agent_id: !v || v === 'all' ? '' : v, page: '1' })}
-              >
-                <SelectTrigger className="h-8 w-[140px] text-sm">
-                  <span className="truncate">
-                    {initialFilters.agent_id ? (agents.find(a => a.id === initialFilters.agent_id)?.name ?? 'Agente') : 'Tutti'}
-                  </span>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tutti</SelectItem>
-                  {agents.map((a) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* Via filter */}
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-medium text-muted-foreground px-0.5">Via</span>
-            <div className="relative">
-              <Input
-                placeholder="es. Garibaldi"
-                value={streetText}
-                onChange={(e) => setStreetText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') updateUrl({ street: streetText, page: '1' })
-                }}
-                onBlur={() => {
-                  if (streetText !== initialFilters.street) updateUrl({ street: streetText, page: '1' })
-                }}
-                className="h-8 w-[140px] text-sm bg-background pr-6"
-              />
-              {streetText && (
-                <button
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  onClick={() => { setStreetText(''); updateUrl({ street: '', page: '1' }) }}
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Civico filter */}
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-medium text-muted-foreground px-0.5">Civico</span>
-            <div className="relative">
-              <Input
-                placeholder="es. 12"
-                value={civicText}
-                onChange={(e) => setCivicText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') updateUrl({ civic: civicText, page: '1' })
-                }}
-                onBlur={() => {
-                  if (civicText !== initialFilters.civic) updateUrl({ civic: civicText, page: '1' })
-                }}
-                className="h-8 w-[80px] text-sm bg-background pr-6"
-              />
-              {civicText && (
-                <button
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  onClick={() => { setCivicText(''); updateUrl({ civic: '', page: '1' }) }}
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* View toggle + legend — right-aligned */}
-          <div className="ml-auto flex items-end gap-1">
-            {/* View mode + Legend */}
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setShowLegend(v => !v)}
-                title="Mostra legenda"
-                className={cn('flex h-8 w-8 items-center justify-center rounded-lg transition-colors', showLegend ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted')}
-              >
-                <HelpCircle className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => updateUrl({ viewMode: 'grid', page: '1' })}
-                title="Vista griglia"
-                className={cn('flex h-8 w-8 items-center justify-center rounded-lg transition-colors', initialFilters.viewMode === 'grid' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted')}
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => updateUrl({ viewMode: 'list', page: '1' })}
-                title="Vista lista"
-                className={cn('flex h-8 w-8 items-center justify-center rounded-lg transition-colors', initialFilters.viewMode !== 'grid' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted')}
-              >
-                <LayoutList className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <BancaDatiFilters
+        searchText={searchText}
+        onSearchChange={handleSearchChange}
+        onSearchCommit={() => {
+          if (debounceRef.current) clearTimeout(debounceRef.current)
+          updateUrl({ q: searchText, page: '1' })
+        }}
+        searchInputRef={searchInputRef}
+        streetText={streetText}
+        onStreetTextChange={setStreetText}
+        onStreetCommit={() => {
+          if (streetText !== initialFilters.street) updateUrl({ street: streetText, page: '1' })
+        }}
+        onStreetClear={() => { setStreetText(''); updateUrl({ street: '', page: '1' }) }}
+        civicText={civicText}
+        onCivicTextChange={setCivicText}
+        onCivicCommit={() => {
+          if (civicText !== initialFilters.civic) updateUrl({ civic: civicText, page: '1' })
+        }}
+        onCivicClear={() => { setCivicText(''); updateUrl({ civic: '', page: '1' }) }}
+        selectedCity={initialFilters.city}
+        selectedZone={initialFilters.zone}
+        selectedTransactionType={initialFilters.transaction_type}
+        selectedDisposition={initialFilters.disposition}
+        selectedAgentId={initialFilters.agent_id}
+        currentViewMode={initialFilters.viewMode}
+        cities={cities}
+        filteredZones={filteredZones}
+        agents={agents}
+        isAdmin={isAdmin}
+        onCityChange={(city) => updateUrl({ city, zone: '', page: '1' })}
+        onZoneChange={(zone) => updateUrl({ zone, page: '1' })}
+        onTransactionTypeChange={(transaction_type) => updateUrl({ transaction_type, page: '1' })}
+        onDispositionChange={(disposition) => updateUrl({ disposition, page: '1' })}
+        onAgentChange={(agent_id) => updateUrl({ agent_id, page: '1' })}
+        onViewModeChange={(viewMode) => updateUrl({ viewMode, page: '1' })}
+        showLegend={showLegend}
+        onToggleLegend={() => setShowLegend(v => !v)}
+      />
 
       {/* Active filter pills */}
       {activePills.length > 0 && (
@@ -548,149 +355,19 @@ export function BancaDatiClient({
       )}
 
       {/* Property grid / list */}
-      {properties.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border/60 py-16 text-center">
-          <Building2 className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" />
-          <p className="text-muted-foreground font-medium">
-            {hasFilters ? 'Nessun immobile corrisponde ai filtri selezionati' : 'Nessun immobile ancora'}
-          </p>
-          {hasFilters ? (
-            <button onClick={clearFilters} className="mt-2 text-sm text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors">
-              Rimuovi filtri
-            </button>
-          ) : (
-            <Link href="/banca-dati/nuovo" className={buttonVariants({ variant: 'outline' }) + ' mt-4'}>
-              <Plus className="h-4 w-4 mr-2" />
-              Aggiungi il primo immobile
-            </Link>
-          )}
-        </div>
-      ) : initialFilters.viewMode !== 'grid' ? (
-        <div className="rounded-xl border border-border overflow-hidden bg-card select-none">
-          <div className="overflow-x-auto">
-          {/* Headers */}
-          <div className="flex items-center bg-muted/40 border-b border-border/60 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            {([
-              { key: 'city', label: 'Città', sortAsc: 'city_asc', sortDesc: 'city_desc' },
-              { key: 'zone', label: 'Zona', hiddenBelow: 'lg' },
-              { key: 'sub_zone', label: 'SZ', hiddenBelow: 'xl' },
-              { key: 'street', label: 'Via' },
-              { key: 'civic', label: 'N.' },
-              { key: 'agent', label: 'Agente', hiddenBelow: 'xl' },
-              { key: 'price', label: 'Prezzo', hiddenBelow: 'lg', sortAsc: 'value_asc', sortDesc: 'value_desc' },
-              { key: 'owner', label: 'Proprietario', hiddenBelow: 'xl' },
-              { key: 'stage', label: 'Stage' },
-              { key: 'disposition', label: 'St.' },
-              { key: 'op', label: 'Op.', hiddenBelow: 'lg' },
-              { key: 'type', label: 'Tipologia', hiddenBelow: 'xl' },
-              { key: 'last_event', label: 'Ultima nota', hiddenBelow: 'xl' },
-              { key: 'updated', label: 'Agg.', hiddenBelow: 'md', sortAsc: 'updated_at_asc', sortDesc: 'updated_at_desc' },
-            ] as { key: string; label: string; hiddenBelow?: string; sortAsc?: string; sortDesc?: string }[]).map(({ key, label, hiddenBelow, sortAsc, sortDesc }) => {
-              const currentSort = initialFilters.sort || 'updated_at_desc'
-              const isSortedAsc = sortAsc && currentSort === sortAsc
-              const isSortedDesc = sortDesc && currentSort === sortDesc
-              const isSortable = !!(sortAsc && sortDesc)
-              function handleSortClick() {
-                if (!isSortable) return
-                if (isSortedDesc) {
-                  updateUrl({ sort: sortAsc!, page: '1' })
-                } else {
-                  updateUrl({ sort: sortDesc!, page: '1' })
-                }
-              }
-              return (
-                <div
-                  key={key}
-                  style={{ width: colWidths[key], minWidth: colWidths[key] }}
-                  className={cn(
-                    'relative shrink-0 px-2 py-2 whitespace-nowrap',
-                    hiddenBelow === 'lg' && 'hidden lg:block',
-                    hiddenBelow === 'xl' && 'hidden xl:block',
-                    hiddenBelow === 'md' && 'hidden md:block',
-                    isSortable && 'cursor-pointer select-none hover:text-foreground transition-colors',
-                    (isSortedAsc || isSortedDesc) && 'text-foreground',
-                  )}
-                  onClick={isSortable ? handleSortClick : undefined}
-                >
-                  <span className="flex items-center gap-0.5">
-                    {label}
-                    {isSortable && (
-                      isSortedAsc ? <ArrowUp className="h-3 w-3 shrink-0" /> :
-                      isSortedDesc ? <ArrowDown className="h-3 w-3 shrink-0" /> :
-                      <ChevronsUpDown className="h-3 w-3 shrink-0 opacity-40" />
-                    )}
-                  </span>
-                  <div
-                    className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary/40 active:bg-primary/60 z-10"
-                    onMouseDown={(e) => { e.stopPropagation(); startResize(key, e) }}
-                  />
-                </div>
-              )
-            })}
-            <div className="w-8 shrink-0" />
-          </div>
-          {/* Rows — inside shared scroll container */}
-          {properties.map((p) => {
-            const { street, civic } = splitAddress(p.address)
-            const lastEv = (p as PropertyCardData & { last_event?: { title: string; event_date: string } | null }).last_event
-            return (
-              <Link
-                key={p.id}
-                href={`/banca-dati/${p.id}`}
-                className="group relative flex items-center border-b border-border/20 last:border-0 hover:bg-[oklch(0.57_0.20_33/0.10)] dark:hover:bg-[oklch(0.57_0.20_33/0.18)] hover:[box-shadow:inset_0_0_0_1.5px_oklch(0.57_0.20_33/0.35)] transition-all cursor-pointer z-0 hover:z-10"
-              >
-                <div style={{ width: colWidths.city, minWidth: colWidths.city }} className="shrink-0 px-2 py-2 text-xs text-muted-foreground truncate">{p.city}</div>
-                <div style={{ width: colWidths.zone, minWidth: colWidths.zone }} className="hidden lg:block shrink-0 px-2 py-2 text-xs text-muted-foreground truncate">{p.zone ?? <span className="opacity-30">—</span>}</div>
-                <div style={{ width: colWidths.sub_zone, minWidth: colWidths.sub_zone }} className="hidden xl:block shrink-0 px-2 py-2 text-xs text-muted-foreground truncate">{(p as PropertyCardData & { sub_zone?: string | null }).sub_zone ?? <span className="opacity-30">—</span>}</div>
-                <div style={{ width: colWidths.street, minWidth: colWidths.street }} className="shrink-0 px-2 py-2 text-sm font-medium truncate">{street}</div>
-                <div style={{ width: colWidths.civic, minWidth: colWidths.civic }} className="shrink-0 px-2 py-2 text-xs text-muted-foreground tabular-nums">{civic}</div>
-                <div style={{ width: colWidths.agent, minWidth: colWidths.agent }} className="hidden xl:block shrink-0 px-2 py-2 text-xs text-muted-foreground truncate">{(p as PropertyCardData & { agent_name?: string | null }).agent_name ?? <span className="opacity-30">—</span>}</div>
-                <div style={{ width: colWidths.price, minWidth: colWidths.price }} className="hidden lg:block shrink-0 px-2 py-2 text-xs font-semibold tabular-nums">{p.estimated_value ? `€${p.estimated_value.toLocaleString('it-IT')}` : <span className="opacity-30">—</span>}</div>
-                <div style={{ width: colWidths.owner, minWidth: colWidths.owner }} className="hidden xl:block shrink-0 px-2 py-2 text-xs text-muted-foreground truncate">{p.owner_name ?? <span className="opacity-30">—</span>}</div>
-                <div style={{ width: colWidths.stage, minWidth: colWidths.stage }} className="shrink-0 px-2 py-1.5"><PropertyStageBadge stage={p.stage} /></div>
-                <div style={{ width: colWidths.disposition, minWidth: colWidths.disposition }} className="shrink-0 px-1 py-2 flex items-center justify-center"><DispositionIcon disposition={p.owner_disposition} /></div>
-                <div style={{ width: colWidths.op, minWidth: colWidths.op }} className="hidden lg:flex shrink-0 px-2 py-2 items-center">
-                  {p.transaction_type ? (
-                    <span className={cn(
-                      'rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none',
-                      p.transaction_type === 'affitto'
-                        ? 'bg-purple-100 text-purple-600 dark:bg-purple-950/60 dark:text-purple-400'
-                        : 'bg-blue-100 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400'
-                    )}>
-                      {p.transaction_type === 'affitto' ? 'Affitto' : 'Vendita'}
-                    </span>
-                  ) : <span className="opacity-30 text-xs">—</span>}
-                </div>
-                <div style={{ width: colWidths.type, minWidth: colWidths.type }} className="hidden xl:block shrink-0 px-2 py-2 text-xs text-muted-foreground truncate">{PROPERTY_TYPE_IT[(p as PropertyCardData & { property_type?: string | null }).property_type ?? ''] ?? <span className="opacity-30">—</span>}</div>
-                <div
-                  style={{ width: colWidths.last_event, minWidth: colWidths.last_event }}
-                  className="hidden xl:block shrink-0 px-2 py-1.5 min-w-0"
-                  title={lastEv ? `${lastEv.title} · ${formatDistanceToNow(new Date(lastEv.event_date), { addSuffix: true, locale: it })}` : undefined}
-                >
-                  {lastEv ? (
-                    <>
-                      <p className="text-xs text-foreground/80 truncate leading-tight">{lastEv.title}</p>
-                      <p className="text-[10px] text-muted-foreground/60 leading-tight mt-0.5">{formatDistanceToNow(new Date(lastEv.event_date), { addSuffix: false, locale: it })}</p>
-                    </>
-                  ) : <span className="text-xs opacity-30">—</span>}
-                </div>
-                <div style={{ width: colWidths.updated, minWidth: colWidths.updated }} className="hidden md:block shrink-0 px-2 py-2 text-xs text-muted-foreground text-right">{formatDistanceToNow(new Date(p.updated_at), { addSuffix: false, locale: it })}</div>
-                <div className="w-8 shrink-0 flex items-center justify-center">
-                  <ChevronRight className="h-3.5 w-3.5 text-muted-foreground opacity-40 group-hover:opacity-100 transition-opacity" />
-                </div>
-              </Link>
-            )
-          })}
-          </div>
-          {/* /overflow-x-auto */}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {properties.map((p) => (
-            <PropertyCard key={p.id} property={p} />
-          ))}
-        </div>
-      )}
+      <BancaDatiTable
+        properties={properties}
+        isLoading={false}
+        hasFilters={hasFilters}
+        viewMode={initialFilters.viewMode}
+        currentSort={initialFilters.sort || 'updated_at_desc'}
+        colWidths={colWidths}
+        onSort={(sortAsc, sortDesc, isSortedDesc) => {
+          updateUrl({ sort: isSortedDesc ? sortAsc : sortDesc, page: '1' })
+        }}
+        onStartResize={startResize}
+        onClearFilters={clearFilters}
+      />
 
       {/* Pagination */}
       {totalPages > 1 && (
