@@ -90,6 +90,9 @@ export function BancaDatiClient({
   const [showLegend, setShowLegend] = useState(false)
   const [colWidths, setColWidths] = useState(DEFAULT_WIDTHS)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Ref to the search input — used to prevent URL re-syncs from overwriting
+  // text the user is actively typing (race between debounce + server re-render).
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   function startResize(col: string, e: React.MouseEvent) {
     e.preventDefault()
@@ -107,20 +110,42 @@ export function BancaDatiClient({
     document.addEventListener('mouseup', onUp)
   }
 
-  // Debounced search — auto-applies 400ms after typing
+  // Debounced search — auto-applies 500ms after typing stops.
+  // Does NOT block typing: the input state updates immediately, only the
+  // server navigation is debounced.
   const handleSearchChange = useCallback((value: string) => {
     setSearchText(value)
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
-      const params = buildParams({ q: value, page: '1' })
-      router.push(`${pathname}?${params}`)
-    }, 400)
-  }, [pathname, router]) // eslint-disable-line react-hooks/exhaustive-deps
+      const params = new URLSearchParams()
+      // Build params inline to avoid stale-closure issues with buildParams
+      const current = {
+        stage: initialFilters.stage, city: initialFilters.city,
+        zone: initialFilters.zone, agent_id: initialFilters.agent_id,
+        disposition: initialFilters.disposition, transaction_type: initialFilters.transaction_type,
+        sort: initialFilters.sort, viewMode: initialFilters.viewMode,
+        q: value, page: '1',
+      }
+      Object.entries(current).forEach(([k, v]) => {
+        if (!v) return
+        if (k === 'sort' && v === 'updated_at_desc') return
+        if (k === 'viewMode' && v === 'list') return
+        params.set(k, v)
+      })
+      router.push(`${pathname}?${params.toString()}`)
+    }, 500)
+  }, [pathname, router, initialFilters]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current) }, [])
 
-  // Sync search text when URL q param changes (e.g. browser back/forward)
-  useEffect(() => { setSearchText(initialFilters.q) }, [initialFilters.q])
+  // Sync URL→input ONLY when the user is NOT typing (input not focused).
+  // This prevents the server re-render triggered by debounce from overwriting
+  // characters the user is currently typing in rapid succession.
+  useEffect(() => {
+    if (document.activeElement !== searchInputRef.current) {
+      setSearchText(initialFilters.q)
+    }
+  }, [initialFilters.q])
 
   const buildParams = useCallback((updates: Record<string, string>) => {
     const params = new URLSearchParams()
@@ -237,6 +262,7 @@ export function BancaDatiClient({
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
           <Input
+            ref={searchInputRef}
             placeholder="Cerca via, città, zona…"
             value={searchText}
             onChange={(e) => handleSearchChange(e.target.value)}

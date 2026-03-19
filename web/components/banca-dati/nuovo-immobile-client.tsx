@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Loader2, Building2, User } from 'lucide-react'
@@ -43,7 +43,10 @@ export function NuovoImmobileClient({ agentDefaultZones }: NuovoImmobileClientPr
   const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
 
-  const [address, setAddress] = useState('')
+  // Address is split into street (from autocomplete) + civico (house number)
+  // Coordinates are resolved only after both street and civico are set.
+  const [street, setStreet] = useState('')
+  const [civico, setCivico] = useState('')
   const [city, setCity] = useState('')
   const [cityProximity, setCityProximity] = useState<string | null>(null)
   const [latitude, setLatitude] = useState<number | null>(null)
@@ -66,6 +69,9 @@ export function NuovoImmobileClient({ agentDefaultZones }: NuovoImmobileClientPr
 
   const [nearby, setNearby] = useState<NearbyResult | null>(null)
   const [loadingNearby, setLoadingNearby] = useState(false)
+  const [geocodingCivico, setGeocodingCivico] = useState(false)
+
+  const civicGeoDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Auto-set zone from agent defaults when city changes
   useEffect(() => {
@@ -75,25 +81,73 @@ export function NuovoImmobileClient({ agentDefaultZones }: NuovoImmobileClientPr
     }
   }, [city, zone, agentDefaultZones])
 
-  // Load nearby when coordinates are set
+  // When street or civico change: geocode the full address to get precise coordinates.
+  // Coordinates are only fetched when BOTH street and civico are non-empty,
+  // ensuring the nearby search uses a building-level point (not a street centroid).
   useEffect(() => {
-    if (!latitude || !longitude) return
+    if (civicGeoDebounceRef.current) clearTimeout(civicGeoDebounceRef.current)
+
+    if (!street.trim() || !civico.trim()) {
+      // No precise address yet — clear coordinates
+      setLatitude(null)
+      setLongitude(null)
+      return
+    }
+
+    civicGeoDebounceRef.current = setTimeout(async () => {
+      setGeocodingCivico(true)
+      try {
+        const q = `${street.trim()} ${civico.trim()}`
+        const url = `/api/geocode?q=${encodeURIComponent(q)}&country=it${cityProximity ? `&proximity=${cityProximity}` : ''}`
+        const res = await fetch(url)
+        if (!res.ok) return
+        const data = await res.json()
+        const first = data.suggestions?.[0]
+        if (first?.latitude && first?.longitude) {
+          setLatitude(first.latitude)
+          setLongitude(first.longitude)
+        }
+      } catch { /* non-fatal */ } finally {
+        setGeocodingCivico(false)
+      }
+    }, 500)
+
+    return () => { if (civicGeoDebounceRef.current) clearTimeout(civicGeoDebounceRef.current) }
+  }, [street, civico, cityProximity])
+
+  // Load nearby when precise coordinates are available (requires both street + civico)
+  useEffect(() => {
+    if (!latitude || !longitude) {
+      setNearby(null)
+      return
+    }
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 5000)
     setLoadingNearby(true)
     fetch(`/api/properties/nearby?lat=${latitude}&lng=${longitude}&radius=100`, { signal: controller.signal })
       .then((r) => r.json())
-      .then((data) => setNearby(data))
+      .then((data: unknown) => {
+        // Guard against error responses — only update state if response has expected shape
+        const typed = data as Partial<NearbyResult>
+        if (typed && Array.isArray(typed.same_building) && Array.isArray(typed.nearby)) {
+          setNearby(typed as NearbyResult)
+        }
+      })
       .catch((err) => { if (err?.name !== 'AbortError') console.error('Nearby fetch failed:', err) })
       .finally(() => { clearTimeout(timeoutId); setLoadingNearby(false) })
     return () => { clearTimeout(timeoutId); controller.abort() }
   }, [latitude, longitude])
 
   function handleAddressSelect(suggestion: { address: string; city: string; latitude: number; longitude: number }) {
-    setAddress(suggestion.address)
-    setCity(suggestion.city)
-    setLatitude(suggestion.latitude)
-    setLongitude(suggestion.longitude)
+    // Set the street name only — coordinates are resolved when the civic number is entered.
+    setStreet(suggestion.address)
+    // Auto-fill city from Mapbox if not already set by CityAutocomplete
+    if (!city && suggestion.city) {
+      setCity(suggestion.city)
+    }
+    // Clear any previously resolved coordinates until civic is entered
+    setLatitude(null)
+    setLongitude(null)
   }
 
   async function searchContacts(q: string) {
@@ -114,10 +168,12 @@ export function NuovoImmobileClient({ agentDefaultZones }: NuovoImmobileClientPr
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!address.trim()) { toast.error('L\'indirizzo è obbligatorio'); return }
+    if (!street.trim()) { toast.error('L\'indirizzo è obbligatorio'); return }
     if (!city.trim()) { toast.error('La città è obbligatoria'); return }
     if (!zone.trim()) { toast.error('La zona è obbligatoria'); return }
-    if (!latitude || !longitude) { toast.error('Seleziona un indirizzo dai suggerimenti per ottenere le coordinate'); return }
+
+    // Combined address for storage
+    const address = civico.trim() ? `${street.trim()} ${civico.trim()}` : street.trim()
 
     setSubmitting(true)
     try {
@@ -125,8 +181,10 @@ export function NuovoImmobileClient({ agentDefaultZones }: NuovoImmobileClientPr
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          address: address.trim(), city: city.trim(), zone: zone.trim(),
-          sub_zone: subZone.trim() || null, latitude, longitude,
+          address, city: city.trim(), zone: zone.trim(),
+          sub_zone: subZone.trim() || null,
+          latitude: latitude ?? null,
+          longitude: longitude ?? null,
           doorbell: doorbell.trim() || null,
           building_notes: buildingNotes.trim() || null,
           initial_note: initialNote.trim() || null,
@@ -181,6 +239,7 @@ export function NuovoImmobileClient({ agentDefaultZones }: NuovoImmobileClientPr
   }
 
   const hasNearby = nearby && (nearby.same_building.length > 0 || nearby.nearby.length > 0)
+  const hasPreciseAddress = !!(street.trim() && civico.trim())
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -218,19 +277,49 @@ export function NuovoImmobileClient({ agentDefaultZones }: NuovoImmobileClientPr
             />
           </div>
 
-          {/* Address with Mapbox autocomplete */}
+          {/* Street + Civic number on the same row */}
           <div className="space-y-1.5">
-            <Label>Indirizzo *</Label>
-            <AddressAutocomplete
-              value={address}
-              onChange={setAddress}
-              onSelect={handleAddressSelect}
-              placeholder="Via Roma 12..."
-              proximity={cityProximity ?? undefined}
-            />
-            {latitude && longitude && (
+            <Label>Via / Indirizzo *</Label>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <AddressAutocomplete
+                  value={street}
+                  onChange={setStreet}
+                  onSelect={handleAddressSelect}
+                  placeholder="Via Roma, Viale Mazzini…"
+                  proximity={cityProximity ?? undefined}
+                />
+              </div>
+              <div className="w-24 shrink-0">
+                <Input
+                  value={civico}
+                  onChange={(e) => setCivico(e.target.value)}
+                  placeholder="N° civico"
+                  aria-label="Numero civico"
+                />
+              </div>
+            </div>
+
+            {/* Coordinate status */}
+            {!hasPreciseAddress && street.trim() && (
+              <p className="text-xs text-muted-foreground">
+                Inserisci il numero civico per ottenere le coordinate precise e cercare immobili vicini.
+              </p>
+            )}
+            {hasPreciseAddress && geocodingCivico && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Ricerca coordinate…
+              </p>
+            )}
+            {hasPreciseAddress && !geocodingCivico && latitude && longitude && (
               <p className="text-xs text-green-600 dark:text-green-400">
                 ✓ Coordinate acquisite ({latitude.toFixed(5)}, {longitude.toFixed(5)})
+              </p>
+            )}
+            {hasPreciseAddress && !geocodingCivico && !latitude && (
+              <p className="text-xs text-amber-600 dark:text-amber-400">
+                ⚠ Coordinate non trovate — l&apos;immobile verrà salvato senza posizione.
               </p>
             )}
           </div>
@@ -269,7 +358,7 @@ export function NuovoImmobileClient({ agentDefaultZones }: NuovoImmobileClientPr
             />
           </div>
 
-          {/* Transaction type + property type (optional, can be set later) */}
+          {/* Transaction type + property type */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Tipo operazione</Label>
@@ -301,7 +390,7 @@ export function NuovoImmobileClient({ agentDefaultZones }: NuovoImmobileClientPr
           </div>
         </Card>
 
-        {/* Nearby properties (appears after coordinate selection) */}
+        {/* Nearby properties — shown only when precise coordinates are available */}
         {(loadingNearby || hasNearby) && (
           <Card className="p-5 space-y-3">
             <h2 className="font-semibold text-sm">Immobili già noti nelle vicinanze</h2>

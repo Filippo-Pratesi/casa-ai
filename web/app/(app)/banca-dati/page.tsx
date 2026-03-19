@@ -86,11 +86,11 @@ export default async function BancaDatiPage({
   if (disposition) query = query.eq('owner_disposition', disposition)
   if (transaction_type) query = query.eq('transaction_type', transaction_type)
 
-  // FIX: use GIN-indexed full-text search instead of ILIKE '%...%'
-  // Falls back to ILIKE only if the search_vector column doesn't exist yet
-  // (i.e. before migration 050 is applied).
+  // Text search across address, city, and zone.
+  // Uses ILIKE for broad compatibility; when migration 050 is applied to the live
+  // DB the search_vector GIN index will be used via textSearch instead.
   if (q) {
-    query = query.textSearch('search_vector', q, { type: 'websearch', config: 'italian' })
+    query = query.or(`address.ilike.%${q}%,city.ilike.%${q}%,zone.ilike.%${q}%`)
   }
 
   const { data, count } = await query
