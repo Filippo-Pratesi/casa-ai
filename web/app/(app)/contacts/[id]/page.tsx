@@ -9,6 +9,7 @@ import { DeleteContactButton } from '@/components/contacts/delete-contact-button
 import { PrivacyConsentSection } from '@/components/contacts/privacy-consent-section'
 import { AttachmentsSection } from '@/components/shared/attachments-section'
 import { BirthdayCard } from '@/components/contacts/birthday-card'
+import { ContactCronistoria } from '@/components/contacts/contact-cronistoria'
 import { CONTACT_TYPE_COLORS as TYPE_COLORS, CONTACT_TYPE_LABELS as TYPE_LABELS } from '@/lib/contact-utils'
 
 interface MatchingListing {
@@ -112,6 +113,7 @@ export default async function ContactDetailPage({
     { data: ownerProps },
     { data: tenantProps },
     { data: contactLinks },
+    { data: cronistoriaData },
   ] = await Promise.all([
     contact.agent_id
       ? admin.from('users').select('name').eq('id', contact.agent_id).single()
@@ -147,9 +149,26 @@ export default async function ContactDetailPage({
       .eq('workspace_id', profile?.workspace_id)
       .eq('contact_id', id)
       .limit(20),
+    // Cronistoria contatto
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (admin as any)
+      .from('contact_events')
+      .select('id, event_type, title, body, event_date, created_at, related_property_id, related_listing_id, agent:users!contact_events_agent_id_fkey(name)')
+      .eq('contact_id', id)
+      .eq('workspace_id', profile?.workspace_id)
+      .order('event_date', { ascending: false })
+      .limit(100),
   ])
 
   const agentName: string | null = (agentData as { name: string } | null)?.name ?? null
+
+  // Normalize cronistoria events
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const cronistoriaEvents = ((cronistoriaData ?? []) as any[]).map((e) => ({
+    ...e,
+    agent_name: e.agent?.name ?? null,
+    agent: undefined,
+  }))
   const appointments = (appointmentsData ?? []) as { id: string; title: string; starts_at: string; type: string }[]
   // Apply city/type filters client-side (DB array contains not straightforward with ilike)
   const rawMatchingListings = (matchingListingsResult.data ?? []) as Array<MatchingListing>
@@ -508,10 +527,16 @@ export default async function ContactDetailPage({
         </div>
       )}
 
+      {/* Cronistoria contatto */}
+      <ContactCronistoria
+        contactId={id}
+        initialEvents={cronistoriaEvents}
+      />
+
       {/* Activity timeline — B2: semantic list markup */}
       {appointments && appointments.length > 0 && (
         <div className="rounded-xl border border-border bg-muted/30 px-4 py-4">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-4">Attività recente</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-4">Appuntamenti</p>
           <ul role="list" aria-label="Cronologia appuntamenti" className="border-l-2 border-border pl-4 space-y-4 relative">
             {appointments.map((appt: { id: string; title: string; starts_at: string; type: string }) => (
               <li key={appt.id} className="relative">
