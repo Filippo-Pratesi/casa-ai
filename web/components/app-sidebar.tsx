@@ -101,7 +101,7 @@ export function AppSidebar({
           <div className="flex items-center gap-3 px-3 py-2.5">
             {/* Logo */}
             <div className="shrink-0">
-              <img src="/logo.png" alt="CasaAI" className="h-11 w-auto object-contain" />
+              <img src="/logo.png" alt="CasaAI" className="h-14 w-auto object-contain" />
             </div>
             <div className="min-w-0">
               <p

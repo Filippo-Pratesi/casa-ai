@@ -3,7 +3,8 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Loader2, ChevronDown, ChevronUp } from 'lucide-react'
+import { Loader2, ChevronDown, ChevronUp, Plus, MapPin } from 'lucide-react'
+import Link from 'next/link'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -33,7 +34,7 @@ interface ContactFormProps {
 
 interface FormState {
   name: string
-  type: string
+  types: string[]
   email: string
   phone: string
   city_of_residence: string
@@ -49,7 +50,7 @@ interface FormState {
 
 const INITIAL: FormState = {
   name: '',
-  type: 'buyer',
+  types: ['buyer'],
   email: '',
   phone: '',
   city_of_residence: '',
@@ -63,14 +64,13 @@ const INITIAL: FormState = {
   min_rooms: '',
 }
 
-const isBuyerLike = (type: string) => type === 'buyer' || type === 'renter'
+const isBuyerLike = (types: string[]) => types.includes('buyer') || types.includes('renter')
 
 export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [form, setForm] = useState<FormState>({ ...INITIAL, ...defaultValues })
   const [showPrefs, setShowPrefs] = useState(
-    // Open by default if any preference is already set (edit mode)
     !!(defaultValues?.budget_min || defaultValues?.budget_max ||
        defaultValues?.preferred_cities || defaultValues?.min_rooms || defaultValues?.min_sqm ||
        (defaultValues?.preferred_types && (defaultValues.preferred_types as string[]).length > 0))
@@ -87,6 +87,18 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
     setForm((prev) => ({ ...prev, [field]: value }))
   }
 
+  function toggleType(value: string) {
+    setForm((prev) => {
+      const current = prev.types
+      if (current.includes(value)) {
+        // Don't allow deselecting the last type
+        if (current.length === 1) return prev
+        return { ...prev, types: current.filter((t) => t !== value) }
+      }
+      return { ...prev, types: [...current, value] }
+    })
+  }
+
   function togglePrefType(value: string) {
     setForm((prev) => ({
       ...prev,
@@ -99,7 +111,8 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
   function buildPayload() {
     return {
       name: form.name.trim(),
-      type: form.type,
+      types: form.types,
+      type: form.types[0], // primary type for backward compat
       email: form.email.trim() || null,
       phone: form.phone.trim() || null,
       city_of_residence: form.city_of_residence.trim() || null,
@@ -159,14 +172,12 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ contact_id: data.id, role: propertyRole }),
             })
-            // If proprietario and property was sconosciuto, advance stage
             if (propertyRole === 'proprietario') {
               await fetch(`/api/properties/${selectedProperty.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ owner_contact_id: data.id }),
               })
-              // Advance: sconosciuto→conosciuto, ignoto→conosciuto
               if (selectedProperty.stage === 'sconosciuto' || selectedProperty.stage === 'ignoto') {
                 await fetch(`/api/properties/${selectedProperty.id}/advance`, {
                   method: 'POST',
@@ -175,7 +186,6 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
                 })
               }
             } else if (selectedProperty.stage === 'sconosciuto') {
-              // Non-proprietario contact on sconosciuto → advance to ignoto
               await fetch(`/api/properties/${selectedProperty.id}/advance`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -197,25 +207,36 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
   return (
     <form onSubmit={handleSubmit} className="max-w-xl space-y-0 divide-y divide-border">
 
-      {/* Tipo cliente */}
+      {/* Tipo cliente — multi-select */}
       <section className="pt-0 pb-6 space-y-3">
-        <h2 className="text-base font-semibold">Tipo cliente</h2>
-        <div className="flex flex-wrap gap-2">
-          {CONTACT_TYPES.map((ct) => (
-            <button
-              key={ct.value}
-              type="button"
-              onClick={() => update('type', ct.value)}
-              className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-all
-                ${form.type === ct.value
-                  ? 'border-[oklch(0.57_0.20_33)] bg-[oklch(0.57_0.20_33)] text-white'
-                  : 'border-border bg-card text-foreground hover:border-muted-foreground/50 hover:bg-muted'
-                }`}
-            >
-              {ct.label}
-            </button>
-          ))}
+        <div>
+          <h2 className="text-base font-semibold">Tipo cliente</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">Puoi selezionare più tipologie contemporaneamente</p>
         </div>
+        <div className="flex flex-wrap gap-2">
+          {CONTACT_TYPES.map((ct) => {
+            const active = form.types.includes(ct.value)
+            return (
+              <button
+                key={ct.value}
+                type="button"
+                onClick={() => toggleType(ct.value)}
+                className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-all
+                  ${active
+                    ? 'border-[oklch(0.57_0.20_33)] bg-[oklch(0.57_0.20_33)] text-white'
+                    : 'border-border bg-card text-foreground hover:border-muted-foreground/50 hover:bg-muted'
+                  }`}
+              >
+                {ct.label}
+              </button>
+            )
+          })}
+        </div>
+        {form.types.length > 1 && (
+          <p className="text-xs text-[oklch(0.57_0.20_33)]">
+            {form.types.map(t => CONTACT_TYPES.find(c => c.value === t)?.label).join(' + ')}
+          </p>
+        )}
       </section>
 
       {/* Dati anagrafici */}
@@ -289,8 +310,8 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
         </div>
       </section>
 
-      {/* Preferenze ricerca — opzionale, collapsible, solo per acquirenti/affittuari */}
-      {isBuyerLike(form.type) && (
+      {/* Preferenze ricerca — solo per acquirenti/affittuari */}
+      {isBuyerLike(form.types) && (
         <section className="py-6 space-y-4">
           <button
             type="button"
@@ -409,10 +430,10 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
 
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label>Cerca immobile</Label>
+              <Label>Cerca immobile in banca dati</Label>
               <div className="relative">
                 <Input
-                  placeholder="Via, città..."
+                  placeholder="Inizia a digitare via, città..."
                   value={propertySearch}
                   onChange={(e) => searchProperties(e.target.value)}
                   autoComplete="off"
@@ -421,38 +442,61 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
                   <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
                 )}
               </div>
+
+              {/* Autocomplete dropdown */}
               {propertyResults.length > 0 && !selectedProperty && (
-                <div className="rounded-lg border border-border max-h-40 overflow-auto">
+                <div className="rounded-lg border border-border shadow-sm max-h-48 overflow-auto">
                   {propertyResults.map((p) => (
                     <button
                       key={p.id}
                       type="button"
                       onClick={() => { setSelectedProperty(p); setPropertySearch(`${p.address}, ${p.city}`); setPropertyResults([]) }}
-                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/50"
+                      className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/50 border-b border-border/50 last:border-0"
                     >
+                      <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium truncate">{p.address}</p>
+                        <p className="text-sm font-medium truncate">{p.address}</p>
                         <p className="text-xs text-muted-foreground">{p.city}</p>
                       </div>
-                      <span className="text-xs text-muted-foreground shrink-0 capitalize">{p.stage}</span>
+                      <span className="text-xs text-muted-foreground shrink-0 capitalize bg-muted px-2 py-0.5 rounded-full">{p.stage}</span>
                     </button>
                   ))}
                 </div>
               )}
+
+              {/* Selected property confirmation */}
               {selectedProperty && (
-                <div className="flex items-center justify-between rounded-lg bg-green-50 dark:bg-green-950 px-3 py-2">
-                  <p className="text-sm text-green-700 dark:text-green-400">✓ {selectedProperty.address}, {selectedProperty.city}</p>
+                <div className="flex items-center justify-between rounded-lg bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-3.5 w-3.5 text-green-600 dark:text-green-400 shrink-0" />
+                    <p className="text-sm text-green-700 dark:text-green-400 font-medium">{selectedProperty.address}, {selectedProperty.city}</p>
+                  </div>
                   <button
                     type="button"
                     onClick={() => { setSelectedProperty(null); setPropertySearch('') }}
-                    className="text-xs text-muted-foreground hover:text-foreground"
+                    className="text-xs text-muted-foreground hover:text-foreground ml-3"
                   >
                     Rimuovi
                   </button>
                 </div>
               )}
+
+              {/* Create new property link */}
+              {!selectedProperty && (
+                <div className="flex items-center gap-1.5 pt-0.5">
+                  <span className="text-xs text-muted-foreground">o</span>
+                  <Link
+                    href="/banca-dati/nuovo"
+                    className="inline-flex items-center gap-1 text-xs text-[oklch(0.57_0.20_33)] hover:underline font-medium"
+                  >
+                    <Plus className="h-3 w-3" />
+                    Crea nuovo immobile in banca dati
+                  </Link>
+                </div>
+              )}
             </div>
 
+            {/* Role selector */}
             {selectedProperty && (
               <div className="space-y-1.5">
                 <Label>Ruolo nel contatto</Label>

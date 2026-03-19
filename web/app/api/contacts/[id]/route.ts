@@ -56,7 +56,17 @@ export async function PATCH(
   const allowed: Record<string, unknown> = {}
 
   if (typeof body.name === 'string' && body.name.trim()) allowed.name = body.name.trim()
-  if (typeof body.type === 'string' && validTypes.includes(body.type)) allowed.type = body.type
+  // Support multi-type update
+  if (Array.isArray(body.types)) {
+    const types = (body.types as unknown[]).filter((t): t is string => typeof t === 'string' && validTypes.includes(t))
+    if (types.length > 0) {
+      allowed.type = types[0]
+      allowed.roles = types
+    }
+  } else if (typeof body.type === 'string' && validTypes.includes(body.type)) {
+    allowed.type = body.type
+    allowed.roles = [body.type]
+  }
   if ('email' in body) allowed.email = typeof body.email === 'string' ? body.email.trim() || null : null
   if ('phone' in body) allowed.phone = typeof body.phone === 'string' ? body.phone.trim() || null : null
   if ('city_of_residence' in body) allowed.city_of_residence = typeof body.city_of_residence === 'string' ? body.city_of_residence.trim() || null : null

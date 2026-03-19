@@ -62,13 +62,21 @@ export async function POST(req: NextRequest) {
   if (!name) return NextResponse.json({ error: 'Il nome è obbligatorio' }, { status: 400 })
 
   const validTypes = ['buyer', 'seller', 'renter', 'landlord', 'other']
-  const type = typeof body.type === 'string' && validTypes.includes(body.type) ? body.type : 'buyer'
+  // Support multi-type (types[]) with fallback to single type for backward compat
+  const rawTypes = Array.isArray(body.types)
+    ? (body.types as unknown[]).filter((t): t is string => typeof t === 'string' && validTypes.includes(t))
+    : []
+  const types = rawTypes.length > 0 ? rawTypes : [
+    typeof body.type === 'string' && validTypes.includes(body.type) ? body.type : 'buyer'
+  ]
+  const type = types[0]
 
   const payload = {
     workspace_id: profile.workspace_id,
     agent_id: user.id,
     name,
     type,
+    roles: types,
     email: typeof body.email === 'string' ? body.email.trim() || null : null,
     phone: typeof body.phone === 'string' ? body.phone.trim() || null : null,
     city_of_residence: typeof body.city_of_residence === 'string' ? body.city_of_residence.trim() || null : null,
