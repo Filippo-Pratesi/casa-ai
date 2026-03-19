@@ -562,14 +562,14 @@ export function ImmobileDetailClient({
         )}
       </div>
 
-      {/* Main layout: 2 columns — timeline left, details right */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
+      {/* Main layout: 2 columns — details left, timeline right */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-6">
 
-        {/* Left column — cronistoria */}
-        <div>
-          <Card className="p-4 h-fit">
-            <h2 className="font-semibold text-sm mb-3">Cronistoria</h2>
-            <div className="max-h-[420px] overflow-y-auto pr-1">
+        {/* Column 2 (260px) — cronistoria, sticky */}
+        <div className="order-2">
+          <Card className="p-3 h-fit lg:sticky lg:top-4">
+            <h2 className="font-semibold text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Cronistoria</h2>
+            <div className="max-h-[calc(100vh-180px)] overflow-y-auto pr-0.5">
               <EventTimeline
                 propertyId={property.id}
                 events={events}
@@ -579,8 +579,8 @@ export function ImmobileDetailClient({
           </Card>
         </div>
 
-        {/* Right column — property data */}
-        <div className="space-y-4">
+        {/* Column 1 (1fr) — property data */}
+        <div className="space-y-4 order-1">
 
           {/* Details card */}
           <Card className="p-5 space-y-4">

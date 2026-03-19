@@ -311,7 +311,7 @@ export function EventTimeline({ propertyId, events, onEventAdded }: EventTimelin
                           </span>
                         )}
                       </div>
-                      <p className="text-xs font-medium mt-0.5 leading-snug">{event.title}</p>
+                      <p className="text-sm font-medium mt-0.5 leading-snug">{event.title}</p>
                       {event.description && (
                         <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{event.description}</p>
                       )}

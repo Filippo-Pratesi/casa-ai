@@ -22,8 +22,8 @@ import { DispositionIcon, DISPOSITION_CONFIG } from './disposition-icon'
 const STAGES: PropertyStage[] = ['sconosciuto', 'ignoto', 'conosciuto', 'incarico', 'venduto', 'locato', 'disponibile']
 
 const PROPERTY_TYPE_IT: Record<string, string> = {
-  apartment: 'Appartamento', house: 'Casa', villa: 'Villa',
-  commercial: 'Commerciale', land: 'Terreno', garage: 'Garage', other: 'Altro',
+  apartment: 'Apt.', house: 'Casa', villa: 'Villa',
+  commercial: 'Comm.', land: 'Terreno', garage: 'Garage', other: 'Altro',
 }
 
 function splitAddress(address: string): { street: string; civic: string } {
