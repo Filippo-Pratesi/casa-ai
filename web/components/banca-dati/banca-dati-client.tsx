@@ -295,7 +295,7 @@ export function BancaDatiClient({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tutte</SelectItem>
-                  {filteredZones.map((z) => <SelectItem key={z.name} value={z.name}>{z.name}</SelectItem>)}
+                  {filteredZones.map((z) => <SelectItem key={`${z.city}:${z.name}`} value={z.name}>{z.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
