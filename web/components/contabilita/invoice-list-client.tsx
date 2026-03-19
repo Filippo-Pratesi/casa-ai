@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Receipt, Download, Send, CheckCircle, Trash2, ChevronRight, Copy, FileDown, MoreVertical, Pencil, X } from 'lucide-react'
+import { Receipt, Download, Send, CheckCircle, Trash2, ChevronRight, Copy, FileDown, MoreVertical, Pencil, X, FileCode } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -49,6 +49,7 @@ function InvoiceRowMenu({ inv, onAction }: { inv: Invoice; onAction: (a: string)
           <Link href={`/contabilita/${inv.id}`} className={item} onClick={() => setOpen(false)}><ChevronRight className="h-4 w-4" />Visualizza</Link>
           {inv.status === 'bozza' && <Link href={`/contabilita/${inv.id}/modifica`} className={item} onClick={() => setOpen(false)}><Pencil className="h-4 w-4" />Modifica</Link>}
           <button onClick={() => { setOpen(false); onAction('pdf') }} className={item}><Download className="h-4 w-4" />Scarica PDF</button>
+          <button onClick={() => { setOpen(false); onAction('xml') }} className={item}><FileCode className="h-4 w-4" />Scarica XML SDI</button>
           <button onClick={() => { setOpen(false); onAction('duplicate') }} className={item}><Copy className="h-4 w-4" />Duplica</button>
           {inv.status === 'bozza' && <button onClick={() => { setOpen(false); onAction('send') }} className={item}><Send className="h-4 w-4" />Invia via email</button>}
           {(inv.status === 'inviata' || inv.status === 'scaduta') && <button onClick={() => { setOpen(false); onAction('paid') }} className={`${item} text-green-600 dark:text-green-400`}><CheckCircle className="h-4 w-4" />Segna come pagata</button>}
@@ -160,6 +161,25 @@ export function InvoiceListClient({ invoices: initialInvoices }: InvoiceListClie
     }
   }
 
+  async function handleDownloadXml(id: string, numero: string) {
+    setActionLoading(id + '-xml')
+    try {
+      const res = await fetch(`/api/invoices/${id}/xml`)
+      if (!res.ok) throw new Error('Errore generazione XML')
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `FatturaPA_${numero.replace(/[^A-Za-z0-9_-]/g, '_')}.xml`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      toast.error('Errore nella generazione del XML')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
   async function handleExportCsv() {
     try {
       const params = new URLSearchParams()
@@ -182,6 +202,7 @@ export function InvoiceListClient({ invoices: initialInvoices }: InvoiceListClie
   function handleRowAction(inv: Invoice, action: string) {
     switch (action) {
       case 'pdf': handleDownloadPdf(inv.id, inv.numero_fattura); break
+      case 'xml': handleDownloadXml(inv.id, inv.numero_fattura); break
       case 'send': handleSendEmail(inv.id); break
       case 'paid': handleMarkPaid(inv.id); break
       case 'delete': handleDelete(inv.id); break
@@ -334,6 +355,7 @@ export function InvoiceListClient({ invoices: initialInvoices }: InvoiceListClie
               {/* Desktop actions */}
               <div className="shrink-0 hidden sm:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button title="PDF" onClick={() => handleDownloadPdf(inv.id, inv.numero_fattura)} disabled={actionLoading === inv.id + '-pdf'} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"><Download className="h-4 w-4" /></button>
+                <button title="XML SDI" onClick={() => handleDownloadXml(inv.id, inv.numero_fattura)} disabled={actionLoading === inv.id + '-xml'} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"><FileCode className="h-4 w-4" /></button>
                 <button title="Duplica" onClick={() => handleDuplicate(inv.id)} disabled={actionLoading === inv.id + '-dup'} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"><Copy className="h-4 w-4" /></button>
                 {inv.status === 'bozza' && <button title="Invia" onClick={() => handleSendEmail(inv.id)} disabled={actionLoading === inv.id + '-send'} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"><Send className="h-4 w-4" /></button>}
                 {(inv.status === 'inviata' || inv.status === 'scaduta') && <button title="Pagata" onClick={() => handleMarkPaid(inv.id)} disabled={actionLoading === inv.id + '-paid'} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-green-500 hover:text-white transition-colors"><CheckCircle className="h-4 w-4" /></button>}

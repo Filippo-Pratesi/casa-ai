@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, Receipt, Download, CheckCircle, Send, Pencil, FileText } from 'lucide-react'
+import { ChevronLeft, Receipt, Download, CheckCircle, Send, Pencil, FileText, FileCode } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { InvoiceStatusBadge } from '@/components/contabilita/invoice-status-badge'
 import { formatCurrency } from '@/components/contabilita/invoice-totals-calculator'
@@ -76,6 +76,12 @@ export default async function InvoiceDetailPage({ params }: Params) {
             <a href={`/api/invoices/${id}/pdf`} target="_blank">
               <Download className="h-4 w-4 mr-1.5" />
               PDF
+            </a>
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <a href={`/api/invoices/${id}/xml`} download>
+              <FileCode className="h-4 w-4 mr-1.5" />
+              XML
             </a>
           </Button>
         </div>
