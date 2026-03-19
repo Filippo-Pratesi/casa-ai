@@ -48,7 +48,7 @@ export const translations = {
     'contacts.empty.body': 'Aggiungi acquirenti, venditori e affittuari per tenere traccia dei tuoi contatti.',
     'contacts.empty.cta': 'Aggiungi il primo contatto',
     'contacts.noResults': 'Nessun contatto corrisponde ai filtri selezionati',
-    'contacts.filter.searchPlaceholder': 'Cerca città o nome…',
+    'contacts.filter.searchPlaceholder': 'Cerca per nome, città o immobile…',
     'contacts.filter.budgetMax': 'Budget max (€)',
     'contacts.filter.minRooms': 'Locali min',
     'contacts.filter.clear': 'Rimuovi filtri',

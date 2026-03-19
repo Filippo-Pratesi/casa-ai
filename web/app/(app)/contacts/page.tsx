@@ -16,6 +16,7 @@ interface Contact {
   date_of_birth: string | null
   created_at: string
   agent_name: string | null
+  property_addresses: string[]
 }
 
 export default async function ContactsPage() {
@@ -41,11 +42,33 @@ export default async function ContactsPage() {
     .order('created_at', { ascending: false })
     .limit(500)
 
+  const contactIds = ((data ?? []) as { id: string }[]).map(c => c.id)
+
+  // Fetch property addresses linked to these contacts via property_contacts
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: propContactsData } = contactIds.length > 0
+    ? await (admin as any)
+        .from('property_contacts')
+        .select('contact_id, property:properties!property_contacts_property_id_fkey(address)')
+        .in('contact_id', contactIds)
+        .eq('workspace_id', profile?.workspace_id)
+    : { data: [] }
+
+  // Build contact_id → addresses map
+  const propAddressMap = new Map<string, string[]>()
+  for (const pc of ((propContactsData ?? []) as { contact_id: string; property: { address: string } | null }[])) {
+    if (!pc.property?.address) continue
+    const existing = propAddressMap.get(pc.contact_id) ?? []
+    existing.push(pc.property.address)
+    propAddressMap.set(pc.contact_id, existing)
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const contacts: Contact[] = (data ?? []).map((c: any) => ({
     ...c,
     agent_name: c.agent?.name ?? null,
     agent: undefined,
+    property_addresses: propAddressMap.get(c.id) ?? [],
   }))
 
   return <ContactsClient contacts={contacts} isAdmin={isAdmin} />

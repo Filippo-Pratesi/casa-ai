@@ -44,6 +44,7 @@ interface Contact {
   date_of_birth: string | null
   created_at: string
   agent_name: string | null
+  property_addresses: string[]
 }
 
 function birthdayDaysLeft(dob: string | null): number | null {
@@ -102,7 +103,8 @@ export function ContactsClient({ contacts, isAdmin }: ContactsClientProps) {
       if (citySearch.trim()) {
         const q = citySearch.trim().toLowerCase()
         const cities = (c.preferred_cities ?? []).join(' ').toLowerCase()
-        if (!cities.includes(q) && !c.name.toLowerCase().includes(q)) return false
+        const addresses = (c.property_addresses ?? []).join(' ').toLowerCase()
+        if (!cities.includes(q) && !c.name.toLowerCase().includes(q) && !addresses.includes(q)) return false
       }
       if (budgetMax) {
         const max = Number(budgetMax)
