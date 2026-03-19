@@ -36,6 +36,7 @@ import { DispositionIcon, DISPOSITION_CONFIG, type OwnerDisposition } from './di
 import { EventTimeline, type PropertyEvent } from './event-timeline'
 import { PropertyCard } from './property-card'
 import { AiMatchPanel } from './ai-match-panel'
+import { CadastralPanel } from './cadastral-panel'
 
 const ROLE_LABELS: Record<string, string> = {
   proprietario: 'Proprietario',
@@ -875,6 +876,19 @@ export function ImmobileDetailClient({
               )}
             </Card>
           )}
+
+          {/* Dati Catastali + Stima Valore */}
+          <CadastralPanel
+            propertyId={property.id}
+            latitude={property.latitude}
+            longitude={property.longitude}
+            sqm={property.sqm}
+            propertyType={property.property_type}
+            codiceComune={null}
+            zonaOmi={property.zone}
+            existingCadastralData={property.cadastral_data ?? null}
+            existingFetchedAt={property.cadastral_data_fetched_at ?? null}
+          />
 
           {/* AI Match Engine */}
           <AiMatchPanel propertyId={property.id} />

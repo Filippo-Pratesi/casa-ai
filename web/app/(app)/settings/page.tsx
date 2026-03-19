@@ -14,6 +14,7 @@ import { ImportContacts } from '@/components/settings/import-contacts'
 import { NotificationPreferences } from '@/components/settings/notification-preferences'
 import { InvoiceRemindersToggle } from '@/components/settings/invoice-reminders-toggle'
 import { AgentZoneAssignment } from '@/components/settings/agent-zone-assignment'
+import { OmiUpload } from '@/components/settings/omi-upload'
 import { getPlanConfig } from '@/lib/plan-limits'
 import { getTranslations } from '@/lib/i18n/server'
 import type { Workspace, Group } from '@/lib/supabase/types'
@@ -151,6 +152,26 @@ export default async function SettingsPage({
     allZones = (zonesRes.data ?? []) as { id: string; name: string; city: string }[]
     allSubZones = (subZonesRes.data ?? []) as { id: string; name: string; zone_id: string }[]
     hasGroupAdmin = (groupAdminRes.count ?? 0) > 0
+  }
+
+  // OMI data status
+  let omiSemestre: string | null = null
+  let omiUploadDate: string | null = null
+  let omiRecordCount: number | null = null
+
+  if (isAdmin && profile?.workspace_id) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: omiConfigs } = await (admin as any)
+      .from('app_config')
+      .select('key, value')
+      .in('key', ['last_omi_semestre', 'last_omi_upload_date', 'omi_record_count'])
+
+    for (const cfg of (omiConfigs ?? []) as { key: string; value: unknown }[]) {
+      const val = typeof cfg.value === 'string' ? JSON.parse(cfg.value) : cfg.value
+      if (cfg.key === 'last_omi_semestre') omiSemestre = val as string
+      if (cfg.key === 'last_omi_upload_date') omiUploadDate = val as string
+      if (cfg.key === 'omi_record_count') omiRecordCount = val as number
+    }
   }
 
   // Piano section visible to group_admin, or to admin if no group_admin exists in workspace
@@ -314,6 +335,23 @@ export default async function SettingsPage({
               <CardContent className="space-y-3">
                 <BulkExportButton />
                 <p className="text-xs text-muted-foreground">{t('settings.exportNote')}</p>
+              </CardContent>
+            </Card>
+          )}
+          {isAdmin && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Quotazioni OMI</CardTitle>
+                <CardDescription>
+                  Carica il dataset delle quotazioni immobiliari OMI dell&apos;Agenzia delle Entrate per abilitare la stima automatica del valore degli immobili.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <OmiUpload
+                  lastSemestre={omiSemestre}
+                  lastUploadDate={omiUploadDate}
+                  recordCount={omiRecordCount}
+                />
               </CardContent>
             </Card>
           )}
