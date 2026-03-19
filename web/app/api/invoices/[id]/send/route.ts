@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Resend } from 'resend'
+import { buildReminders } from '@/lib/invoice-reminder-templates'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -86,6 +87,13 @@ export async function POST(_req: NextRequest, { params }: Params) {
         sent_to_email: invoice.cliente_pec,
       })
       .eq('id', id)
+
+    // Create automatic reminders if invoice has a due date
+    if (invoice.data_scadenza) {
+      const reminders = buildReminders(id, profile.workspace_id, invoice.data_scadenza)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (admin as any).from('invoice_reminders').insert(reminders)
+    }
 
     return NextResponse.json({ success: true, sent_to: invoice.cliente_pec })
   } catch (err) {

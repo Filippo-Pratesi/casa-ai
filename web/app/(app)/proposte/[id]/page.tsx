@@ -6,6 +6,7 @@ import { ChevronLeft, FileText, Download, ArrowLeftRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ProposalStatusBadge } from '@/components/proposals/proposal-status-badge'
 import { ProposalDetailActions } from '@/components/proposals/proposal-detail-actions'
+import { GenerateInvoiceButton } from '@/components/proposals/generate-invoice-button'
 
 function fmtEur(n: number | null | undefined) {
   if (!n) return '€ 0'
@@ -214,6 +215,14 @@ export default async function PropostaDetailPage({ params }: Params) {
           {/* Quick actions */}
           {proposal.status === 'inviata' && (
             <ProposalDetailActions proposalId={id} />
+          )}
+
+          {/* Generate invoice from accepted proposal */}
+          {proposal.status === 'accettata' && (
+            <div className="rounded-2xl border border-border bg-card p-5 space-y-2">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Azioni</h2>
+              <GenerateInvoiceButton proposalId={id} proposalNumero={proposal.numero_proposta} />
+            </div>
           )}
         </div>
       </div>

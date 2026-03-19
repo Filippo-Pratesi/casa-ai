@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { CheckCircle, Send } from 'lucide-react'
+import { CheckCircle, Send, Copy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { InvoiceStatus } from './invoice-status-badge'
 
@@ -77,6 +77,29 @@ export function InvoiceDetailActions({ invoiceId, status, clienteEmail }: Invoic
           Segna come pagata
         </Button>
       )}
+      <Button
+        variant="outline"
+        size="sm"
+        className="w-full justify-start"
+        onClick={async () => {
+          setLoading('dup')
+          try {
+            const res = await fetch(`/api/invoices/${invoiceId}/duplicate`, { method: 'POST' })
+            if (!res.ok) throw new Error('Errore')
+            const d = await res.json()
+            toast.success(`Fattura duplicata: ${d.numero_fattura}`)
+            router.push(`/contabilita/${d.id}/modifica`)
+          } catch {
+            toast.error('Errore nella duplicazione')
+          } finally {
+            setLoading(null)
+          }
+        }}
+        disabled={loading === 'dup'}
+      >
+        <Copy className="h-4 w-4 mr-2" />
+        Duplica fattura
+      </Button>
     </div>
   )
 }

@@ -65,6 +65,7 @@ export async function POST(req: NextRequest) {
       numero_fattura,
       anno,
       progressivo,
+      proposal_id: body.proposal_id || null,
       contact_id: body.contact_id || null,
       listing_id: body.listing_id || null,
       cliente_nome,

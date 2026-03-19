@@ -2,11 +2,12 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, Receipt, Download, CheckCircle, Send, Pencil } from 'lucide-react'
+import { ChevronLeft, Receipt, Download, CheckCircle, Send, Pencil, FileText, FileCode } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { InvoiceStatusBadge } from '@/components/contabilita/invoice-status-badge'
 import { formatCurrency } from '@/components/contabilita/invoice-totals-calculator'
 import { InvoiceDetailActions } from '@/components/contabilita/invoice-detail-actions'
+import { CreditNoteButton } from '@/components/contabilita/credit-note-button'
 
 function fmtDate(d: string | null | undefined) {
   if (!d) return '—'
@@ -57,7 +58,7 @@ export default async function InvoiceDetailPage({ params }: Params) {
               <h1 className="text-xl font-bold tracking-tight text-foreground font-mono">{invoice.numero_fattura}</h1>
               <InvoiceStatusBadge status={invoice.status} />
             </div>
-            <p className="text-sm text-muted-foreground">Fattura — {fmtDate(invoice.data_emissione)}</p>
+            <p className="text-sm text-muted-foreground">{invoice.document_type === 'nota_credito' ? 'Nota di credito' : 'Fattura'} — {fmtDate(invoice.data_emissione)}</p>
           </div>
         </div>
 
@@ -75,6 +76,12 @@ export default async function InvoiceDetailPage({ params }: Params) {
             <a href={`/api/invoices/${id}/pdf`} target="_blank">
               <Download className="h-4 w-4 mr-1.5" />
               PDF
+            </a>
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <a href={`/api/invoices/${id}/xml`} download>
+              <FileCode className="h-4 w-4 mr-1.5" />
+              XML
             </a>
           </Button>
         </div>
@@ -207,6 +214,42 @@ export default async function InvoiceDetailPage({ params }: Params) {
               </div>
             )}
           </div>
+
+          {/* Credit note actions */}
+          {invoice.document_type !== 'nota_credito' && (invoice.status === 'inviata' || invoice.status === 'pagata') && (
+            <div className="rounded-2xl border border-border bg-card p-5 space-y-2">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Rettifiche</h2>
+              <CreditNoteButton invoiceId={id} numeroFattura={invoice.numero_fattura} />
+            </div>
+          )}
+
+          {/* Related invoice link (for NC) */}
+          {invoice.related_invoice_id && (
+            <div className="rounded-2xl border border-border bg-card p-5">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Fattura stornata</h2>
+              <Link
+                href={`/contabilita/${invoice.related_invoice_id}`}
+                className="flex items-center gap-2 text-sm font-medium text-[oklch(0.57_0.20_33)] dark:text-[oklch(0.73_0.18_36)] hover:underline"
+              >
+                <Receipt className="h-4 w-4" />
+                Visualizza fattura originale
+              </Link>
+            </div>
+          )}
+
+          {/* Proposal link */}
+          {invoice.proposal_id && (
+            <div className="rounded-2xl border border-border bg-card p-5">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Proposta collegata</h2>
+              <Link
+                href={`/proposte/${invoice.proposal_id}`}
+                className="flex items-center gap-2 text-sm font-medium text-[oklch(0.57_0.20_33)] dark:text-[oklch(0.73_0.18_36)] hover:underline"
+              >
+                <FileText className="h-4 w-4" />
+                Visualizza proposta d&apos;acquisto
+              </Link>
+            </div>
+          )}
 
           {/* Actions */}
           {(invoice.status === 'inviata' || invoice.status === 'scaduta' || invoice.status === 'bozza') && (
