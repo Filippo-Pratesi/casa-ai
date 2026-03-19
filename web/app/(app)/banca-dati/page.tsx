@@ -51,6 +51,8 @@ export default async function BancaDatiPage({
   const disposition = params.disposition ?? ''
   const transaction_type = params.transaction_type ?? ''
   const q = params.q ?? ''
+  const street = params.street ?? ''
+  const civic = params.civic ?? ''
   const page = parseInt(params.page ?? '1', 10)
   const sort = params.sort ?? 'updated_at_desc'
   const viewMode = params.viewMode ?? 'list'
@@ -91,6 +93,14 @@ export default async function BancaDatiPage({
   // DB the search_vector GIN index will be used via textSearch instead.
   if (q) {
     query = query.or(`address.ilike.%${q}%,city.ilike.%${q}%,zone.ilike.%${q}%`)
+  }
+  // Via filter: matches street portion of address (before house number)
+  if (street) {
+    query = query.ilike('address', `%${street}%`)
+  }
+  // Civico filter: matches numeric portion of address
+  if (civic) {
+    query = query.ilike('address', `% ${civic}%`)
   }
 
   const { data, count } = await query
@@ -193,7 +203,7 @@ export default async function BancaDatiPage({
       cities={cities}
       agents={agents}
       isAdmin={isAdmin}
-      initialFilters={{ stage, city, zone, agent_id, disposition, transaction_type, q, sort, viewMode }}
+      initialFilters={{ stage, city, zone, agent_id, disposition, transaction_type, q, sort, viewMode, street, civic }}
     />
   )
 }

@@ -58,6 +58,8 @@ interface BancaDatiClientProps {
     q: string
     sort: string
     viewMode: string
+    street: string
+    civic: string
   }
 }
 
@@ -87,6 +89,8 @@ export function BancaDatiClient({
   const router = useRouter()
   const pathname = usePathname()
   const [searchText, setSearchText] = useState(initialFilters.q)
+  const [streetText, setStreetText] = useState(initialFilters.street)
+  const [civicText, setCivicText] = useState(initialFilters.civic)
   const [showLegend, setShowLegend] = useState(false)
   const [colWidths, setColWidths] = useState(DEFAULT_WIDTHS)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -159,6 +163,8 @@ export function BancaDatiClient({
       sort: initialFilters.sort,
       viewMode: initialFilters.viewMode,
       q: searchText,
+      street: streetText,
+      civic: civicText,
       ...updates,
     }
     Object.entries(current).forEach(([k, v]) => {
@@ -168,7 +174,7 @@ export function BancaDatiClient({
       params.set(k, v)
     })
     return params.toString()
-  }, [initialFilters, searchText])
+  }, [initialFilters, searchText, streetText, civicText])
 
   const updateUrl = useCallback((updates: Record<string, string>) => {
     router.push(`${pathname}?${buildParams(updates)}`)
@@ -176,10 +182,12 @@ export function BancaDatiClient({
 
   function clearFilters() {
     setSearchText('')
+    setStreetText('')
+    setCivicText('')
     router.push(pathname)
   }
 
-  const hasFilters = !!(initialFilters.stage || initialFilters.city || initialFilters.zone || initialFilters.agent_id || initialFilters.disposition || initialFilters.transaction_type || initialFilters.q)
+  const hasFilters = !!(initialFilters.stage || initialFilters.city || initialFilters.zone || initialFilters.agent_id || initialFilters.disposition || initialFilters.transaction_type || initialFilters.q || initialFilters.street || initialFilters.civic)
   // Zones filtered by selected city
   const filteredZones = initialFilters.city
     ? zonesWithCity.filter(z => z.city === initialFilters.city)
@@ -198,6 +206,8 @@ export function BancaDatiClient({
   if (initialFilters.disposition) activePills.push({ key: 'disposition', label: (DISPOSITION_CONFIG as any)[initialFilters.disposition]?.label ?? initialFilters.disposition, clear: { disposition: '', page: '1' } })
   if (initialFilters.agent_id) activePills.push({ key: 'agent_id', label: agents.find(a => a.id === initialFilters.agent_id)?.name ?? 'Agente', clear: { agent_id: '', page: '1' } })
   if (searchText) activePills.push({ key: 'q', label: `"${searchText}"`, clear: { q: '', page: '1' } })
+  if (initialFilters.street) activePills.push({ key: 'street', label: `Via: ${initialFilters.street}`, clear: { street: '', page: '1' } })
+  if (initialFilters.civic) activePills.push({ key: 'civic', label: `N.: ${initialFilters.civic}`, clear: { civic: '', page: '1' } })
 
   return (
     <div className="space-y-5">
@@ -390,6 +400,60 @@ export function BancaDatiClient({
             </div>
           )}
 
+          {/* Via filter */}
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[10px] font-medium text-muted-foreground px-0.5">Via</span>
+            <div className="relative">
+              <Input
+                placeholder="es. Garibaldi"
+                value={streetText}
+                onChange={(e) => setStreetText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') updateUrl({ street: streetText, page: '1' })
+                }}
+                onBlur={() => {
+                  if (streetText !== initialFilters.street) updateUrl({ street: streetText, page: '1' })
+                }}
+                className="h-8 w-[140px] text-sm bg-background pr-6"
+              />
+              {streetText && (
+                <button
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => { setStreetText(''); updateUrl({ street: '', page: '1' }) }}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Civico filter */}
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[10px] font-medium text-muted-foreground px-0.5">Civico</span>
+            <div className="relative">
+              <Input
+                placeholder="es. 12"
+                value={civicText}
+                onChange={(e) => setCivicText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') updateUrl({ civic: civicText, page: '1' })
+                }}
+                onBlur={() => {
+                  if (civicText !== initialFilters.civic) updateUrl({ civic: civicText, page: '1' })
+                }}
+                className="h-8 w-[80px] text-sm bg-background pr-6"
+              />
+              {civicText && (
+                <button
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => { setCivicText(''); updateUrl({ civic: '', page: '1' }) }}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* View toggle + legend — right-aligned */}
           <div className="ml-auto flex items-end gap-1">
             {/* View mode + Legend */}
@@ -429,6 +493,8 @@ export function BancaDatiClient({
               key={pill.key}
               onClick={() => {
                 if (pill.key === 'q') setSearchText('')
+                if (pill.key === 'street') setStreetText('')
+                if (pill.key === 'civic') setCivicText('')
                 updateUrl(pill.clear)
               }}
               className="inline-flex items-center gap-1 rounded-full bg-[oklch(0.57_0.20_33/0.10)] text-[oklch(0.45_0.20_33)] dark:bg-[oklch(0.57_0.20_33/0.20)] dark:text-[oklch(0.80_0.15_33)] border border-[oklch(0.57_0.20_33/0.25)] px-2.5 py-0.5 text-xs font-medium hover:bg-[oklch(0.57_0.20_33/0.18)] transition-colors"
