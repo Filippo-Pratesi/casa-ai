@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import { unzipSync } from 'fflate'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Upload, Loader2, CheckCircle, AlertTriangle, ChevronDown, ChevronUp, Info } from 'lucide-react'
+import { parseOmiValoriCsv } from '@/lib/omi-parse'
 
 interface OmiUploadProps {
   lastSemestre: string | null
@@ -11,8 +13,11 @@ interface OmiUploadProps {
   recordCount: number | null
 }
 
+const BATCH_SIZE = 500
+
 export function OmiUpload({ lastSemestre, lastUploadDate, recordCount }: OmiUploadProps) {
   const [uploading, setUploading] = useState(false)
+  const [progress, setProgress] = useState<string | null>(null)
   const [result, setResult] = useState<{ success: boolean; message: string; count?: number } | null>(null)
   const [showInstructions, setShowInstructions] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -21,34 +26,90 @@ export function OmiUpload({ lastSemestre, lastUploadDate, recordCount }: OmiUplo
     const file = e.target.files?.[0]
     if (!file) return
 
-    if (!file.name.endsWith('.csv') && !file.name.endsWith('.zip')) {
+    const name = file.name.toLowerCase()
+    if (!name.endsWith('.csv') && !name.endsWith('.zip')) {
       setResult({ success: false, message: 'Il file deve essere in formato CSV o ZIP' })
       return
     }
 
     setUploading(true)
     setResult(null)
+    setProgress('Lettura file…')
 
     try {
-      const formData = new FormData()
-      formData.append('file', file)
+      // 1. Extract CSV text in-browser
+      let csvText: string
+      let sourceFilename = name
 
-      const res = await fetch('/api/settings/omi-upload', {
-        method: 'POST',
-        body: formData,
-      })
+      if (name.endsWith('.zip')) {
+        const buf = new Uint8Array(await file.arrayBuffer())
+        let zipFiles: Record<string, Uint8Array>
+        try {
+          zipFiles = unzipSync(buf)
+        } catch {
+          setResult({ success: false, message: 'File ZIP non valido o corrotto' })
+          return
+        }
 
-      const data = await res.json()
-
-      if (res.ok) {
-        setResult({ success: true, message: `Importati ${data.count?.toLocaleString('it-IT') ?? 0} record`, count: data.count })
+        const valoriEntry = Object.entries(zipFiles).find(([k]) =>
+          k.toUpperCase().includes('VALORI') && k.toUpperCase().endsWith('.CSV')
+        )
+        if (!valoriEntry) {
+          setResult({ success: false, message: 'Nessun file *_VALORI.csv trovato nello ZIP. Assicurati di caricare il file scaricato dal portale OMI.' })
+          return
+        }
+        sourceFilename = valoriEntry[0]
+        csvText = new TextDecoder('utf-8').decode(valoriEntry[1])
       } else {
-        setResult({ success: false, message: data.error ?? 'Errore durante l\'importazione' })
+        csvText = await file.text()
       }
-    } catch {
-      setResult({ success: false, message: 'Errore di rete durante l\'upload' })
+
+      // 2. Parse CSV in-browser
+      setProgress('Analisi CSV…')
+      const parsed = parseOmiValoriCsv(csvText, sourceFilename)
+      if ('error' in parsed) {
+        setResult({ success: false, message: parsed.error })
+        return
+      }
+
+      const { rows, semestre } = parsed
+      if (rows.length === 0) {
+        setResult({ success: false, message: 'Nessun record valido trovato nel file VALORI' })
+        return
+      }
+
+      // 3. POST rows in JSON batches
+      const totalBatches = Math.ceil(rows.length / BATCH_SIZE)
+      let insertedCount = 0
+
+      for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+        const batchIndex = Math.floor(i / BATCH_SIZE) + 1
+        setProgress(`Importazione batch ${batchIndex}/${totalBatches}…`)
+
+        const batch = rows.slice(i, i + BATCH_SIZE)
+        const isFinal = i + BATCH_SIZE >= rows.length
+
+        const res = await fetch('/api/settings/omi-upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rows: batch, semestre, isFinal, totalCount: rows.length }),
+        })
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({ error: 'Errore server' }))
+          setResult({ success: false, message: data.error ?? 'Errore durante l\'importazione' })
+          return
+        }
+
+        insertedCount += batch.length
+      }
+
+      setResult({ success: true, message: `Importati ${insertedCount.toLocaleString('it-IT')} record (${semestre})`, count: insertedCount })
+    } catch (err) {
+      setResult({ success: false, message: err instanceof Error ? err.message : 'Errore imprevisto' })
     } finally {
       setUploading(false)
+      setProgress(null)
       if (fileRef.current) fileRef.current.value = ''
     }
   }
@@ -85,7 +146,7 @@ export function OmiUpload({ lastSemestre, lastUploadDate, recordCount }: OmiUplo
           onClick={() => fileRef.current?.click()}
         >
           {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
-          {uploading ? 'Importazione in corso...' : 'Carica ZIP / CSV OMI'}
+          {uploading ? (progress ?? 'Importazione in corso…') : 'Carica ZIP / CSV OMI'}
         </Button>
         <input
           ref={fileRef}
