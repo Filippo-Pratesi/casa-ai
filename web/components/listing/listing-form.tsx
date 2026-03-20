@@ -16,7 +16,6 @@ import {
 } from '@/components/ui/select'
 import { PhotoUploader } from '@/components/listing/photo-uploader'
 import { PROPERTY_TYPES, FEATURES, TONES, CONDITIONS } from '@/components/listing/listing-constants'
-import { CityAutocomplete } from '@/components/banca-dati/city-autocomplete'
 
 // Map from banca dati property features to listing features
 const PROPERTY_TO_LISTING_FEATURES: Record<string, string> = {
@@ -140,13 +139,25 @@ export function ListingForm() {
   // Property selector state
   const [selectedProperty, setSelectedProperty] = useState<PropertyResult | null>(null)
   const [propSearch, setPropSearch] = useState('')
-  const [propFilterCity, setPropFilterCity] = useState('') // input display value
-  const [propCitySelected, setPropCitySelected] = useState('') // confirmed city for API
+  const [propCitySelected, setPropCitySelected] = useState('')
   const [propFilterZone, setPropFilterZone] = useState('')
+  const [cities, setCities] = useState<string[]>([])
   const [availableZones, setAvailableZones] = useState<string[]>([])
   const [propResults, setPropResults] = useState<PropertyResult[]>([])
   const [loadingProps, setLoadingProps] = useState(false)
   const searchAbortRef = useRef<AbortController | null>(null)
+
+  // Fetch distinct cities from banca dati on mount
+  useEffect(() => {
+    fetch('/api/properties?per_page=500')
+      .then(r => r.json())
+      .then(data => {
+        const unique = [...new Set<string>((data.data ?? []).map((p: { city: string }) => p.city))]
+          .filter(Boolean).sort()
+        setCities(unique)
+      })
+      .catch(() => {})
+  }, [])
 
   // Fetch zones when a city is selected
   useEffect(() => {
@@ -219,7 +230,6 @@ export function ListingForm() {
     setSelectedProperty(null)
     setForm(INITIAL_FORM)
     setPropSearch('')
-    setPropFilterCity('')
     setPropCitySelected('')
     setPropFilterZone('')
     setAvailableZones([])
@@ -338,12 +348,19 @@ export function ListingForm() {
           <div className="space-y-2">
             <div className="flex gap-2">
               <div className="flex-1">
-                <CityAutocomplete
-                  value={propFilterCity}
-                  onChange={(v) => { setPropFilterCity(v); if (!v) { setPropCitySelected(''); setPropFilterZone(''); setAvailableZones([]) } }}
-                  onSelect={(s) => { setPropFilterCity(s.city); setPropCitySelected(s.city); setPropFilterZone('') }}
-                  placeholder="Filtra per città…"
-                />
+                <Select
+                  value={propCitySelected || null}
+                  onValueChange={(v) => { setPropCitySelected(v ?? ''); setPropFilterZone('') }}
+                >
+                  <SelectTrigger className="text-sm">
+                    <SelectValue placeholder={cities.length === 0 ? 'Caricamento…' : 'Filtra per città…'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cities.map((c) => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="flex-1">
                 <Select
@@ -395,12 +412,15 @@ export function ListingForm() {
                 ))}
               </div>
             )}
-            {!loadingProps && (propSearch.trim() || propCitySelected.trim() || propFilterZone.trim()) && propResults.length === 0 && (
+            {!loadingProps && (propSearch.trim() || propCitySelected || propFilterZone) && propResults.length === 0 && (
               <p className="text-xs text-muted-foreground text-center py-2">Nessun immobile trovato. Aggiungilo prima in <a href="/banca-dati/nuovo" className="underline text-[oklch(0.57_0.20_33)]">Banca Dati</a>.</p>
             )}
           </div>
         )}
       </section>
+
+      {/* Sections 1–7 + submit — greyed out until property is selected */}
+      <div className={!hasProperty ? 'pointer-events-none select-none opacity-40' : ''}>
 
       {/* Section 1 — Tipo immobile */}
       <section className="py-6 space-y-3">
@@ -688,13 +708,16 @@ export function ListingForm() {
           {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
           {isPending ? 'Generazione in corso...' : 'Genera contenuti'}
         </button>
-        {!hasProperty && (
-          <p className="text-center text-xs text-muted-foreground mt-2">Seleziona prima un immobile dalla banca dati per poter generare l&apos;annuncio.</p>
-        )}
         {isPending && (
           <p className="text-center text-xs text-muted-foreground mt-2">L&apos;AI sta analizzando le foto e generando i contenuti. Ci vorranno circa 15-20 secondi.</p>
         )}
       </div>
+
+      </div>{/* end grey-out wrapper */}
+
+      {!hasProperty && (
+        <p className="text-center text-xs text-muted-foreground pb-2">Seleziona prima un immobile dalla banca dati per compilare i campi.</p>
+      )}
     </form>
   )
 }

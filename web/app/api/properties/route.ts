@@ -49,8 +49,7 @@ export async function GET(req: NextRequest) {
   if (disposition) query = query.eq('owner_disposition', disposition)
   if (transaction_type) query = query.eq('transaction_type', transaction_type)
   if (q) {
-    const search = `%${q}%`
-    query = query.or(`address.ilike.${search},city.ilike.${search}`)
+    query = query.ilike('address', `%${q}%`)
   }
 
   // last_contact filter uses updated_at as proxy for last interaction date
