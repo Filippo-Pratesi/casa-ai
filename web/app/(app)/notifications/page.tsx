@@ -1,10 +1,81 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { Bell, Cake, CheckSquare, CalendarDays, ChevronRight } from 'lucide-react'
+import { Bell, Cake, CheckSquare, CalendarDays, ChevronRight, Home } from 'lucide-react'
 import { MarkNotificationsReadButton } from '@/components/notifications/mark-read-button'
 import { NotificationLink } from '@/components/notifications/notification-link'
 import { getTranslations } from '@/lib/i18n/server'
+
+// Genera notifiche di scadenza locazione se non esistono già per oggi
+async function generateLeaseExpiryNotifications(userId: string, workspaceId: string) {
+  const admin = createAdminClient()
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  // Find properties locato with lease_end_date in next 90 days
+  const ninetyDaysOut = new Date(today)
+  ninetyDaysOut.setDate(ninetyDaysOut.getDate() + 90)
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: expiring } = await (admin as any)
+    .from('properties')
+    .select('id, address, city, lease_end_date, agent_id')
+    .eq('workspace_id', workspaceId)
+    .eq('stage', 'locato')
+    .not('lease_end_date', 'is', null)
+    .lte('lease_end_date', ninetyDaysOut.toISOString().split('T')[0])
+    .gte('lease_end_date', today.toISOString().split('T')[0])
+
+  if (!expiring || expiring.length === 0) return
+
+  const THRESHOLDS = [90, 60, 30, 0] as const
+  const sevenDaysAgo = new Date(today)
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+
+  for (const property of expiring as { id: string; address: string; city: string; lease_end_date: string; agent_id: string | null }[]) {
+    const leaseEnd = new Date(property.lease_end_date)
+    const daysLeft = Math.ceil((leaseEnd.getTime() - today.getTime()) / 86400000)
+    const agentId = property.agent_id ?? userId
+
+    for (const threshold of THRESHOLDS) {
+      if (daysLeft > threshold) continue // Not yet at this threshold
+      if (daysLeft < threshold - 7) continue // Already past this threshold by more than a week
+
+      const notifType = threshold === 0 ? 'lease_expiry_today' : `lease_expiry_${threshold}`
+      const titleText = threshold === 0
+        ? `Contratto ${property.address} scade OGGI`
+        : `Contratto ${property.address} scade tra ${threshold} giorni`
+      const bodyText = threshold === 0
+        ? `Il contratto di locazione per ${property.address}, ${property.city} scade oggi. Verifica il rinnovo o la disponibilità dell'immobile.`
+        : `Il contratto di locazione per ${property.address}, ${property.city} scade tra ${threshold} giorni (${leaseEnd.toLocaleDateString('it-IT')}).`
+
+      // Deduplication: check if same type+title notification already exists in last 7 days
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { count } = await (admin as any)
+        .from('notifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('agent_id', agentId)
+        .eq('type', notifType)
+        .eq('title', titleText)
+        .gte('created_at', sevenDaysAgo.toISOString())
+
+      if ((count ?? 0) > 0) continue // Already notified this week
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (admin as any)
+        .from('notifications')
+        .insert({
+          agent_id: agentId,
+          workspace_id: workspaceId,
+          type: notifType,
+          title: titleText,
+          body: bodyText,
+          contact_id: null,
+          read: false,
+        })
+    }
+  }
+}
 
 interface Notification {
   id: string
@@ -43,6 +114,7 @@ function getNotificationRoute(n: Notification): string {
     case 'appointment':
       return '/calendar'
     default:
+      if (n.type.startsWith('lease_expiry')) return '/banca-dati'
       return n.contact_id ? `/contacts/${n.contact_id}` : '/notifications'
   }
 }
@@ -70,6 +142,14 @@ function NotificationIcon({ type, read }: { type: string; read: boolean }) {
       </div>
     )
   }
+  if (type.startsWith('lease_expiry')) {
+    const isUrgent = type === 'lease_expiry_today' || type === 'lease_expiry_30'
+    return (
+      <div className={`mt-0.5 rounded-full p-1.5 shrink-0 ${read ? 'bg-muted' : isUrgent ? 'bg-red-100 dark:bg-red-950' : 'bg-amber-100 dark:bg-amber-950'}`}>
+        <Home className={`${base} ${read ? 'text-muted-foreground' : isUrgent ? 'text-red-500 dark:text-red-300' : 'text-amber-500 dark:text-amber-300'}`} />
+      </div>
+    )
+  }
   return (
     <div className={`mt-0.5 rounded-full p-1.5 shrink-0 ${read ? 'bg-muted' : 'bg-muted'}`}>
       <Bell className={`${base} text-muted-foreground`} />
@@ -84,6 +164,18 @@ export default async function NotificationsPage() {
   const { t, locale } = await getTranslations()
 
   const admin = createAdminClient()
+
+  // Resolve workspace_id then generate lease expiry notifications
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: profileData } = await (admin as any)
+    .from('users')
+    .select('workspace_id')
+    .eq('id', user.id)
+    .single()
+  const workspaceId = (profileData as { workspace_id: string } | null)?.workspace_id
+  if (workspaceId) {
+    await generateLeaseExpiryNotifications(user.id, workspaceId)
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (admin as any)

@@ -38,6 +38,21 @@ export default async function ImmobileDetailPage({ params }: { params: Promise<{
 
   if (!propertyData) notFound()
 
+  // Resolve OMI zone code from zone name for valuation engine
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const propertyZoneName = (propertyData as any).zone as string | null
+  let omiZoneCode: string | null = null
+  if (propertyZoneName) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: zoneData } = await (admin as any)
+      .from('zones')
+      .select('omi_zone_code')
+      .eq('workspace_id', profile.workspace_id)
+      .ilike('name', propertyZoneName)
+      .maybeSingle()
+    omiZoneCode = (zoneData as { omi_zone_code: string | null } | null)?.omi_zone_code ?? null
+  }
+
   // Load property contacts with roles (include types for multi-type badges)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: contactsData } = await (admin as any)
@@ -88,6 +103,7 @@ export default async function ImmobileDetailPage({ params }: { params: Promise<{
       nearby={nearby}
       isAdmin={isAdmin}
       isOwner={isOwner}
+      omiZoneCode={omiZoneCode}
     />
   )
 }

@@ -89,6 +89,7 @@ interface ImmobileDetailClientProps {
   nearby: NearbyResult
   isAdmin: boolean
   isOwner: boolean
+  omiZoneCode?: string | null
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -108,6 +109,7 @@ export function ImmobileDetailClient({
   nearby,
   isAdmin,
   isOwner,
+  omiZoneCode,
 }: ImmobileDetailClientProps) {
   const router = useRouter()
   const [property, setProperty] = useState(initialProperty)
@@ -675,7 +677,7 @@ export function ImmobileDetailClient({
             sqm={property.sqm}
             propertyType={property.property_type}
             codiceComune={property.city ?? null}
-            zonaOmi={property.zone}
+            zonaOmi={omiZoneCode ?? null}
             existingCadastralData={property.cadastral_data ?? null}
             existingFetchedAt={property.cadastral_data_fetched_at ?? null}
             onCadastralDataFetched={async (data) => {
