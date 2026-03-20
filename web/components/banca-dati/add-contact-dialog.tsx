@@ -24,6 +24,9 @@ import { cn } from '@/lib/utils'
 
 const ROLE_LABELS: Record<string, string> = {
   proprietario: 'Proprietario',
+  venditore: 'Venditore',
+  acquirente: 'Acquirente',
+  inquilino: 'Inquilino',
   moglie_marito: 'Moglie/Marito',
   figlio_figlia: 'Figlio/Figlia',
   vicino: 'Vicino',
@@ -32,7 +35,6 @@ const ROLE_LABELS: Record<string, string> = {
   avvocato: 'Avvocato',
   commercialista: 'Commercialista',
   precedente_proprietario: 'Ex proprietario',
-  inquilino: 'Inquilino',
   altro: 'Altro',
 }
 
@@ -70,7 +72,6 @@ export const AddContactDialog = React.memo(function AddContactDialog({
   const [newLastName, setNewLastName] = useState('')
   const [newPhone, setNewPhone] = useState('')
   const [newEmail, setNewEmail] = useState('')
-  const [newType, setNewType] = useState('seller')
 
   // Shared
   const [contactRole, setContactRole] = useState('proprietario')
@@ -98,7 +99,6 @@ export const AddContactDialog = React.memo(function AddContactDialog({
     setNewLastName('')
     setNewPhone('')
     setNewEmail('')
-    setNewType('seller')
     setContactRole('proprietario')
     setContactNotes('')
   }
@@ -146,7 +146,6 @@ export const AddContactDialog = React.memo(function AddContactDialog({
         body = {
           new_contact: {
             name,
-            type: newType,
             phone: newPhone.trim() || null,
             email: newEmail.trim() || null,
           },
@@ -295,19 +294,6 @@ export const AddContactDialog = React.memo(function AddContactDialog({
                   <Label>Email</Label>
                   <Input type="email" placeholder="mario@esempio.it" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
                 </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Tipo contatto</Label>
-                <Select value={newType} onValueChange={setNewType}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="seller">Venditore</SelectItem>
-                    <SelectItem value="buyer">Acquirente</SelectItem>
-                    <SelectItem value="landlord">Proprietario affitto</SelectItem>
-                    <SelectItem value="renter">Affittuario</SelectItem>
-                    <SelectItem value="other">Altro</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
             </div>
           )}

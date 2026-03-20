@@ -32,6 +32,9 @@ import { LocatoDialog } from './locato-dialog'
 
 const ROLE_LABELS: Record<string, string> = {
   proprietario: 'Proprietario',
+  venditore: 'Venditore',
+  acquirente: 'Acquirente',
+  inquilino: 'Inquilino',
   moglie_marito: 'Moglie/Marito',
   figlio_figlia: 'Figlio/Figlia',
   vicino: 'Vicino',
@@ -40,7 +43,6 @@ const ROLE_LABELS: Record<string, string> = {
   avvocato: 'Avvocato',
   commercialista: 'Commercialista',
   precedente_proprietario: 'Ex proprietario',
-  inquilino: 'Inquilino',
   altro: 'Altro',
 }
 

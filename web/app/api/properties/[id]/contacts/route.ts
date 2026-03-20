@@ -5,10 +5,19 @@ import { createAdminClient } from '@/lib/supabase/admin'
 type RouteContext = { params: Promise<{ id: string }> }
 
 const VALID_ROLES = [
-  'proprietario', 'moglie_marito', 'figlio_figlia', 'vicino', 'portiere',
+  'proprietario', 'venditore', 'acquirente',
+  'moglie_marito', 'figlio_figlia', 'vicino', 'portiere',
   'amministratore', 'avvocato', 'commercialista', 'precedente_proprietario',
   'inquilino', 'altro',
 ]
+
+// Derive contact type from role (used when creating a new contact)
+function contactTypeFromRole(role: string): string {
+  if (['proprietario', 'venditore'].includes(role)) return 'seller'
+  if (role === 'acquirente') return 'buyer'
+  if (role === 'inquilino') return 'renter'
+  return 'other'
+}
 
 async function getWorkspaceId(userId: string) {
   const admin = createAdminClient()
@@ -84,8 +93,11 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     const name = typeof nc.name === 'string' ? nc.name.trim() : ''
     if (!name) return NextResponse.json({ error: 'Il nome del contatto è obbligatorio' }, { status: 400 })
 
+    // Derive type from role if not explicitly provided
     const validTypes = ['buyer', 'seller', 'renter', 'landlord', 'other']
-    const contactType = typeof nc.type === 'string' && validTypes.includes(nc.type) ? nc.type : 'other'
+    const contactType = typeof nc.type === 'string' && validTypes.includes(nc.type)
+      ? nc.type
+      : contactTypeFromRole(role)
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: newContact, error: createError } = await (supabase as any)
