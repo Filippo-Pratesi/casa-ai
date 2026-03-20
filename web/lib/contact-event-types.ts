@@ -10,6 +10,22 @@ export const EVENT_TYPES = {
   appuntamento: 'appuntamento',
   campagna_inviata: 'campagna_inviata',
   immobile_proposto: 'immobile_proposto',
+  // Auto-events: contact/property linking
+  immobile_collegato: 'immobile_collegato',
+  stato_cambiato: 'stato_cambiato',
+  incarico_firmato: 'incarico_firmato',
+  vendita_conclusa: 'vendita_conclusa',
+  // Auto-events: proposals
+  proposta_inviata: 'proposta_inviata',
+  proposta_accettata: 'proposta_accettata',
+  proposta_rifiutata: 'proposta_rifiutata',
+  controproposta_ricevuta: 'controproposta_ricevuta',
+  proposta_ritirata: 'proposta_ritirata',
+  // Auto-events: lease
+  locazione_avviata: 'locazione_avviata',
+  locazione_conclusa: 'locazione_conclusa',
+  contratto_scaduto: 'contratto_scaduto',
+  contratto_in_scadenza: 'contratto_in_scadenza',
 } as const
 
 export type EventType = (typeof EVENT_TYPES)[keyof typeof EVENT_TYPES]
@@ -42,6 +58,19 @@ export const EVENT_LABELS: Record<EventType, string> = {
   appuntamento: 'Appuntamento',
   campagna_inviata: 'Campagna inviata',
   immobile_proposto: 'Immobile proposto',
+  immobile_collegato: 'Immobile collegato',
+  stato_cambiato: 'Tipo contatto cambiato',
+  incarico_firmato: 'Incarico firmato',
+  vendita_conclusa: 'Vendita conclusa',
+  proposta_inviata: 'Proposta inviata',
+  proposta_accettata: 'Proposta accettata',
+  proposta_rifiutata: 'Proposta rifiutata',
+  controproposta_ricevuta: 'Controproposta ricevuta',
+  proposta_ritirata: 'Proposta ritirata',
+  locazione_avviata: 'Locazione avviata',
+  locazione_conclusa: 'Locazione conclusa',
+  contratto_scaduto: 'Contratto scaduto',
+  contratto_in_scadenza: 'Contratto in scadenza',
 }
 
 /**
@@ -55,6 +84,19 @@ export const EVENT_COLORS: Record<EventType, string> = {
   appuntamento: 'bg-purple-100 text-purple-600 dark:bg-purple-950 dark:text-purple-400',
   campagna_inviata: 'bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400',
   immobile_proposto: 'bg-teal-100 text-teal-600 dark:bg-teal-950 dark:text-teal-400',
+  immobile_collegato: 'bg-teal-100 text-teal-600 dark:bg-teal-950 dark:text-teal-400',
+  stato_cambiato: 'bg-slate-100 text-slate-600 dark:bg-slate-950 dark:text-slate-400',
+  incarico_firmato: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400',
+  vendita_conclusa: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400',
+  proposta_inviata: 'bg-cyan-100 text-cyan-600 dark:bg-cyan-950 dark:text-cyan-400',
+  proposta_accettata: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400',
+  proposta_rifiutata: 'bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400',
+  controproposta_ricevuta: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-950 dark:text-yellow-400',
+  proposta_ritirata: 'bg-slate-100 text-slate-600 dark:bg-slate-950 dark:text-slate-400',
+  locazione_avviata: 'bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400',
+  locazione_conclusa: 'bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400',
+  contratto_scaduto: 'bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400',
+  contratto_in_scadenza: 'bg-orange-100 text-orange-600 dark:bg-orange-950 dark:text-orange-400',
 }
 
 /**
@@ -67,6 +109,19 @@ export const EVENT_ICON_NAMES: Record<EventType, string> = {
   appuntamento: 'Calendar',
   campagna_inviata: 'Megaphone',
   immobile_proposto: 'Home',
+  immobile_collegato: 'Home',
+  stato_cambiato: 'RefreshCw',
+  incarico_firmato: 'PenLine',
+  vendita_conclusa: 'CheckCircle2',
+  proposta_inviata: 'Send',
+  proposta_accettata: 'ThumbsUp',
+  proposta_rifiutata: 'ThumbsDown',
+  controproposta_ricevuta: 'ArrowLeftRight',
+  proposta_ritirata: 'Undo2',
+  locazione_avviata: 'KeyRound',
+  locazione_conclusa: 'KeyRound',
+  contratto_scaduto: 'AlertCircle',
+  contratto_in_scadenza: 'Clock',
 }
 
 /**
@@ -175,6 +230,19 @@ export const EVENT_TYPE_DESCRIPTIONS: Record<EventType, string> = {
   appuntamento: 'Appuntamento fisico o riunione programmata con il cliente',
   campagna_inviata: 'Newsletter, campagna email, o comunicazione di massa inviata',
   immobile_proposto: 'Immobile o proprietà proposto/a al cliente',
+  immobile_collegato: 'Immobile collegato a questo contatto nella Banca Dati',
+  stato_cambiato: 'Tipo contatto modificato (es. acquirente → venditore)',
+  incarico_firmato: 'Contratto di incarico firmato per un immobile',
+  vendita_conclusa: 'Vendita di un immobile conclusa con successo',
+  proposta_inviata: 'Proposta di acquisto inviata al venditore',
+  proposta_accettata: 'Proposta di acquisto accettata',
+  proposta_rifiutata: 'Proposta di acquisto rifiutata',
+  controproposta_ricevuta: 'Controproposta ricevuta dal venditore',
+  proposta_ritirata: 'Proposta di acquisto ritirata',
+  locazione_avviata: 'Contratto di locazione avviato per un immobile',
+  locazione_conclusa: 'Contratto di locazione concluso',
+  contratto_scaduto: 'Contratto di locazione scaduto',
+  contratto_in_scadenza: 'Contratto di locazione in prossima scadenza',
 }
 
 /**

@@ -124,18 +124,54 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       metadata: { old_stage: oldStage, new_stage: targetStage, reason },
     })
 
+  const u = updated as Record<string, unknown>
+  const address = (u.address as string | undefined) ?? 'Indirizzo sconosciuto'
+
   // Auto-event: contact vendita_conclusa when property moves to venduto
-  if (targetStage === 'venduto' && (updated as Record<string, unknown>).owner_contact_id) {
-    const ownerContactId = (updated as Record<string, unknown>).owner_contact_id
+  if (targetStage === 'venduto' && u.owner_contact_id) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (admin as any).from('contact_events').insert({
       workspace_id: userProfile.workspace_id,
-      contact_id: ownerContactId,
+      contact_id: u.owner_contact_id,
       agent_id: user.id,
       event_type: 'vendita_conclusa',
-      title: `Vendita conclusa: ${(updated as Record<string, unknown>).address ?? 'Indirizzo sconosciuto'}`,
+      title: `Vendita conclusa: ${address}`,
       related_property_id: id,
     })
+  }
+
+  // Auto-events: locazione avviata → proprietario + inquilino
+  if (targetStage === 'locato') {
+    const contactInserts = []
+
+    if (u.owner_contact_id) {
+      contactInserts.push({
+        workspace_id: userProfile.workspace_id,
+        contact_id: u.owner_contact_id,
+        agent_id: user.id,
+        event_type: 'locazione_avviata',
+        title: `Locazione avviata: ${address}`,
+        body: u.lease_end_date ? `Scadenza contratto: ${new Date(u.lease_end_date as string).toLocaleDateString('it-IT')}` : null,
+        related_property_id: id,
+      })
+    }
+
+    if (u.tenant_contact_id) {
+      contactInserts.push({
+        workspace_id: userProfile.workspace_id,
+        contact_id: u.tenant_contact_id,
+        agent_id: user.id,
+        event_type: 'locazione_conclusa',
+        title: `Contratto di locazione firmato: ${address}`,
+        body: u.lease_end_date ? `Scadenza contratto: ${new Date(u.lease_end_date as string).toLocaleDateString('it-IT')}` : null,
+        related_property_id: id,
+      })
+    }
+
+    if (contactInserts.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (admin as any).from('contact_events').insert(contactInserts)
+    }
   }
 
   return NextResponse.json({ property: updated })

@@ -134,5 +134,70 @@ export async function POST(req: NextRequest) {
     }
   }).catch(() => { /* silent — Google Calendar is optional */ })
 
+  // Auto-events: contact_event on linked contact + property_event on linked listing's property
+  const startsAtLabel = new Date(String(body.starts_at)).toLocaleString('it-IT', {
+    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  })
+
+  if (payload.contact_id) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (admin as any).from('contact_events').insert({
+      workspace_id: profile.workspace_id,
+      contact_id: payload.contact_id,
+      agent_id: targetAgentId,
+      event_type: 'appuntamento',
+      title: `${title} — ${startsAtLabel}`,
+      body: payload.notes ?? null,
+    })
+  }
+
+  if (payload.listing_id) {
+    // Resolve property_id from listing
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: listingRow } = await (admin as any)
+      .from('listings')
+      .select('property_id')
+      .eq('id', payload.listing_id)
+      .single()
+    const propertyId = (listingRow as { property_id?: string } | null)?.property_id ?? null
+
+    if (!propertyId) {
+      // Try to find property by listing_id on properties table
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: propRow } = await (admin as any)
+        .from('properties')
+        .select('id')
+        .eq('listing_id', payload.listing_id)
+        .eq('workspace_id', profile.workspace_id)
+        .single()
+      const resolvedPropertyId = (propRow as { id?: string } | null)?.id ?? null
+      if (resolvedPropertyId) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (admin as any).from('property_events').insert({
+          workspace_id: profile.workspace_id,
+          property_id: resolvedPropertyId,
+          agent_id: targetAgentId,
+          event_type: 'visita',
+          title: `${title} — ${startsAtLabel}`,
+          description: payload.notes ?? null,
+          sentiment: 'positive',
+          contact_id: payload.contact_id ?? null,
+        })
+      }
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (admin as any).from('property_events').insert({
+        workspace_id: profile.workspace_id,
+        property_id: propertyId,
+        agent_id: targetAgentId,
+        event_type: 'visita',
+        title: `${title} — ${startsAtLabel}`,
+        description: payload.notes ?? null,
+        sentiment: 'positive',
+        contact_id: payload.contact_id ?? null,
+      })
+    }
+  }
+
   return NextResponse.json({ id: newId }, { status: 201 })
 }

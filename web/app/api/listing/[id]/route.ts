@@ -76,6 +76,33 @@ export async function PATCH(
     .eq('workspace_id', profile.workspace_id)
   if (error) return NextResponse.json({ error: 'Errore aggiornamento' }, { status: 500 })
 
+  // Auto-event: property_event on price change (fire-and-forget)
+  if (currentPrice !== newPrice) {
+    void (async () => {
+      // Find linked property
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: propRow } = await (admin as any)
+        .from('properties')
+        .select('id')
+        .eq('listing_id', id)
+        .eq('workspace_id', profile.workspace_id)
+        .single()
+      if (propRow?.id) {
+        const fmt = (v: number) => `€${v.toLocaleString('it-IT')}`
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (admin as any).from('property_events').insert({
+          workspace_id: profile.workspace_id,
+          property_id: propRow.id,
+          agent_id: user.id,
+          event_type: 'altro',
+          title: `Prezzo aggiornato: ${fmt(currentPrice)} → ${fmt(newPrice)}`,
+          sentiment: newPrice < currentPrice ? 'neutral' : 'positive',
+          metadata: { old_price: currentPrice, new_price: newPrice, listing_id: id },
+        })
+      }
+    })()
+  }
+
   return NextResponse.json({ success: true, price: newPrice })
 }
 
@@ -169,6 +196,30 @@ export async function DELETE(
     console.error('Delete listing error:', error)
     return NextResponse.json({ error: 'Errore nella cancellazione' }, { status: 500 })
   }
+
+  // Auto-event: property_event archiviato on linked banca dati property (fire-and-forget)
+  void (async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: propRow } = await (admin as any)
+      .from('properties')
+      .select('id')
+      .eq('listing_id', id)
+      .eq('workspace_id', profile.workspace_id)
+      .single()
+    if (propRow?.id) {
+      const addressLabel = [listing.address as string, listing.city as string].filter(Boolean).join(', ')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (admin as any).from('property_events').insert({
+        workspace_id: profile.workspace_id,
+        property_id: propRow.id,
+        agent_id: user.id,
+        event_type: 'archiviato',
+        title: sold ? `Annuncio archiviato come venduto: ${addressLabel}` : `Annuncio rimosso: ${addressLabel}`,
+        sentiment: sold ? 'positive' : 'neutral',
+        metadata: { listing_id: id, sold },
+      })
+    }
+  })()
 
   return NextResponse.json({ success: true })
 }
