@@ -211,19 +211,6 @@ export function InvoiceListClient({ invoices: initialInvoices }: InvoiceListClie
     }
   }
 
-  if (invoices.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-muted/30 py-16 text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[oklch(0.57_0.20_33/0.15)] to-[oklch(0.66_0.15_188/0.10)]">
-          <Receipt className="h-8 w-8 text-[oklch(0.57_0.20_33)] dark:text-[oklch(0.73_0.18_36)]" />
-        </div>
-        <h3 className="text-lg font-semibold">Nessuna fattura ancora</h3>
-        <p className="mt-1 text-sm text-muted-foreground max-w-sm">Crea la tua prima fattura e gestisci la contabilità direttamente da CasaAI.</p>
-        <Link href="/contabilita/nuova" className="btn-ai mt-6 inline-flex items-center justify-center rounded-lg px-2.5 h-8 text-sm font-medium">Crea la prima fattura</Link>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-4">
       {/* Filters + Export */}

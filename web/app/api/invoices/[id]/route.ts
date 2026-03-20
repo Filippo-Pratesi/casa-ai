@@ -61,9 +61,21 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const isAdmin = profile.role === 'admin' || profile.role === 'group_admin'
   if (!isOwner && !isAdmin) return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 })
 
-  // Strip protected fields
-  const { id: _id, workspace_id: _ws, agent_id: _ag, numero_fattura: _nf, anno: _anno, progressivo: _prog, ...updateable } = body
-  void _id; void _ws; void _ag; void _nf; void _anno; void _prog
+  // Allowlist of mutable fields — reject anything not explicitly permitted
+  const ALLOWED_FIELDS = [
+    'cliente_nome', 'cliente_indirizzo', 'cliente_pec', 'cliente_codice_fiscale',
+    'voci', 'imponibile', 'importo_iva', 'importo_ritenuta', 'importo_cassa',
+    'totale_documento', 'netto_a_pagare', 'note', 'descrizione',
+    'data_emissione', 'data_scadenza', 'data_pagamento',
+    'metodo_pagamento', 'iban', 'status', 'listing_id',
+  ] as const
+  const updateable: Record<string, unknown> = {}
+  for (const field of ALLOWED_FIELDS) {
+    if (field in body) updateable[field] = body[field]
+  }
+  if (Object.keys(updateable).length === 0) {
+    return NextResponse.json({ error: 'Nessun campo modificabile fornito' }, { status: 400 })
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (admin as any)

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Archive, Home, UserRound, CheckCircle2, Trash2, ChevronRight, Euro, BarChart2 } from 'lucide-react'
 import { getTranslations } from '@/lib/i18n/server'
 import { ArchiveDateFilter } from '@/components/archive/archive-date-filter'
+import { ArchiveExportButtons } from '@/components/archive/archive-export-buttons'
 import { Suspense } from 'react'
 
 interface ArchivedListing {
@@ -97,14 +98,18 @@ export default async function ArchivePage({
   if (date_from) listingsQuery = listingsQuery.gte('archived_at', date_from)
   if (date_to) listingsQuery = listingsQuery.lte('archived_at', date_to + 'T23:59:59')
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let contactsQuery = (admin as any)
+    .from('archived_contacts')
+    .select('id, name, type, phone, email, bought_listing, bought_listing_address, archived_at')
+    .eq('workspace_id', profile.workspace_id)
+    .order('archived_at', { ascending: false })
+  if (date_from) contactsQuery = contactsQuery.gte('archived_at', date_from)
+  if (date_to) contactsQuery = contactsQuery.lte('archived_at', date_to + 'T23:59:59')
+
   const [listingsRes, contactsRes] = await Promise.all([
     listingsQuery,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (admin as any)
-      .from('archived_contacts')
-      .select('id, name, type, phone, email, bought_listing, bought_listing_address, archived_at')
-      .eq('workspace_id', profile.workspace_id)
-      .order('archived_at', { ascending: false }),
+    contactsQuery,
   ])
 
   const allListings = (listingsRes.data ?? []) as ArchivedListing[]
@@ -167,14 +172,17 @@ export default async function ArchivePage({
             <p className="text-sm text-muted-foreground">{t('archive.subtitle')}</p>
           </div>
         </div>
-        <Suspense>
-          <ArchiveDateFilter dateFrom={date_from} dateTo={date_to} filter={filter} />
-        </Suspense>
+        <div className="flex flex-wrap items-center gap-3">
+          <Suspense>
+            <ArchiveDateFilter dateFrom={date_from} dateTo={date_to} filter={filter} />
+          </Suspense>
+          <ArchiveExportButtons />
+        </div>
       </div>
 
       {/* Stats bar */}
       {soldListings.length > 0 && (
-        <div className="animate-in-2 grid grid-cols-3 gap-3">
+        <div className="animate-in-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="rounded-xl border border-border bg-card px-4 py-3">
             <div className="flex items-center gap-2 mb-1">
               <Home className="h-3.5 w-3.5 text-muted-foreground" />

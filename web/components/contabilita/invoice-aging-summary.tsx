@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { formatCurrency } from './invoice-totals-calculator'
 import type { InvoiceStats, AgingInvoice } from '@/app/api/invoices/stats/route'
@@ -117,7 +118,7 @@ export function InvoiceAgingSummary({ aging }: Props) {
               {openBucket === b.label && b.invoices.length > 0 && (
                 <div className="mt-2 space-y-1.5 pt-2 border-t border-current/10">
                   {b.invoices.map(inv => (
-                    <div key={inv.id} className="flex items-center justify-between text-xs">
+                    <Link key={inv.id} href={`/contabilita/${inv.id}`} className="flex items-center justify-between text-xs hover:bg-black/5 dark:hover:bg-white/5 rounded-md px-1 py-0.5 transition-colors">
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="font-mono font-medium text-foreground shrink-0">{inv.numero_fattura}</span>
                         <span className="truncate text-muted-foreground">{inv.cliente_nome}</span>
@@ -126,7 +127,7 @@ export function InvoiceAgingSummary({ aging }: Props) {
                         <span className="text-muted-foreground">{inv.days_overdue} gg</span>
                         <span className="font-semibold text-foreground">{formatCurrency(inv.totale_documento)}</span>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               )}

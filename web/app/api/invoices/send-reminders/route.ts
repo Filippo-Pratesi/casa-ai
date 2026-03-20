@@ -5,9 +5,12 @@ import { reminderSubject, reminderHtml, type ReminderType } from '@/lib/invoice-
 
 // POST /api/invoices/send-reminders — cron endpoint, no user auth required (use CRON_SECRET)
 export async function POST(req: NextRequest) {
-  const secret = req.headers.get('x-cron-secret')
   const expectedSecret = process.env.CRON_SECRET
-  if (expectedSecret && secret !== expectedSecret) {
+  if (!expectedSecret) {
+    return NextResponse.json({ error: 'CRON_SECRET non configurato' }, { status: 500 })
+  }
+  const secret = req.headers.get('x-cron-secret')
+  if (secret !== expectedSecret) {
     return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
   }
 

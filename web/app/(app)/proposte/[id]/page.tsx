@@ -2,14 +2,14 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, FileText, Download, ArrowLeftRight } from 'lucide-react'
+import { ChevronLeft, FileText, Download, ArrowLeftRight, ArrowRightLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ProposalStatusBadge } from '@/components/proposals/proposal-status-badge'
 import { ProposalDetailActions } from '@/components/proposals/proposal-detail-actions'
 import { GenerateInvoiceButton } from '@/components/proposals/generate-invoice-button'
 
 function fmtEur(n: number | null | undefined) {
-  if (!n) return '€ 0'
+  if (n == null) return '---'
   return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
 }
 
@@ -179,6 +179,37 @@ export default async function PropostaDetailPage({ params }: Params) {
               </div>
             )}
           </div>
+
+          {/* Counter-offer */}
+          {proposal.prezzo_controproposto != null && (
+            <div className="rounded-2xl border border-purple-200 dark:border-purple-800 bg-gradient-to-br from-purple-50/50 to-purple-100/30 dark:from-purple-950/30 dark:to-purple-900/20 p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <ArrowRightLeft className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                <h2 className="text-sm font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wide">Controproposta</h2>
+              </div>
+              <p className="text-2xl font-bold text-foreground">{fmtEur(proposal.prezzo_controproposto)}</p>
+              <div className="mt-4 space-y-2">
+                {proposal.validita_risposta && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Validità risposta</p>
+                    <p className="text-sm font-medium text-foreground">{fmtDate(proposal.validita_risposta)}</p>
+                  </div>
+                )}
+                {proposal.data_rogito_proposta && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Rogito entro il</p>
+                    <p className="text-sm font-medium text-foreground">{fmtDate(proposal.data_rogito_proposta)}</p>
+                  </div>
+                )}
+                {proposal.note_venditore && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Note del venditore</p>
+                    <p className="text-sm text-foreground whitespace-pre-wrap">{proposal.note_venditore}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Dates */}
           <div className="rounded-2xl border border-border bg-card p-5 space-y-3">

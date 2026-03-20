@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { use, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, ArrowLeftRight } from 'lucide-react'
@@ -16,23 +16,15 @@ interface CounterOfferPageProps {
 
 export default function CounterOfferPage({ params }: CounterOfferPageProps) {
   const router = useRouter()
+  const { id: proposalId } = use(params)
   const [saving, setSaving] = useState(false)
   const [prezzoContro, setPrezzoContro] = useState('')
   const [validitaRisposta, setValiditaRisposta] = useState('')
   const [dataRogito, setDataRogito] = useState('')
   const [note, setNote] = useState('')
 
-  // We need the id from params — use React.use() pattern
-  const [proposalId, setProposalId] = useState<string | null>(null)
-
-  // Resolve params on first render
-  if (!proposalId) {
-    params.then(p => setProposalId(p.id))
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!proposalId) return
     if (!prezzoContro || isNaN(Number(prezzoContro))) {
       toast.error('Inserisci un prezzo valido')
       return
@@ -141,7 +133,7 @@ export default function CounterOfferPage({ params }: CounterOfferPageProps) {
           </Button>
           <Button
             type="submit"
-            disabled={saving || !proposalId}
+            disabled={saving}
             className="bg-purple-600 hover:bg-purple-700 text-white"
           >
             {saving ? 'Salvataggio…' : 'Registra controproposta'}
