@@ -13,14 +13,13 @@ import { ContactCronistoria } from '@/components/contacts/contact-cronistoria'
 import { CONTACT_TYPE_COLORS as TYPE_COLORS, CONTACT_TYPE_LABELS as TYPE_LABELS } from '@/lib/contact-utils'
 import { ContactTypeBadges } from '@/components/contacts/contact-type-badges'
 
-interface MatchingListing {
-  id: string
-  address: string
-  city: string
-  price: number
-  sqm: number
-  rooms: number
-  property_type: string
+interface MatchResult {
+  property_id: string
+  combined_score: number
+  ai_adjustment: number
+  ai_reason: string | null
+  properties: { address: string; city: string; estimated_value: number | null; sqm: number | null; rooms: number | null; property_type: string | null } | null
+  listing_id?: string | null
 }
 
 const PROPERTY_TYPE_LABELS: Record<string, string> = {
@@ -88,23 +87,18 @@ export default async function ContactDetailPage({
 
   const contact = data as Contact
 
-  const isBuyerLike = contact.type === 'buyer' || contact.type === 'renter'
+  const isBuyerLike = contact.type === 'buyer' || contact.type === 'renter' ||
+    (contact.types ?? []).some(t => t === 'buyer' || t === 'renter')
 
-  // Build DB-level filter for matching listings (A5)
+  // Query pre-computed match results from match engine (deterministic + AI)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const buildMatchingListingsQuery = () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let q = (admin as any)
-      .from('listings')
-      .select('id, address, city, price, sqm, rooms, property_type')
-      .eq('workspace_id', profile?.workspace_id)
-      .order('created_at', { ascending: false })
-      .limit(5)
-    if (contact.budget_max !== null) q = q.lte('price', contact.budget_max)
-    if (contact.min_rooms !== null) q = q.gte('rooms', contact.min_rooms)
-    if (contact.min_sqm !== null) q = q.gte('sqm', contact.min_sqm)
-    return q
-  }
+  const buildMatchResultsQuery = () => (admin as any)
+    .from('match_results')
+    .select('property_id, combined_score, ai_adjustment, ai_reason, properties(address, city, estimated_value, sqm, rooms, property_type)')
+    .eq('workspace_id', profile?.workspace_id)
+    .eq('contact_id', id)
+    .order('combined_score', { ascending: false })
+    .limit(5)
 
   // Fetch all independent data in parallel (A1)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -127,7 +121,7 @@ export default async function ContactDetailPage({
       .eq('contact_id', id)
       .order('starts_at', { ascending: false })
       .limit(10),
-    isBuyerLike ? buildMatchingListingsQuery() : Promise.resolve({ data: [] }),
+    isBuyerLike ? buildMatchResultsQuery() : Promise.resolve({ data: [] }),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (admin as any)
       .from('properties')
@@ -172,13 +166,23 @@ export default async function ContactDetailPage({
     agent: undefined,
   }))
   const appointments = (appointmentsData ?? []) as { id: string; title: string; starts_at: string; type: string }[]
-  // Apply city/type filters client-side (DB array contains not straightforward with ilike)
-  const rawMatchingListings = (matchingListingsResult.data ?? []) as Array<MatchingListing>
-  const matchingListings = rawMatchingListings.filter(l => {
-    if ((contact.preferred_cities ?? []).length > 0 && !(contact.preferred_cities ?? []).map(s => s.toLowerCase()).includes(l.city.toLowerCase())) return false
-    if ((contact.preferred_types ?? []).length > 0 && !(contact.preferred_types ?? []).includes(l.property_type)) return false
-    return true
-  })
+  const rawMatchResults = (matchingListingsResult.data ?? []) as MatchResult[]
+
+  // Lookup listing IDs for matched properties (separate query — no direct FK from match_results to listings)
+  let matchResults = rawMatchResults
+  if (rawMatchResults.length > 0) {
+    const propertyIds = rawMatchResults.map(m => m.property_id)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: listingsForProps } = await (admin as any)
+      .from('listings')
+      .select('id, property_id')
+      .in('property_id', propertyIds)
+    const listingMap: Record<string, string> = {}
+    for (const l of (listingsForProps ?? []) as { id: string; property_id: string }[]) {
+      listingMap[l.property_id] = l.id
+    }
+    matchResults = rawMatchResults.map(m => ({ ...m, listing_id: listingMap[m.property_id] ?? null }))
+  }
 
   function birthdayDaysLeft(dob: string | null): number | null {
     if (!dob) return null
@@ -420,34 +424,49 @@ export default async function ContactDetailPage({
         </div>
       )}
 
-      {/* Matching listings */}
-      {matchingListings.length > 0 && (
+      {/* Immobili compatibili — da Match Engine */}
+      {matchResults.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Home className="h-4 w-4 text-muted-foreground" />
             <h2 className="text-sm font-semibold text-foreground">Immobili compatibili</h2>
-            <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{matchingListings.length}</span>
+            <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{matchResults.length}</span>
           </div>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {matchingListings.slice(0, 5).map((l) => (
-              <a
-                key={l.id}
-                href={`/listing/${l.id}`}
-                className="rounded-xl border border-border bg-muted/30 px-4 py-3 hover:bg-muted transition-colors block"
-              >
-                <p className="text-sm font-medium text-foreground truncate">{l.address}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{l.city}</p>
-                <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                  <span className="font-semibold text-foreground">€{l.price.toLocaleString('it-IT')}</span>
-                  <span>{l.sqm} m²</span>
-                  <span>{l.rooms} loc.</span>
-                </div>
-              </a>
-            ))}
+          <div className="space-y-2">
+            {matchResults.map((m) => {
+              const prop = m.properties
+              const href = m.listing_id ? `/listing/${m.listing_id}` : `/banca-dati/${m.property_id}`
+              const scoreColor = m.combined_score >= 80 ? 'text-green-600' : m.combined_score >= 60 ? 'text-amber-500' : 'text-blue-500'
+              return (
+                <Link
+                  key={m.property_id}
+                  href={href}
+                  className="rounded-xl border border-border bg-muted/30 px-4 py-3 hover:bg-muted transition-colors block"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-foreground truncate">{prop?.address ?? '—'}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{prop?.city}</p>
+                      <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground flex-wrap">
+                        {prop?.estimated_value && <span className="font-semibold text-foreground">€{prop.estimated_value.toLocaleString('it-IT')}</span>}
+                        {prop?.sqm && <span>{prop.sqm} m²</span>}
+                        {prop?.rooms && <span>{prop.rooms} loc.</span>}
+                        {prop?.property_type && <span>{PROPERTY_TYPE_LABELS[prop.property_type] ?? prop.property_type}</span>}
+                      </div>
+                      {m.ai_reason && <p className="text-xs text-muted-foreground italic mt-1">{m.ai_reason}</p>}
+                    </div>
+                    <div className="shrink-0 flex flex-col items-end gap-1">
+                      <span className={`text-sm font-bold tabular-nums ${scoreColor}`}>{m.combined_score}</span>
+                      {m.ai_adjustment !== 0 && (
+                        <span className="text-[10px] text-muted-foreground">AI {m.ai_adjustment > 0 ? '+' : ''}{m.ai_adjustment}</span>
+                      )}
+                      <ExternalLink className="h-3.5 w-3.5 text-muted-foreground mt-0.5" />
+                    </div>
+                  </div>
+                </Link>
+              )
+            })}
           </div>
-          {matchingListings.length > 5 && (
-            <p className="text-xs text-muted-foreground text-center">+ {matchingListings.length - 5} altri</p>
-          )}
         </div>
       )}
 
