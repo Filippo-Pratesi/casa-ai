@@ -8,6 +8,7 @@ import {
   Phone, Mail, Eye, MessageSquare, FileText, Home, CheckCircle,
   AlertCircle, RefreshCw, Star, StickyNote, Users, Building2,
   Megaphone, TrendingUp, Package, MoreHorizontal, Plus, X, Clock,
+  UserPlus, ArrowLeftRight,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -59,6 +60,8 @@ export const EVENT_ICON: Record<string, React.ElementType> = {
   valutazione_ai: Star,
   insight_ai: Star,
   altro: MoreHorizontal,
+  contatto_aggiunto: UserPlus,
+  cambio_disposizione: ArrowLeftRight,
 }
 
 export const EVENT_LABELS: Record<string, string> = {
@@ -87,6 +90,8 @@ export const EVENT_LABELS: Record<string, string> = {
   valutazione_ai: 'Valutazione AI',
   insight_ai: 'Insight AI',
   altro: 'Altro',
+  contatto_aggiunto: 'Contatto aggiunto',
+  cambio_disposizione: 'Disposizione cambiata',
 }
 
 const SENTIMENT_CONFIG = {

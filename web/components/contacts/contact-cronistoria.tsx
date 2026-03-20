@@ -1,14 +1,21 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import Link from 'next/link'
-import { FileText, Phone, Mail, Calendar, Megaphone, Home, Plus, Loader2, ChevronDown } from 'lucide-react'
+import { FileText, Phone, Mail, Calendar, Megaphone, Home, Plus, Loader2, ChevronDown, RefreshCw, Star, CheckCircle, ThumbsDown, ThumbsUp, Send, Undo2, ArrowLeftRight, KeyRound, AlertCircle, Clock, UserPlus } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { formatDistanceToNow } from 'date-fns'
 import { it } from 'date-fns/locale'
 import { EVENT_COLORS, EVENT_LABELS, EVENT_ICON_NAMES } from '@/lib/contact-event-types'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 interface ContactEvent {
   id: string
@@ -34,6 +41,18 @@ const ICON_COMPONENTS: Record<string, React.ElementType> = {
   Calendar,
   Megaphone,
   Home,
+  RefreshCw,
+  Star,
+  CheckCircle2: CheckCircle,
+  ThumbsUp,
+  ThumbsDown,
+  Send,
+  Undo2,
+  ArrowLeftRight,
+  KeyRound,
+  AlertCircle,
+  Clock,
+  UserPlus,
 }
 
 export function ContactCronistoria({ contactId, initialEvents }: ContactCronistoriaProps) {
@@ -42,8 +61,15 @@ export function ContactCronistoria({ contactId, initialEvents }: ContactCronisto
   const [noteText, setNoteText] = useState('')
   const [savingNote, setSavingNote] = useState(false)
   const [showAll, setShowAll] = useState(false)
+  const [filterType, setFilterType] = useState('all')
 
-  const displayedEvents = showAll ? events : events.slice(0, 10)
+  const presentTypes = useMemo(
+    () => Array.from(new Set(events.map(e => e.event_type))).sort(),
+    [events]
+  )
+
+  const filteredEvents = filterType === 'all' ? events : events.filter(e => e.event_type === filterType)
+  const displayedEvents = showAll ? filteredEvents : filteredEvents.slice(0, 10)
 
   const handleAddNote = useCallback(async () => {
     const text = noteText.trim()
@@ -88,10 +114,32 @@ export function ContactCronistoria({ contactId, initialEvents }: ContactCronisto
     <div className="space-y-4">
       {/* Cronistoria section */}
       <div className="rounded-xl border border-border bg-muted/30 px-4 py-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium flex-1">
             Cronistoria
           </p>
+          {presentTypes.length > 1 && (
+            <Select value={filterType} onValueChange={(v) => { setFilterType(v ?? 'all'); setShowAll(false) }}>
+              <SelectTrigger className="h-7 w-[150px] text-xs">
+                <span className="truncate text-xs">
+                  {filterType === 'all'
+                    ? `Tutti (${events.length})`
+                    : `${EVENT_LABELS[filterType as keyof typeof EVENT_LABELS] ?? filterType} (${events.filter(e => e.event_type === filterType).length})`}
+                </span>
+              </SelectTrigger>
+              <SelectContent align="end">
+                <SelectItem value="all" className="text-xs">Tutti ({events.length})</SelectItem>
+                {presentTypes.map(t => {
+                  const count = events.filter(e => e.event_type === t).length
+                  return (
+                    <SelectItem key={t} value={t} className="text-xs">
+                      {EVENT_LABELS[t as keyof typeof EVENT_LABELS] ?? t} ({count})
+                    </SelectItem>
+                  )
+                })}
+              </SelectContent>
+            </Select>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -135,8 +183,10 @@ export function ContactCronistoria({ contactId, initialEvents }: ContactCronisto
           </div>
         )}
 
-        {events.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-2">Nessun evento registrato</p>
+        {filteredEvents.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-2">
+            {filterType !== 'all' ? 'Nessun evento di questo tipo.' : 'Nessun evento registrato'}
+          </p>
         ) : (
           <ul role="list" className="border-l-2 border-border pl-4 space-y-3 max-h-[70vh] overflow-y-auto overscroll-contain pr-1">
             {displayedEvents.map((ev) => {
@@ -191,13 +241,13 @@ export function ContactCronistoria({ contactId, initialEvents }: ContactCronisto
           </ul>
         )}
 
-        {events.length > 10 && !showAll && (
+        {filteredEvents.length > 10 && !showAll && (
           <button
             onClick={() => setShowAll(true)}
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             <ChevronDown className="h-3.5 w-3.5" />
-            Mostra tutti ({events.length} eventi)
+            Mostra tutti ({filteredEvents.length} eventi)
           </button>
         )}
       </div>
