@@ -3,6 +3,19 @@ import { NextResponse, type NextRequest } from 'next/server'
 import type { Database } from '@/lib/supabase/types'
 
 export async function updateSession(request: NextRequest) {
+  // Handle CORS preflight
+  if (request.method === 'OPTIONS') {
+    return new NextResponse(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_APP_URL ?? '*',
+        'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Max-Age': '86400',
+      },
+    })
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient<Database>(
@@ -49,6 +62,12 @@ export async function updateSession(request: NextRequest) {
 
   if (!user && !isPublicRoute) return redirectWith('/login')
   if (user && isPublicRoute) return redirectWith('/dashboard')
+
+  // Add CORS headers to all API responses
+  if (request.nextUrl.pathname.startsWith('/api/')) {
+    supabaseResponse.headers.set('Access-Control-Allow-Origin', process.env.NEXT_PUBLIC_APP_URL ?? '*')
+    supabaseResponse.headers.set('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS')
+  }
 
   return supabaseResponse
 }

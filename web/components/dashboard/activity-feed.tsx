@@ -185,8 +185,8 @@ export function ActivityFeed() {
             >
               {f.label}
               {f.key !== 'all' && (
-                <span className="ml-1 opacity-60">
-                  ({feed.filter(i => i.source === f.key).length})
+                <span className="ml-1.5 opacity-50 tabular-nums">
+                  {feed.filter(i => i.source === f.key).length}
                 </span>
               )}
             </button>

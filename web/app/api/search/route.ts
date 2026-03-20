@@ -22,8 +22,9 @@ export async function GET(req: NextRequest) {
   if (!profile) return NextResponse.json({ results: [] })
 
   const pattern = `%${q}%`
+  const safe = q.replace(/'/g, "''")
 
-  const [listingsRes, contactsRes, propertiesRes] = await Promise.all([
+  const [listingsRes, contactsRes, propertiesRes, proposalsRes, invoicesRes] = await Promise.all([
     // Search listings by address or city
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (admin as any)
@@ -55,6 +56,24 @@ export async function GET(req: NextRequest) {
       .select('id, address, city, zone, stage')
       .eq('workspace_id', profile.workspace_id)
       .or(`address.ilike.${pattern},city.ilike.${pattern},zone.ilike.${pattern}`)
+      .limit(5),
+
+    // Search proposals by buyer or seller name
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (admin as any)
+      .from('proposals')
+      .select('id, buyer_name, seller_name, prezzo_offerto, status')
+      .eq('workspace_id', profile.workspace_id)
+      .or(`buyer_name.ilike.%${safe}%,seller_name.ilike.%${safe}%`)
+      .limit(5),
+
+    // Search invoices by client name or invoice number
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (admin as any)
+      .from('invoices')
+      .select('id, cliente_nome, numero_fattura, anno, importo_totale, status')
+      .eq('workspace_id', profile.workspace_id)
+      .or(`cliente_nome.ilike.%${safe}%,numero_fattura.ilike.%${safe}%`)
       .limit(5),
   ])
 
@@ -90,5 +109,23 @@ export async function GET(req: NextRequest) {
       href: `/banca-dati/${p.id}`,
     }))
 
-  return NextResponse.json({ results: [...listings, ...contacts, ...properties] })
+  const proposals = ((proposalsRes.data ?? []) as Array<{ id: string; buyer_name: string; seller_name: string | null; prezzo_offerto: number | null; status: string }>)
+    .map(p => ({
+      type: 'proposal' as const,
+      id: p.id,
+      label: p.buyer_name,
+      sub: `${p.seller_name ? p.seller_name + ' · ' : ''}${p.prezzo_offerto ? '€' + p.prezzo_offerto.toLocaleString('it-IT') : ''}`.trim().replace(/^·\s*/, ''),
+      href: `/proposte/${p.id}`,
+    }))
+
+  const invoices = ((invoicesRes.data ?? []) as Array<{ id: string; cliente_nome: string; numero_fattura: string; anno: number; importo_totale: number | null; status: string }>)
+    .map(inv => ({
+      type: 'invoice' as const,
+      id: inv.id,
+      label: `N. ${inv.numero_fattura}/${inv.anno} — ${inv.cliente_nome}`,
+      sub: inv.importo_totale ? `€${inv.importo_totale.toLocaleString('it-IT')} · ${inv.status}` : inv.status,
+      href: `/contabilita/${inv.id}`,
+    }))
+
+  return NextResponse.json({ results: [...listings, ...contacts, ...properties, ...proposals, ...invoices] })
 }

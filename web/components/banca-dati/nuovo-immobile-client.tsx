@@ -400,10 +400,9 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Tipo operazione</Label>
-              <Select value={transactionType || 'none'} onValueChange={(v) => setTransactionType(!v || v === 'none' ? '' : v)}>
-                <SelectTrigger><SelectValue placeholder="Non specificato" /></SelectTrigger>
+              <Select value={transactionType || null} onValueChange={(v) => setTransactionType(v ?? '')}>
+                <SelectTrigger><SelectValue placeholder="Nessuno" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Non specificato</SelectItem>
                   <SelectItem value="vendita">Vendita</SelectItem>
                   <SelectItem value="affitto">Affitto</SelectItem>
                 </SelectContent>
@@ -411,10 +410,9 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
             </div>
             <div className="space-y-1.5">
               <Label>Tipo immobile</Label>
-              <Select value={propertyType || 'none'} onValueChange={(v) => setPropertyType(!v || v === 'none' ? '' : v)}>
-                <SelectTrigger><SelectValue placeholder="Non specificato" /></SelectTrigger>
+              <Select value={propertyType || null} onValueChange={(v) => setPropertyType(v ?? '')}>
+                <SelectTrigger><SelectValue placeholder="Nessuno" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Non specificato</SelectItem>
                   <SelectItem value="apartment">Appartamento</SelectItem>
                   <SelectItem value="house">Casa</SelectItem>
                   <SelectItem value="villa">Villa</SelectItem>
@@ -484,10 +482,9 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Condizioni</Label>
-              <Select value={condition || 'none'} onValueChange={(v) => setCondition(!v || v === 'none' ? '' : v)}>
-                <SelectTrigger><SelectValue placeholder="Non specificato" /></SelectTrigger>
+              <Select value={condition || null} onValueChange={(v) => setCondition(v ?? '')}>
+                <SelectTrigger><SelectValue placeholder="Nessuno" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Non specificato</SelectItem>
                   <SelectItem value="ottimo">Ottimo</SelectItem>
                   <SelectItem value="buono">Buono</SelectItem>
                   <SelectItem value="sufficiente">Sufficiente</SelectItem>

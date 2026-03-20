@@ -24,6 +24,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { MlsToggle } from '@/components/listing/mls-toggle'
 import { ToneRegenerate } from '@/components/listing/tone-regenerate'
 import { ListingMatchPanel } from '@/components/listing/match-panel'
+import { ListingCronistoriaPanel } from '@/components/listing/listing-cronistoria-panel'
+import type { CronistoriaEvent, ListingNote } from '@/components/listing/listing-cronistoria-panel'
 import type { Listing, GeneratedContent } from '@/lib/supabase/types'
 
 const TYPE_LABELS: Record<string, string> = {
@@ -242,9 +244,28 @@ export default async function ListingDetailPage({
     contact_name: e.contact?.name ?? null,
     contact_id: e.contact?.id ?? null,
   }))
-  const cronistoriaEvents = [...cronistoriaPropertyEvents, ...cronistoriaContactEvents]
+  const cronistoriaEvents: CronistoriaEvent[] = [...cronistoriaPropertyEvents, ...cronistoriaContactEvents]
     .sort((a, b) => new Date(b.event_date).getTime() - new Date(a.event_date).getTime())
     .slice(0, 50)
+
+  // Fetch listing notes for cronistoria collaboration panel
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: listingNotesData } = await (admin as any)
+    .from('listing_notes')
+    .select('id, content, created_at, agent:users!listing_notes_agent_id_fkey(name)')
+    .eq('listing_id', id)
+    .eq('workspace_id', userProfile.workspace_id)
+    .order('created_at', { ascending: false })
+    .limit(50)
+
+  const initialNotes: ListingNote[] = ((listingNotesData ?? []) as Array<{
+    id: string; content: string; created_at: string; agent: { name: string } | null
+  }>).map((n) => ({
+    id: n.id,
+    content: n.content,
+    created_at: n.created_at,
+    agent_name: n.agent?.name ?? null,
+  }))
 
   // Snapshot linked property as const so TypeScript narrowing works in JSX
   const linkedPropertySnap: LinkedProperty | null = linkedProperty
@@ -656,39 +677,12 @@ export default async function ListingDetailPage({
       )}
     </div>
 
-    {/* Right sidebar: cronistoria */}
-    {cronistoriaEvents.length > 0 && (
-      <div className="hidden lg:block lg:sticky lg:top-4 space-y-3">
-        <div className="rounded-xl border border-border bg-muted/30 px-4 py-4 space-y-3">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Cronistoria</p>
-          <ul role="list" className="border-l-2 border-border pl-3 space-y-3 max-h-[80vh] overflow-y-auto pr-1">
-            {cronistoriaEvents.map((ev) => (
-              <li key={`${ev.source}-${ev.id}`} className="relative">
-                <div className="absolute -left-[17px] top-1 h-3 w-3 rounded-full border-2 border-background bg-[oklch(0.57_0.20_33)]" />
-                <div className="space-y-0.5">
-                  <p className="text-xs font-medium leading-tight">{ev.title}</p>
-                  {ev.description && (
-                    <p className="text-[10px] text-muted-foreground line-clamp-2">{ev.description}</p>
-                  )}
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[9px] font-medium rounded bg-muted px-1 py-0.5 text-muted-foreground">{ev.event_type}</span>
-                    {ev.source === 'contact' && ev.contact_name && (
-                      <Link href={`/contacts/${ev.contact_id}`} className="text-[9px] text-[oklch(0.57_0.20_33)] hover:underline">
-                        {ev.contact_name}
-                      </Link>
-                    )}
-                  </div>
-                  <time className="text-[9px] text-muted-foreground/50 block">
-                    {new Date(ev.event_date).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    {ev.agent_name ? ` · ${ev.agent_name}` : ''}
-                  </time>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    )}
+    {/* Right sidebar: cronistoria + note interne */}
+    <ListingCronistoriaPanel
+      listingId={listing.id}
+      initialEvents={cronistoriaEvents}
+      initialNotes={initialNotes}
+    />
     </div>
     </div>
   )
