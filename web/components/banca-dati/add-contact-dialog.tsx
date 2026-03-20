@@ -8,13 +8,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -74,7 +67,7 @@ export const AddContactDialog = React.memo(function AddContactDialog({
   const [newEmail, setNewEmail] = useState('')
 
   // Shared
-  const [contactRole, setContactRole] = useState('proprietario')
+  const [contactRoles, setContactRoles] = useState<string[]>(['proprietario'])
   const [contactNotes, setContactNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -99,7 +92,7 @@ export const AddContactDialog = React.memo(function AddContactDialog({
     setNewLastName('')
     setNewPhone('')
     setNewEmail('')
-    setContactRole('proprietario')
+    setContactRoles(['proprietario'])
     setContactNotes('')
   }
 
@@ -126,54 +119,71 @@ export const AddContactDialog = React.memo(function AddContactDialog({
     setContactResults([])
   }
 
+  function toggleRole(role: string) {
+    setContactRoles(prev =>
+      prev.includes(role)
+        ? prev.length > 1 ? prev.filter(r => r !== role) : prev  // keep at least one
+        : [...prev, role]
+    )
+  }
+
   async function handleSubmit() {
+    if (contactRoles.length === 0) { toast.error('Seleziona almeno un ruolo'); return }
     setSubmitting(true)
     try {
-      let body: Record<string, unknown>
-
-      if (mode === 'search') {
-        if (!selectedContact) { toast.error('Seleziona un contatto'); setSubmitting(false); return }
-        body = {
-          contact_id: selectedContact.id,
-          role: contactRole,
-          notes: contactNotes.trim() || null,
-        }
-      } else {
-        const firstName = newFirstName.trim()
-        const lastName = newLastName.trim()
-        const name = [firstName, lastName].filter(Boolean).join(' ')
-        if (!name) { toast.error('Inserisci almeno il nome'); setSubmitting(false); return }
-        body = {
-          new_contact: {
-            name,
-            phone: newPhone.trim() || null,
-            email: newEmail.trim() || null,
-          },
-          role: contactRole,
-          notes: contactNotes.trim() || null,
-        }
-      }
-
-      const res = await fetch(`/api/properties/${propertyId}/contacts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-      if (!res.ok) {
-        const { error } = await res.json().catch(() => ({ error: 'Errore' }))
-        throw new Error(error)
-      }
-      const { id: linkId, contact_id } = await res.json()
-      void linkId
       const contactName = mode === 'search'
         ? selectedContact!.name
         : [newFirstName.trim(), newLastName.trim()].filter(Boolean).join(' ')
-      const finalContactId = mode === 'search' ? selectedContact!.id : (contact_id ?? '')
+
+      if (mode === 'search' && !selectedContact) { toast.error('Seleziona un contatto'); setSubmitting(false); return }
+      if (mode === 'create' && !contactName) { toast.error('Inserisci almeno il nome'); setSubmitting(false); return }
+
+      let finalContactId = ''
+
+      // For multi-role: first call creates the contact (if new), subsequent calls link same contact_id
+      for (let i = 0; i < contactRoles.length; i++) {
+        const role = contactRoles[i]
+        let body: Record<string, unknown>
+
+        if (mode === 'search') {
+          body = { contact_id: selectedContact!.id, role, notes: contactNotes.trim() || null }
+        } else if (i === 0) {
+          // First role: create new contact
+          body = {
+            new_contact: {
+              name: contactName,
+              phone: newPhone.trim() || null,
+              email: newEmail.trim() || null,
+            },
+            role,
+            notes: contactNotes.trim() || null,
+          }
+        } else {
+          // Subsequent roles: link same contact_id (already created)
+          body = { contact_id: finalContactId, role, notes: contactNotes.trim() || null }
+        }
+
+        const res = await fetch(`/api/properties/${propertyId}/contacts`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        })
+        if (!res.ok) {
+          const { error } = await res.json().catch(() => ({ error: 'Errore' }))
+          throw new Error(error)
+        }
+        const data = await res.json()
+        if (i === 0) {
+          finalContactId = mode === 'search' ? selectedContact!.id : (data.contact_id ?? '')
+        }
+      }
 
       toast.success('Contatto aggiunto')
       onOpenChange(false)
       resetAll()
-      onAdded({ role: contactRole, contactId: finalContactId, contactName })
+      // Report primary role (proprietario if selected, else first)
+      const primaryRole = contactRoles.includes('proprietario') ? 'proprietario' : contactRoles[0]
+      onAdded({ role: primaryRole, contactId: finalContactId, contactName })
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Errore')
     } finally {
@@ -299,15 +309,27 @@ export const AddContactDialog = React.memo(function AddContactDialog({
           )}
 
           <div className="space-y-1.5">
-            <Label>Ruolo nell&apos;immobile *</Label>
-            <Select value={contactRole} onValueChange={setContactRole}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {Object.entries(ROLE_LABELS).map(([key, label]) => (
-                  <SelectItem key={key} value={key}>{label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>Ruolo nell&apos;immobile <span className="text-muted-foreground font-normal">(seleziona uno o più)</span></Label>
+            <div className="flex flex-wrap gap-1.5">
+              {Object.entries(ROLE_LABELS).map(([key, label]) => {
+                const active = contactRoles.includes(key)
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => toggleRole(key)}
+                    className={cn(
+                      'rounded-full px-3 py-1 text-xs font-medium border transition-all',
+                      active
+                        ? 'bg-[oklch(0.57_0.20_33)] text-white border-[oklch(0.57_0.20_33)]'
+                        : 'bg-transparent text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground'
+                    )}
+                  >
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           <div className="space-y-1.5">

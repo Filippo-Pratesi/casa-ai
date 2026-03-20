@@ -160,6 +160,23 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: "Errore nell'associazione del contatto" }, { status: 500 })
   }
 
+  // If role is 'proprietario' and property has no owner yet, set owner_contact_id
+  if (role === 'proprietario') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: currentProp } = await (admin as any)
+      .from('properties')
+      .select('owner_contact_id')
+      .eq('id', id)
+      .single()
+    if (!(currentProp as { owner_contact_id: string | null } | null)?.owner_contact_id) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (admin as any)
+        .from('properties')
+        .update({ owner_contact_id: contactId })
+        .eq('id', id)
+    }
+  }
+
   // Auto-event: contact added
   const ROLE_IT: Record<string, string> = {
     proprietario: 'Proprietario', moglie_marito: 'Moglie/Marito', figlio_figlia: 'Figlio/Figlia',

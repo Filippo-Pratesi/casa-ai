@@ -800,11 +800,22 @@ export function ImmobileDetailClient({
         open={addContactOpen}
         onOpenChange={setAddContactOpen}
         propertyId={property.id}
-        onAdded={async ({ role, contactName }) => {
+        onAdded={async ({ role, contactId, contactName }) => {
           const cRes = await fetch(`/api/properties/${property.id}/contacts`)
           if (cRes.ok) {
             const cData = await cRes.json()
-            setContacts(Array.isArray(cData.contacts) ? cData.contacts : [])
+            const freshContacts = Array.isArray(cData.contacts) ? cData.contacts : []
+            setContacts(freshContacts)
+            // If proprietario added, update owner_contact in local property state
+            if (role === 'proprietario' && !property.owner_contact) {
+              const ownerEntry = freshContacts.find(
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (c: any) => c.role === 'proprietario' && c.contacts?.id === contactId
+              )
+              if (ownerEntry?.contacts) {
+                setProperty((prev: Record<string, unknown>) => ({ ...prev, owner_contact: ownerEntry.contacts, owner_contact_id: contactId }))
+              }
+            }
           }
           await reloadEvents()
           // First-contact stage prompt: only if this is the first contact, role is proprietario, and stage is sconosciuto
