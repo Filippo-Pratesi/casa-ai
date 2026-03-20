@@ -119,7 +119,11 @@ export async function generateListingContent(
   // Strip markdown fences if Gemini adds them despite responseMimeType
   const clean = text.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim()
 
-  return JSON.parse(clean) as GeneratedContent
+  try {
+    return JSON.parse(clean) as GeneratedContent
+  } catch {
+    throw new Error('Risposta AI non valida: il modello ha restituito un formato non riconosciuto')
+  }
 }
 
 export async function regenerateTab(
@@ -169,7 +173,13 @@ IMPORTANTE: Solo JSON valido, nessun testo aggiuntivo.`
   const result = await model.generateContent([prompt, ...imageParts])
   const text = result.response.text()
   const clean = text.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim()
-  const partial = JSON.parse(clean) as Partial<GeneratedContent>
+
+  let partial: Partial<GeneratedContent>
+  try {
+    partial = JSON.parse(clean) as Partial<GeneratedContent>
+  } catch {
+    throw new Error('Risposta AI non valida: il modello ha restituito un formato non riconosciuto')
+  }
 
   return { ...currentContent, [tab]: partial[tab] ?? currentContent[tab] }
 }

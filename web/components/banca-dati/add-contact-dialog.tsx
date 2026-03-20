@@ -14,22 +14,9 @@ import { Button } from '@/components/ui/button'
 import { Loader2, Search, UserPlus, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { PROPERTY_ROLE_LABELS } from '@/lib/property-role-labels'
 
-const ROLE_LABELS: Record<string, string> = {
-  proprietario: 'Proprietario',
-  venditore: 'Venditore',
-  acquirente: 'Acquirente',
-  inquilino: 'Inquilino',
-  moglie_marito: 'Moglie/Marito',
-  figlio_figlia: 'Figlio/Figlia',
-  vicino: 'Vicino',
-  portiere: 'Portiere',
-  amministratore: 'Amministratore',
-  avvocato: 'Avvocato',
-  commercialista: 'Commercialista',
-  precedente_proprietario: 'Ex proprietario',
-  altro: 'Altro',
-}
+const ROLE_LABELS = PROPERTY_ROLE_LABELS
 
 interface ContactResult {
   id: string

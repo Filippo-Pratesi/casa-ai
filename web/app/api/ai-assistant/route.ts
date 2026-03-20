@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
   if (!profile) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 403 })
 
   const plan = profile.workspaces?.plan ?? 'trial'
-  if (plan !== 'agenzia' && plan !== 'network') {
+  if (plan !== 'growth' && plan !== 'network') {
     return NextResponse.json({ error: 'Funzionalità disponibile per i piani Agenzia e Network' }, { status: 403 })
   }
 

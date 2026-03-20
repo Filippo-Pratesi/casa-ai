@@ -61,7 +61,7 @@ export default async function PlansPage() {
       ],
     },
     {
-      id: 'agenzia' as const,
+      id: 'growth' as const,
       name: 'Agenzia',
       iconKey: 'Building2',
       color: 'text-purple-600',

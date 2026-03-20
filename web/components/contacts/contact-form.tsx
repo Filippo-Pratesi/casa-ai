@@ -110,7 +110,7 @@ const INITIAL: FormState = {
 
 function resolveInitial(defaults?: ContactFormDefaultValues): FormState {
   if (!defaults) return { ...INITIAL }
-  const nameParts = defaults.name ? splitName(defaults.name) : {}
+  const nameParts: { first_name?: string; last_name?: string } = defaults.name ? splitName(defaults.name) : {}
   return {
     ...INITIAL,
     first_name: defaults.first_name ?? nameParts.first_name ?? '',

@@ -8,7 +8,7 @@ const WEBHOOK_SECRET   = process.env.STRIPE_WEBHOOK_SECRET  ?? ''
 // Map Stripe product/price metadata plan → DB plan tier
 const PLAN_MAP: Record<string, string> = {
   starter: 'starter',
-  agenzia: 'agenzia',
+  growth: 'growth',
   network: 'network',
 }
 
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (admin as any)
         .from('workspaces')
-        .update({ plan: PLAN_MAP[plan] as 'starter' | 'agenzia' | 'network' })
+        .update({ plan: PLAN_MAP[plan] as 'starter' | 'growth' | 'network' })
         .eq('id', workspaceId)
     }
   }
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (admin as any)
         .from('workspaces')
-        .update({ plan: PLAN_MAP[plan] as 'starter' | 'agenzia' | 'network' })
+        .update({ plan: PLAN_MAP[plan] as 'starter' | 'growth' | 'network' })
         .eq('id', workspaceId)
     }
   }

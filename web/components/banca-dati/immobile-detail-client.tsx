@@ -29,22 +29,9 @@ import { EditDetailsDialog } from './edit-details-dialog'
 import { AddContactDialog } from './add-contact-dialog'
 import { IncaricoDialog } from './incarico-dialog'
 import { LocatoDialog } from './locato-dialog'
+import { PROPERTY_ROLE_LABELS } from '@/lib/property-role-labels'
 
-const ROLE_LABELS: Record<string, string> = {
-  proprietario: 'Proprietario',
-  venditore: 'Venditore',
-  acquirente: 'Acquirente',
-  inquilino: 'Inquilino',
-  moglie_marito: 'Moglie/Marito',
-  figlio_figlia: 'Figlio/Figlia',
-  vicino: 'Vicino',
-  portiere: 'Portiere',
-  amministratore: 'Amministratore',
-  avvocato: 'Avvocato',
-  commercialista: 'Commercialista',
-  precedente_proprietario: 'Ex proprietario',
-  altro: 'Altro',
-}
+const ROLE_LABELS = PROPERTY_ROLE_LABELS
 
 const PROPERTY_TYPE_IT: Record<string, string> = {
   apartment: 'Appartamento', house: 'Casa', villa: 'Villa',
@@ -472,7 +459,7 @@ export function ImmobileDetailClient({
         {/* Column 2 (260px) — cronistoria, sticky */}
         <div className="order-2">
           <Card className="p-3 h-fit lg:sticky lg:top-4">
-            <h2 className="font-semibold text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Cronistoria</h2>
+            <h2 className="font-semibold text-xs uppercase tracking-wide text-muted-foreground mb-2">Cronistoria</h2>
             <div className="max-h-[calc(100vh-180px)] overflow-y-auto pr-0.5">
               <EventTimeline
                 propertyId={property.id}

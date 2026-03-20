@@ -1,4 +1,4 @@
-export type PlanTier = 'trial' | 'starter' | 'agenzia' | 'network'
+export type PlanTier = 'trial' | 'starter' | 'growth' | 'network'
 
 export interface PlanConfig {
   name: string
@@ -47,7 +47,7 @@ export const PLAN_CONFIG: Record<PlanTier, PlanConfig> = {
     prioritySupport: false,
     trialDays: 0,
   },
-  agenzia: {
+  growth: {
     name: 'Agenzia',
     maxAgents: 15,
     maxListingsPerMonth: -1,
@@ -91,6 +91,6 @@ export function canUseFeature(plan: string, feature: keyof PlanConfig): boolean 
 // Annual price = monthly × 12 × 0.95 (5% discount) / 12, rounded
 export const PLAN_PRICES: Record<Exclude<PlanTier, 'trial'>, { monthly: number; annual: number }> = {
   starter: { monthly: 149, annual: 142 },
-  agenzia: { monthly: 299, annual: 284 },
+  growth: { monthly: 299, annual: 284 },
   network:  { monthly: 899, annual: 854 },
 }

@@ -10,8 +10,9 @@ import { PrivacyConsentSection } from '@/components/contacts/privacy-consent-sec
 import { AttachmentsSection } from '@/components/shared/attachments-section'
 import { BirthdayCard } from '@/components/contacts/birthday-card'
 import { ContactCronistoria } from '@/components/contacts/contact-cronistoria'
-import { CONTACT_TYPE_COLORS as TYPE_COLORS, CONTACT_TYPE_LABELS as TYPE_LABELS } from '@/lib/contact-utils'
+import { CONTACT_TYPE_COLORS as TYPE_COLORS, CONTACT_TYPE_LABELS as TYPE_LABELS, birthdayDaysLeft } from '@/lib/contact-utils'
 import { ContactTypeBadges } from '@/components/contacts/contact-type-badges'
+import { PROPERTY_ROLE_LABELS } from '@/lib/property-role-labels'
 
 interface MatchResult {
   property_id: string
@@ -184,16 +185,6 @@ export default async function ContactDetailPage({
     matchResults = rawMatchResults.map(m => ({ ...m, listing_id: listingMap[m.property_id] ?? null }))
   }
 
-  function birthdayDaysLeft(dob: string | null): number | null {
-    if (!dob) return null
-    const today = new Date()
-    const [, mm, dd] = dob.split('-').map(Number)
-    let next = new Date(today.getFullYear(), mm - 1, dd)
-    if (next < today) next = new Date(today.getFullYear() + 1, mm - 1, dd)
-    const diff = Math.ceil((next.getTime() - today.setHours(0, 0, 0, 0)) / 86400000)
-    return diff <= 7 ? diff : null
-  }
-
   const birthdayDays = birthdayDaysLeft(contact.date_of_birth)
 
   // Linked properties from banca dati
@@ -220,20 +211,16 @@ export default async function ContactDetailPage({
     sconosciuto: 'Sconosciuto', ignoto: 'Non contattato', conosciuto: 'Conosciuto',
     incarico: 'Incarico', venduto: 'Venduto', locato: 'Locato',
   }
+  // Colors aligned with STAGE_CONFIG in components/banca-dati/property-stage-icon.tsx
   const STAGE_COLORS: Record<string, string> = {
-    sconosciuto: 'bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300',
-    ignoto: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
-    conosciuto: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
-    incarico: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
-    venduto: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300',
-    locato: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300',
+    sconosciuto: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
+    ignoto: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400',
+    conosciuto: 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400',
+    incarico: 'bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400',
+    venduto: 'bg-green-50 text-green-600 dark:bg-green-950 dark:text-green-400',
+    locato: 'bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400',
   }
-  const ROLE_LABELS: Record<string, string> = {
-    proprietario: 'Proprietario', moglie_marito: 'Moglie/Marito', figlio_figlia: 'Figlio/Figlia',
-    vicino: 'Vicino', portiere: 'Portiere', amministratore: 'Amministratore',
-    avvocato: 'Avvocato', commercialista: 'Commercialista',
-    precedente_proprietario: 'Ex proprietario', inquilino: 'Inquilino', altro: 'Altro',
-  }
+  const ROLE_LABELS = PROPERTY_ROLE_LABELS
 
   const hasPreferences = isBuyerLike && (
     contact.budget_min || contact.budget_max ||

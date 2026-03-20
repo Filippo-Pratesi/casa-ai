@@ -7,7 +7,7 @@
  * 3. Null se entrambi falliscono
  */
 
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { fetchOmiQuotation, PROPERTY_TYPE_TO_OMI } from './3eurotools'
 
 // --- Types ---
@@ -42,10 +42,7 @@ const DISCLAIMER = 'Stima indicativa basata su quotazioni OMI dell\'Agenzia dell
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getAdminClient(): any {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
+  return createAdminClient()
 }
 
 // --- Strategy 1: CSV locale ---

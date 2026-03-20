@@ -109,6 +109,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
         agent_id: user.id,
         name,
         type: contactType,
+        types: [contactType],
         phone: typeof nc.phone === 'string' ? nc.phone.trim() || null : null,
         email: typeof nc.email === 'string' ? nc.email.trim() || null : null,
       })

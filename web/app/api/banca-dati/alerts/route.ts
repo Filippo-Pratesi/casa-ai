@@ -34,18 +34,26 @@ export async function POST(_req: NextRequest) {
     .eq('workspace_id', profile.workspace_id)
     .in('stage', ['conosciuto', 'incarico'])
 
+  const allPropertyIds: string[] = ((staleProps ?? []) as { id: string }[]).map((p) => p.id)
   const stalePropertyIds: string[] = []
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  for (const prop of (staleProps ?? []) as any[]) {
+
+  if (allPropertyIds.length > 0) {
+    // Batch query: get all property IDs that have at least one recent event
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: recentEvents } = await (admin as any)
+    const { data: recentEventRows } = await (admin as any)
       .from('property_events')
-      .select('id')
-      .eq('property_id', prop.id)
+      .select('property_id')
+      .in('property_id', allPropertyIds)
       .gte('event_date', cutoffDate)
-      .limit(1)
-    if (!recentEvents || recentEvents.length === 0) {
-      stalePropertyIds.push(prop.id)
+
+    const activePropertyIds = new Set<string>(
+      ((recentEventRows ?? []) as { property_id: string }[]).map((e) => e.property_id)
+    )
+
+    for (const id of allPropertyIds) {
+      if (!activePropertyIds.has(id)) {
+        stalePropertyIds.push(id)
+      }
     }
   }
 

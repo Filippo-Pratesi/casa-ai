@@ -44,7 +44,7 @@ export async function exchangeCodeForToken(code: string): Promise<string> {
   const data = await res.json()
 
   if (!res.ok || !data.access_token) {
-    throw new Error(`Token exchange failed: ${JSON.stringify(data)}`)
+    throw new Error(`Errore autenticazione Facebook: ${data?.error?.message ?? 'errore sconosciuto'}`)
   }
 
   return data.access_token
@@ -62,7 +62,7 @@ export async function getLongLivedToken(shortLivedToken: string): Promise<string
   const data = await res.json()
 
   if (!res.ok || !data.access_token) {
-    throw new Error(`Long-lived token exchange failed: ${JSON.stringify(data)}`)
+    throw new Error(`Errore rinnovo token Facebook: ${data?.error?.message ?? 'errore sconosciuto'}`)
   }
 
   return data.access_token
@@ -81,7 +81,7 @@ export async function getUserPages(userToken: string): Promise<FacebookPage[]> {
   const data = await res.json()
 
   if (!res.ok) {
-    throw new Error(`Failed to get pages: ${JSON.stringify(data)}`)
+    throw new Error(`Errore recupero pagine Facebook: ${data?.error?.message ?? 'errore sconosciuto'}`)
   }
 
   return (data.data ?? []) as FacebookPage[]
@@ -122,7 +122,7 @@ export async function publishToFacebook(params: {
       body: JSON.stringify({ message, access_token: pageToken }),
     })
     const data = await res.json()
-    if (!res.ok || !data.id) throw new Error(`Facebook post failed: ${JSON.stringify(data)}`)
+    if (!res.ok || !data.id) throw new Error(`Errore pubblicazione Facebook: ${data?.error?.message ?? 'errore sconosciuto'}`)
     return data.id as string
   }
 
@@ -151,7 +151,7 @@ export async function publishToFacebook(params: {
     }),
   })
   const data = await res.json()
-  if (!res.ok || !data.id) throw new Error(`Facebook post failed: ${JSON.stringify(data)}`)
+  if (!res.ok || !data.id) throw new Error(`Errore pubblicazione Facebook: ${data?.error?.message ?? 'errore sconosciuto'}`)
 
   return data.id as string
 }
@@ -181,7 +181,7 @@ export async function publishToInstagram(params: {
     })
     const createData = await createRes.json()
     if (!createRes.ok || !createData.id) {
-      throw new Error(`IG media create failed: ${JSON.stringify(createData)}`)
+      throw new Error(`Errore creazione media Instagram: ${createData?.error?.message ?? 'errore sconosciuto'}`)
     }
 
     const publishRes = await fetch(`${GRAPH_API_BASE}/${igAccountId}/media_publish`, {
@@ -191,7 +191,7 @@ export async function publishToInstagram(params: {
     })
     const publishData = await publishRes.json()
     if (!publishRes.ok || !publishData.id) {
-      throw new Error(`IG publish failed: ${JSON.stringify(publishData)}`)
+      throw new Error(`Errore pubblicazione Instagram: ${publishData?.error?.message ?? 'errore sconosciuto'}`)
     }
 
     return publishData.id as string
@@ -226,7 +226,7 @@ export async function publishToInstagram(params: {
   })
   const carouselData = await carouselRes.json()
   if (!carouselRes.ok || !carouselData.id) {
-    throw new Error(`IG carousel create failed: ${JSON.stringify(carouselData)}`)
+    throw new Error(`Errore creazione carosello Instagram: ${carouselData?.error?.message ?? 'errore sconosciuto'}`)
   }
 
   const publishRes = await fetch(`${GRAPH_API_BASE}/${igAccountId}/media_publish`, {
@@ -236,7 +236,7 @@ export async function publishToInstagram(params: {
   })
   const publishData = await publishRes.json()
   if (!publishRes.ok || !publishData.id) {
-    throw new Error(`IG carousel publish failed: ${JSON.stringify(publishData)}`)
+    throw new Error(`Errore pubblicazione carosello Instagram: ${publishData?.error?.message ?? 'errore sconosciuto'}`)
   }
 
   return publishData.id as string
