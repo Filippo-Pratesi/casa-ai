@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Loader2, ChevronDown, ChevronUp, Plus, MapPin } from 'lucide-react'
-import Link from 'next/link'
+import { Loader2, ChevronDown, ChevronUp, Plus, MapPin, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { InlinePropertyCreator } from '@/components/banca-dati/inline-property-creator'
 
 const CONTACT_TYPES = [
   { value: 'buyer', label: 'Acquirente' },
@@ -152,10 +152,14 @@ export function ContactForm({ mode, contactId, defaultValues, onSuccess }: Conta
 
   // Property linking state (create mode standalone only)
   const [propertySearch, setPropertySearch] = useState('')
+  const [propertyFilterCity, setPropertyFilterCity] = useState('')
+  const [propertyFilterZone, setPropertyFilterZone] = useState('')
   const [propertyResults, setPropertyResults] = useState<{ id: string; address: string; city: string; stage: string }[]>([])
   const [selectedProperty, setSelectedProperty] = useState<{ id: string; address: string; city: string; stage: string } | null>(null)
   const [propertyRole, setPropertyRole] = useState('proprietario')
   const [searchingProperties, setSearchingProperties] = useState(false)
+  const [showInlineCreator, setShowInlineCreator] = useState(false)
+  const propertySearchRef = useRef<AbortController | null>(null)
 
   function update(field: keyof FormState, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -205,21 +209,42 @@ export function ContactForm({ mode, contactId, defaultValues, onSuccess }: Conta
     }
   }
 
-  async function searchProperties(q: string) {
-    setPropertySearch(q)
-    setSelectedProperty(null)
-    if (q.length < 2) { setPropertyResults([]); return }
+  async function runPropertySearch(q: string, city: string, zone: string) {
+    if (q.length < 2 && !city.trim() && !zone.trim()) { setPropertyResults([]); return }
+    if (propertySearchRef.current) propertySearchRef.current.abort()
+    const ctrl = new AbortController()
+    propertySearchRef.current = ctrl
     setSearchingProperties(true)
     try {
-      const res = await fetch(`/api/properties?q=${encodeURIComponent(q)}&per_page=8`)
+      const params = new URLSearchParams({ per_page: '8' })
+      if (q.trim()) params.set('q', q.trim())
+      if (city.trim()) params.set('city', city.trim())
+      if (zone.trim()) params.set('zone', zone.trim())
+      const res = await fetch(`/api/properties?${params}`, { signal: ctrl.signal })
       if (res.ok) {
         const data = await res.json()
-        setPropertyResults((data.properties ?? []).slice(0, 8))
+        setPropertyResults((data.data ?? []).slice(0, 8))
       }
+    } catch (err) {
+      if ((err as Error).name !== 'AbortError') setPropertyResults([])
     } finally {
       setSearchingProperties(false)
     }
   }
+
+  function searchProperties(q: string) {
+    setPropertySearch(q)
+    setSelectedProperty(null)
+    runPropertySearch(q, propertyFilterCity, propertyFilterZone)
+  }
+
+  // Re-trigger search when city/zone filters change
+  useEffect(() => {
+    if (propertySearch.length >= 2 || propertyFilterCity.trim() || propertyFilterZone.trim()) {
+      runPropertySearch(propertySearch, propertyFilterCity, propertyFilterZone)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propertyFilterCity, propertyFilterZone])
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -549,6 +574,40 @@ export function ContactForm({ mode, contactId, defaultValues, onSuccess }: Conta
           <div className="space-y-3">
             <div className="space-y-1.5">
               <Label>Cerca immobile in banca dati</Label>
+
+              {/* Filters row */}
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    placeholder="Filtra per città…"
+                    value={propertyFilterCity}
+                    onChange={(e) => setPropertyFilterCity(e.target.value)}
+                    autoComplete="off"
+                    className="text-sm"
+                  />
+                  {propertyFilterCity && (
+                    <button type="button" onClick={() => setPropertyFilterCity('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+                <div className="relative flex-1">
+                  <Input
+                    placeholder="Filtra per zona…"
+                    value={propertyFilterZone}
+                    onChange={(e) => setPropertyFilterZone(e.target.value)}
+                    autoComplete="off"
+                    className="text-sm"
+                  />
+                  {propertyFilterZone && (
+                    <button type="button" onClick={() => setPropertyFilterZone('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Search input */}
               <div className="relative">
                 <Input placeholder="Inizia a digitare via, città..." value={propertySearch} onChange={(e) => searchProperties(e.target.value)} autoComplete="off" />
                 {searchingProperties && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />}
@@ -584,14 +643,30 @@ export function ContactForm({ mode, contactId, defaultValues, onSuccess }: Conta
                 </div>
               )}
 
-              {!selectedProperty && (
+              {!selectedProperty && !showInlineCreator && (
                 <div className="flex items-center gap-1.5 pt-0.5">
                   <span className="text-xs text-muted-foreground">o</span>
-                  <Link href="/banca-dati/nuovo" className="inline-flex items-center gap-1 text-xs text-[oklch(0.57_0.20_33)] hover:underline font-medium">
+                  <button
+                    type="button"
+                    onClick={() => setShowInlineCreator(true)}
+                    className="inline-flex items-center gap-1 text-xs text-[oklch(0.57_0.20_33)] hover:underline font-medium"
+                  >
                     <Plus className="h-3 w-3" />
                     Crea nuovo immobile in banca dati
-                  </Link>
+                  </button>
                 </div>
+              )}
+
+              {showInlineCreator && (
+                <InlinePropertyCreator
+                  onCreated={(property) => {
+                    setSelectedProperty(property)
+                    setPropertySearch(`${property.address}, ${property.city}`)
+                    setPropertyResults([])
+                    setShowInlineCreator(false)
+                  }}
+                  onCancel={() => setShowInlineCreator(false)}
+                />
               )}
             </div>
 

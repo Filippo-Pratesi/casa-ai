@@ -65,6 +65,8 @@ export const AddContactDialog = React.memo(function AddContactDialog({
   const [newLastName, setNewLastName] = useState('')
   const [newPhone, setNewPhone] = useState('')
   const [newEmail, setNewEmail] = useState('')
+  const [newCity, setNewCity] = useState('')
+  const [newAddress, setNewAddress] = useState('')
 
   // Shared
   const [contactRoles, setContactRoles] = useState<string[]>(['proprietario'])
@@ -92,6 +94,8 @@ export const AddContactDialog = React.memo(function AddContactDialog({
     setNewLastName('')
     setNewPhone('')
     setNewEmail('')
+    setNewCity('')
+    setNewAddress('')
     setContactRoles(['proprietario'])
     setContactNotes('')
   }
@@ -154,6 +158,8 @@ export const AddContactDialog = React.memo(function AddContactDialog({
               name: contactName,
               phone: newPhone.trim() || null,
               email: newEmail.trim() || null,
+              city_of_residence: newCity.trim() || null,
+              address_of_residence: newAddress.trim() || null,
             },
             role,
             notes: contactNotes.trim() || null,
@@ -303,6 +309,16 @@ export const AddContactDialog = React.memo(function AddContactDialog({
                 <div className="space-y-1.5">
                   <Label>Email</Label>
                   <Input type="email" placeholder="mario@esempio.it" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Città di residenza</Label>
+                  <Input placeholder="Es. Viareggio" value={newCity} onChange={(e) => setNewCity(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Indirizzo</Label>
+                  <Input placeholder="Es. Via Roma 10" value={newAddress} onChange={(e) => setNewAddress(e.target.value)} />
                 </div>
               </div>
             </div>

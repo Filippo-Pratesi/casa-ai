@@ -40,7 +40,9 @@ export async function GET(req: NextRequest) {
     .order('updated_at', { ascending: false })
     .range(offset, offset + per_page - 1)
 
+  const cityFilter = params.get('city')
   if (stage) query = query.eq('stage', stage)
+  if (cityFilter) query = query.ilike('city', `%${cityFilter}%`)
   if (zone) query = query.eq('zone', zone)
   if (sub_zone) query = query.eq('sub_zone', sub_zone)
   if (agent_id) query = query.eq('agent_id', agent_id)
@@ -111,8 +113,6 @@ export async function POST(req: NextRequest) {
   if (!address) return NextResponse.json({ error: "L'indirizzo è obbligatorio" }, { status: 400 })
   if (!city) return NextResponse.json({ error: 'La città è obbligatoria' }, { status: 400 })
   if (!zone) return NextResponse.json({ error: 'La zona è obbligatoria' }, { status: 400 })
-  if (latitude === null) return NextResponse.json({ error: 'La latitudine è obbligatoria' }, { status: 400 })
-  if (longitude === null) return NextResponse.json({ error: 'La longitudine è obbligatoria' }, { status: 400 })
 
   // Resolve agent_id: explicit override (admin only) > zone default > current user
   let resolvedAgentId = user.id
