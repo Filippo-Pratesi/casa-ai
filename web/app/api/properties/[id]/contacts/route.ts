@@ -172,6 +172,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
   const { data: contactRow } = await (admin as any)
     .from('contacts').select('name').eq('id', contactId).single()
   const contactName = (contactRow as { name?: string } | null)?.name ?? 'Contatto'
+  // Auto-event: contact added to property
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (admin as any).from('property_events').insert({
     workspace_id: workspaceId,
@@ -179,6 +180,23 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     agent_id: user.id,
     event_type: 'contatto_aggiunto',
     title: `${contactName} aggiunto come ${ROLE_IT[role] ?? role}`,
+  })
+
+  // Auto-event: property linked to contact
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: propertyData } = await (admin as any)
+    .from('properties')
+    .select('address, city')
+    .eq('id', id)
+    .single()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (admin as any).from('contact_events').insert({
+    workspace_id: workspaceId,
+    contact_id: contactId,
+    agent_id: user.id,
+    event_type: 'immobile_collegato',
+    title: `Immobile collegato: ${(propertyData as { address?: string; city?: string } | null)?.address ?? 'Indirizzo sconosciuto'}, ${(propertyData as { address?: string; city?: string } | null)?.city ?? ''}`,
+    related_property_id: id,
   })
 
   return NextResponse.json({ id: (link as { id: string }).id, contact_id: contactId }, { status: 201 })

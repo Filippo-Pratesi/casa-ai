@@ -106,14 +106,17 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
 
   const admin = createAdminClient()
 
-  // If disposition is changing, fetch old value for the event log
-  let oldDisposition: string | null = null
-  if ('owner_disposition' in update) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: current } = await (admin as any)
-      .from('properties').select('owner_disposition').eq('id', id).eq('workspace_id', workspaceId).single()
-    oldDisposition = (current as { owner_disposition?: string } | null)?.owner_disposition ?? null
-  }
+  // Fetch current property to detect changes for events
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: currentProp } = await (admin as any)
+    .from('properties')
+    .select('owner_disposition, incarico_date, stage, owner_contact_id')
+    .eq('id', id)
+    .eq('workspace_id', workspaceId)
+    .single()
+
+  const oldDisposition = (currentProp as { owner_disposition?: string } | null)?.owner_disposition ?? null
+  const oldIncaricDate = (currentProp as { incarico_date?: string } | null)?.incarico_date ?? null
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (admin as any)
@@ -142,6 +145,29 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
       agent_id: user.id,
       event_type: 'cambio_disposizione',
       title: `Stato proprietario: ${oldLabel} → ${newLabel}`,
+    })
+  }
+
+  // Auto-event: incarico signed (new incarico_date set and owner contact exists)
+  if ('incarico_date' in update && update.incarico_date && !oldIncaricDate && data.owner_contact_id) {
+    const ownerContactId = data.owner_contact_id
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: contactRow } = await (admin as any)
+      .from('contacts')
+      .select('name')
+      .eq('id', ownerContactId)
+      .single()
+    const contactName = (contactRow as { name?: string } | null)?.name ?? 'Proprietario'
+
+    // Auto-event in contact_events
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (admin as any).from('contact_events').insert({
+      workspace_id: workspaceId,
+      contact_id: ownerContactId,
+      agent_id: user.id,
+      event_type: 'incarico_firmato',
+      title: `Incarico firmato per: ${data.address ?? 'Indirizzo sconosciuto'}`,
+      related_property_id: id,
     })
   }
 

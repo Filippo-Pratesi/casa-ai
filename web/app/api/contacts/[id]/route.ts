@@ -86,6 +86,16 @@ export async function PATCH(
   if ('professione' in body) allowed.professione = typeof body.professione === 'string' ? body.professione.trim() || null : null
   if ('data_nascita' in body) allowed.data_nascita = typeof body.data_nascita === 'string' ? body.data_nascita || null : null
 
+  // Fetch current contact to detect type changes
+  const admin = createAdminClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: currentContact } = await (admin as any)
+    .from('contacts')
+    .select('type, name')
+    .eq('id', id)
+    .eq('workspace_id', workspaceId)
+    .single()
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)
     .from('contacts')
@@ -94,6 +104,24 @@ export async function PATCH(
     .eq('workspace_id', workspaceId)
 
   if (error) return NextResponse.json({ error: 'Errore nel salvataggio' }, { status: 500 })
+
+  // Auto-event: contact type changed
+  if ('type' in allowed && allowed.type !== (currentContact as { type?: string } | null)?.type) {
+    const TYPE_IT: Record<string, string> = {
+      buyer: 'Acquirente', seller: 'Venditore', renter: 'Affittuario',
+      landlord: 'Proprietario', other: 'Altro',
+    }
+    const oldTypeLabel = TYPE_IT[(currentContact as { type?: string } | null)?.type ?? ''] ?? (currentContact as { type?: string } | null)?.type ?? '—'
+    const newTypeLabel = TYPE_IT[allowed.type as string] ?? allowed.type
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (admin as any).from('contact_events').insert({
+      workspace_id: workspaceId,
+      contact_id: id,
+      agent_id: user.id,
+      event_type: 'stato_cambiato',
+      title: `Tipo contatto: ${oldTypeLabel} → ${newTypeLabel}`,
+    })
+  }
 
   return NextResponse.json({ success: true })
 }

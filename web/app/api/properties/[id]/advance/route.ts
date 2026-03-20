@@ -124,6 +124,20 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       metadata: { old_stage: oldStage, new_stage: targetStage, reason },
     })
 
+  // Auto-event: contact vendita_conclusa when property moves to venduto
+  if (targetStage === 'venduto' && (updated as Record<string, unknown>).owner_contact_id) {
+    const ownerContactId = (updated as Record<string, unknown>).owner_contact_id
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (admin as any).from('contact_events').insert({
+      workspace_id: userProfile.workspace_id,
+      contact_id: ownerContactId,
+      agent_id: user.id,
+      event_type: 'vendita_conclusa',
+      title: `Vendita conclusa: ${(updated as Record<string, unknown>).address ?? 'Indirizzo sconosciuto'}`,
+      related_property_id: id,
+    })
+  }
+
   return NextResponse.json({ property: updated })
 }
 
