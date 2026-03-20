@@ -140,11 +140,22 @@ export function ListingForm() {
   // Property selector state
   const [selectedProperty, setSelectedProperty] = useState<PropertyResult | null>(null)
   const [propSearch, setPropSearch] = useState('')
-  const [propFilterCity, setPropFilterCity] = useState('')
+  const [propFilterCity, setPropFilterCity] = useState('') // input display value
+  const [propCitySelected, setPropCitySelected] = useState('') // confirmed city for API
   const [propFilterZone, setPropFilterZone] = useState('')
+  const [availableZones, setAvailableZones] = useState<string[]>([])
   const [propResults, setPropResults] = useState<PropertyResult[]>([])
   const [loadingProps, setLoadingProps] = useState(false)
   const searchAbortRef = useRef<AbortController | null>(null)
+
+  // Fetch zones when a city is selected
+  useEffect(() => {
+    if (!propCitySelected) { setAvailableZones([]); setPropFilterZone(''); return }
+    fetch(`/api/zones?city=${encodeURIComponent(propCitySelected)}`)
+      .then(r => r.json())
+      .then(data => setAvailableZones((data.zones ?? []).map((z: { name: string }) => z.name)))
+      .catch(() => {})
+  }, [propCitySelected])
 
   async function runPropertySearch(q: string, city: string, zone: string) {
     if (!q.trim() && !city.trim() && !zone.trim()) { setPropResults([]); return }
@@ -153,7 +164,7 @@ export function ListingForm() {
     searchAbortRef.current = ctrl
     setLoadingProps(true)
     try {
-      const params = new URLSearchParams({ per_page: '10' })
+      const params = new URLSearchParams({ per_page: '20' })
       if (q.trim()) params.set('q', q.trim())
       if (city.trim()) params.set('city', city.trim())
       if (zone.trim()) params.set('zone', zone.trim())
@@ -170,10 +181,10 @@ export function ListingForm() {
   }
 
   useEffect(() => {
-    const t = setTimeout(() => runPropertySearch(propSearch, propFilterCity, propFilterZone), 300)
+    const t = setTimeout(() => runPropertySearch(propSearch, propCitySelected, propFilterZone), 300)
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [propSearch, propFilterCity, propFilterZone])
+  }, [propSearch, propCitySelected, propFilterZone])
 
   function selectProperty(p: PropertyResult) {
     setSelectedProperty(p)
@@ -209,7 +220,9 @@ export function ListingForm() {
     setForm(INITIAL_FORM)
     setPropSearch('')
     setPropFilterCity('')
+    setPropCitySelected('')
     setPropFilterZone('')
+    setAvailableZones([])
   }
 
   function update(field: keyof FormState, value: string) {
@@ -324,31 +337,29 @@ export function ListingForm() {
         ) : (
           <div className="space-y-2">
             <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Input
-                  placeholder="Filtra per città…"
+              <div className="flex-1">
+                <CityAutocomplete
                   value={propFilterCity}
-                  onChange={(e) => setPropFilterCity(e.target.value)}
-                  className="text-sm"
+                  onChange={(v) => { setPropFilterCity(v); if (!v) { setPropCitySelected(''); setPropFilterZone(''); setAvailableZones([]) } }}
+                  onSelect={(s) => { setPropFilterCity(s.city); setPropCitySelected(s.city); setPropFilterZone('') }}
+                  placeholder="Filtra per città…"
                 />
-                {propFilterCity && (
-                  <button type="button" onClick={() => setPropFilterCity('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                    <X className="h-3 w-3" />
-                  </button>
-                )}
               </div>
-              <div className="relative flex-1">
-                <Input
-                  placeholder="Filtra per zona…"
-                  value={propFilterZone}
-                  onChange={(e) => setPropFilterZone(e.target.value)}
-                  className="text-sm"
-                />
-                {propFilterZone && (
-                  <button type="button" onClick={() => setPropFilterZone('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                    <X className="h-3 w-3" />
-                  </button>
-                )}
+              <div className="flex-1">
+                <Select
+                  value={propFilterZone || null}
+                  onValueChange={(v) => setPropFilterZone(v ?? '')}
+                  disabled={!propCitySelected || availableZones.length === 0}
+                >
+                  <SelectTrigger className="text-sm">
+                    <SelectValue placeholder={!propCitySelected ? 'Prima seleziona città' : availableZones.length === 0 ? 'Nessuna zona' : 'Filtra per zona…'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableZones.map((z) => (
+                      <SelectItem key={z} value={z}>{z}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="relative">
@@ -384,7 +395,7 @@ export function ListingForm() {
                 ))}
               </div>
             )}
-            {!loadingProps && (propSearch.trim() || propFilterCity.trim() || propFilterZone.trim()) && propResults.length === 0 && (
+            {!loadingProps && (propSearch.trim() || propCitySelected.trim() || propFilterZone.trim()) && propResults.length === 0 && (
               <p className="text-xs text-muted-foreground text-center py-2">Nessun immobile trovato. Aggiungilo prima in <a href="/banca-dati/nuovo" className="underline text-[oklch(0.57_0.20_33)]">Banca Dati</a>.</p>
             )}
           </div>
