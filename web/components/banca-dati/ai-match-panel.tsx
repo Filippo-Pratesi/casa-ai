@@ -43,7 +43,7 @@ interface AiMatchPanelProps {
 export function AiMatchPanel({ propertyId }: AiMatchPanelProps) {
   const [loading, setLoading] = useState(false)
   const [matches, setMatches] = useState<MatchResult[] | null>(null)
-  const [status, setStatus] = useState<'ready' | 'pending' | null>(null)
+  const [status, setStatus] = useState<'ready' | 'pending' | 'not_eligible' | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   async function loadMatches() {
@@ -68,7 +68,7 @@ export function AiMatchPanel({ propertyId }: AiMatchPanelProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-[oklch(0.57_0.20_33)]" />
-            <span className="text-sm font-semibold">AI Match Engine</span>
+            <span className="text-sm font-semibold">Match Engine</span>
           </div>
           <Button
             variant="outline"
@@ -78,7 +78,7 @@ export function AiMatchPanel({ propertyId }: AiMatchPanelProps) {
             disabled={loading}
           >
             {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-            Mostra Match AI
+            Mostra Match
           </Button>
         </div>
       </Card>
@@ -90,7 +90,7 @@ export function AiMatchPanel({ propertyId }: AiMatchPanelProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-[oklch(0.57_0.20_33)]" />
-          <span className="text-sm font-semibold">AI Match Engine</span>
+          <span className="text-sm font-semibold">Match Engine</span>
           {status === 'pending' && (
             <span className="text-[10px] text-muted-foreground">(calcolo in corso)</span>
           )}
@@ -109,9 +109,15 @@ export function AiMatchPanel({ propertyId }: AiMatchPanelProps) {
 
       {error && <div className="text-sm text-destructive">{error}</div>}
 
+      {status === 'not_eligible' && (
+        <p className="text-sm text-muted-foreground">
+          Il match è disponibile per immobili in fase conosciuto, incarico o disponibile.
+        </p>
+      )}
+
       {status === 'pending' && matches.length === 0 && (
         <p className="text-sm text-muted-foreground">
-          Nessun match calcolato. I match vengono aggiornati ogni notte alle 3:00 o al momento della pubblicazione dell&apos;annuncio.
+          Nessun cliente compatibile trovato.
         </p>
       )}
 

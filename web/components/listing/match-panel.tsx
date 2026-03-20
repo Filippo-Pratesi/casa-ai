@@ -51,7 +51,7 @@ export function ListingMatchPanel({ propertyId }: ListingMatchPanelProps) {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/banca-dati/match?property_id=${propertyId}`)
+      const res = await fetch(`/api/banca-dati/match?property_id=${propertyId}&ai=1`)
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Errore')
       setMatches(data.matches ?? [])
@@ -74,7 +74,7 @@ export function ListingMatchPanel({ propertyId }: ListingMatchPanelProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-[oklch(0.57_0.20_33)]" />
-          <span className="text-sm font-semibold">Clienti Compatibili</span>
+          <span className="text-sm font-semibold">AI Match Engine</span>
           {status === 'pending' && !loading && (
             <span className="text-[10px] text-amber-500">(in attesa calcolo)</span>
           )}
