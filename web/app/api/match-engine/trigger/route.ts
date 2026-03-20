@@ -87,10 +87,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, matches: 0 })
   }
 
-  // Step 2: AI adjustment via DeepSeek — only for incarico stage
+  // Step 2: AI adjustment via DeepSeek — always runs on manual trigger (stage restriction only applies to cron)
   let aiAdjustments: Record<string, { adjustment: number; reason: string }> = {}
   const apiKey = process.env.DEEPSEEK_API_KEY
-  if (apiKey && propertyStage === 'incarico') {
+  if (apiKey) {
     try {
       aiAdjustments = await getAIAdjustments(apiKey, listing, top5)
     } catch (err) {

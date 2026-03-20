@@ -867,10 +867,10 @@ export function ImmobileDetailClient({
             if (role === 'proprietario' && !property.owner_contact) {
               const ownerEntry = freshContacts.find(
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                (c: any) => c.role === 'proprietario' && c.contacts?.id === contactId
+                (c: any) => c.role === 'proprietario' && c.contact?.id === contactId
               )
-              if (ownerEntry?.contacts) {
-                setProperty((prev: Record<string, unknown>) => ({ ...prev, owner_contact: ownerEntry.contacts, owner_contact_id: contactId }))
+              if (ownerEntry?.contact) {
+                setProperty((prev: Record<string, unknown>) => ({ ...prev, owner_contact: ownerEntry.contact, owner_contact_id: contactId }))
               }
             }
           }

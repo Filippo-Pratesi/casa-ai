@@ -122,6 +122,9 @@ export async function PATCH(
   if (linkedPropertyId) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (admin as any).from('properties').update({
+      address,
+      city,
+      estimated_value: price,
       sqm,
       rooms,
       bathrooms,

@@ -43,7 +43,7 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (adminClient as any)
     .from('property_contacts')
-    .select('id, role, is_primary, notes, created_at, contacts(id, name, phone, email, type)')
+    .select('id, role, is_primary, notes, created_at, contact:contacts(id, name, phone, email, type, types)')
     .eq('property_id', id)
     .eq('workspace_id', workspaceId)
     .order('is_primary', { ascending: false })
