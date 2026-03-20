@@ -22,6 +22,19 @@ import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
+const FEATURES = [
+  { id: 'elevator', label: 'Ascensore' },
+  { id: 'terrace', label: 'Terrazzo' },
+  { id: 'garden', label: 'Giardino' },
+  { id: 'garage', label: 'Garage' },
+  { id: 'parking', label: 'Posto auto' },
+  { id: 'cellar', label: 'Cantina' },
+  { id: 'storage', label: 'Ripostiglio' },
+  { id: 'renovated_kitchen', label: 'Cucina ristrutturata' },
+  { id: 'sea_view', label: 'Vista mare' },
+  { id: 'panoramic_view', label: 'Vista panoramica' },
+]
+
 interface EditDetailsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -48,7 +61,17 @@ export const EditDetailsDialog = React.memo(function EditDetailsDialog({
     estimated_value: property.estimated_value ? String(property.estimated_value) : '',
     doorbell: property.doorbell ?? '',
     building_notes: property.building_notes ?? '',
+    features: (property.features ?? []) as string[],
   })
+
+  function toggleFeature(id: string) {
+    setEditForm(f => ({
+      ...f,
+      features: f.features.includes(id)
+        ? f.features.filter(x => x !== id)
+        : [...f.features, id],
+    }))
+  }
   const [savingDetails, setSavingDetails] = useState(false)
 
   async function handleSaveDetails() {
@@ -66,6 +89,7 @@ export const EditDetailsDialog = React.memo(function EditDetailsDialog({
         estimated_value: editForm.estimated_value ? parseInt(editForm.estimated_value, 10) : null,
         doorbell: editForm.doorbell.trim() || null,
         building_notes: editForm.building_notes.trim() || null,
+        features: editForm.features,
       }
       const res = await fetch(`/api/properties/${property.id}`, {
         method: 'PATCH',
@@ -173,6 +197,28 @@ export const EditDetailsDialog = React.memo(function EditDetailsDialog({
           <div className="space-y-1.5">
             <Label>Note palazzo</Label>
             <Textarea value={editForm.building_notes} onChange={(e) => setEditForm(f => ({ ...f, building_notes: e.target.value }))} rows={2} placeholder="Es. Palazzo anni '60, 4 piani, no ascensore..." />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Caratteristiche</Label>
+            <div className="flex flex-wrap gap-2">
+              {FEATURES.map((f) => {
+                const active = editForm.features.includes(f.id)
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => toggleFeature(f.id)}
+                    className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
+                      active
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-background text-muted-foreground border-border hover:border-primary/50'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                )
+              })}
+            </div>
           </div>
         </div>
         <DialogFooter>
