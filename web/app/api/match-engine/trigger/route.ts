@@ -25,17 +25,16 @@ export async function POST(req: NextRequest) {
   if (!profileData) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 404 })
   const profile = profileData as { workspace_id: string }
 
-  // Find the published listing for this property
+  // Find the listing for this property (any status — manual trigger works for draft too)
   const { data: listing } = await admin
     .from('listings')
     .select('id, property_id, workspace_id, address, city, price, rooms, sqm, property_type')
     .eq('property_id', property_id)
     .eq('workspace_id', profile.workspace_id)
-    .eq('status', 'published')
     .single()
 
   if (!listing) {
-    return NextResponse.json({ error: 'Annuncio pubblicato non trovato per questo immobile' }, { status: 404 })
+    return NextResponse.json({ error: 'Annuncio non trovato per questo immobile' }, { status: 404 })
   }
 
   // Step 1: Deterministic scoring
