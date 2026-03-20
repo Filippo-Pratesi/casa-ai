@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, FileText, Download, ArrowLeftRight, ArrowRightLeft } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button'
 import { ProposalStatusBadge } from '@/components/proposals/proposal-status-badge'
 import { ProposalDetailActions } from '@/components/proposals/proposal-detail-actions'
 import { GenerateInvoiceButton } from '@/components/proposals/generate-invoice-button'
@@ -75,15 +75,15 @@ export default async function PropostaDetailPage({ params }: Params) {
 
         {/* Actions */}
         <div className="flex items-center gap-2 shrink-0">
-          <Button variant="outline" size="sm" render={<a href={`/api/proposals/${id}/pdf`} target="_blank" />}>
+          <a href={`/api/proposals/${id}/pdf`} target="_blank" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
             <Download className="h-4 w-4 mr-1.5" />
             PDF
-          </Button>
+          </a>
           {proposal.status === 'inviata' && (
-            <Button variant="outline" size="sm" render={<Link href={`/proposte/${id}/counter-offer`} />}>
+            <Link href={`/proposte/${id}/counter-offer`} className={buttonVariants({ variant: 'outline', size: 'sm' })}>
               <ArrowLeftRight className="h-4 w-4 mr-1.5" />
               Controproposta
-            </Button>
+            </Link>
           )}
         </div>
       </div>

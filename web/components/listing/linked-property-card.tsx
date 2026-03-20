@@ -55,6 +55,7 @@ export function LinkedPropertyCard({ property }: LinkedPropertyCardProps) {
             size="icon"
             className="h-8 w-8 shrink-0"
             title="Visualizza in Banca Dati"
+            nativeButton={false}
             render={<Link href={`/banca-dati/${property.id}`} />}
           >
             <ExternalLink className="h-4 w-4" />
@@ -76,6 +77,7 @@ export function LinkedPropertyCard({ property }: LinkedPropertyCardProps) {
                     variant="ghost"
                     size="sm"
                     className="h-auto p-0 justify-start text-xs text-muted-foreground hover:text-foreground"
+                    nativeButton={false}
                     render={<a href={`mailto:${property.owner_contact.email}`} />}
                   >
                     <Mail className="h-3.5 w-3.5 mr-2" />
@@ -87,6 +89,7 @@ export function LinkedPropertyCard({ property }: LinkedPropertyCardProps) {
                     variant="ghost"
                     size="sm"
                     className="h-auto p-0 justify-start text-xs text-muted-foreground hover:text-foreground"
+                    nativeButton={false}
                     render={<a href={`tel:${property.owner_contact.phone}`} />}
                   >
                     <Phone className="h-3.5 w-3.5 mr-2" />

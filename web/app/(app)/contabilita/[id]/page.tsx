@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, Receipt, Download, CheckCircle, Send, Pencil, FileText, FileCode } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button'
 import { InvoiceStatusBadge } from '@/components/contabilita/invoice-status-badge'
 import { formatCurrency } from '@/components/contabilita/invoice-totals-calculator'
 import { InvoiceDetailActions } from '@/components/contabilita/invoice-detail-actions'
@@ -65,19 +65,19 @@ export default async function InvoiceDetailPage({ params }: Params) {
         {/* Actions */}
         <div className="flex items-center gap-2 shrink-0">
           {invoice.status === 'bozza' && (
-            <Button variant="outline" size="sm" render={<Link href={`/contabilita/${id}/modifica`} />}>
+            <Link href={`/contabilita/${id}/modifica`} className={buttonVariants({ variant: 'outline', size: 'sm' })}>
               <Pencil className="h-4 w-4 mr-1.5" />
               Modifica
-            </Button>
+            </Link>
           )}
-          <Button variant="outline" size="sm" render={<a href={`/api/invoices/${id}/pdf`} target="_blank" />}>
+          <a href={`/api/invoices/${id}/pdf`} target="_blank" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
             <Download className="h-4 w-4 mr-1.5" />
             PDF
-          </Button>
-          <Button variant="outline" size="sm" render={<a href={`/api/invoices/${id}/xml`} download />}>
+          </a>
+          <a href={`/api/invoices/${id}/xml`} download className={buttonVariants({ variant: 'outline', size: 'sm' })}>
             <FileCode className="h-4 w-4 mr-1.5" />
             XML
-          </Button>
+          </a>
         </div>
       </div>
 
