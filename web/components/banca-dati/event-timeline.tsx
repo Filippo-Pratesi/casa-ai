@@ -83,7 +83,7 @@ export const EVENT_LABELS: Record<string, string> = {
   locato: 'Locato',
   contratto_scaduto: 'Contratto scaduto',
   archiviato: 'Archiviato',
-  ritorno: 'Ritorno disponibile',
+  ritorno: 'Ritorno al mercato',
   valutazione_ai: 'Valutazione AI',
   insight_ai: 'Insight AI',
   altro: 'Altro',

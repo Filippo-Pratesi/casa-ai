@@ -4,11 +4,11 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 type RouteContext = { params: Promise<{ id: string }> }
 
-const VALID_STAGES = ['sconosciuto', 'ignoto', 'conosciuto', 'incarico', 'venduto', 'locato', 'disponibile']
+const VALID_STAGES = ['sconosciuto', 'ignoto', 'conosciuto', 'incarico', 'venduto', 'locato']
 // Stage order index — higher index = more advanced. Used to detect backward transitions.
 const STAGE_ORDER: Record<string, number> = {
   sconosciuto: 0, ignoto: 1, conosciuto: 2, incarico: 3,
-  venduto: 4, locato: 4, disponibile: 5,
+  venduto: 4, locato: 4,
 }
 
 async function getWorkspaceAndRole(userId: string) {
@@ -169,12 +169,6 @@ function validateStageAdvance(
     }
     if (!property.monthly_rent) {
       return 'Il canone mensile è obbligatorio per passare a "locato"'
-    }
-  }
-
-  if (targetStage === 'disponibile') {
-    if (property.stage !== 'locato') {
-      return 'La fase "disponibile" è raggiungibile solo da "locato"'
     }
   }
 

@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
 
   const STAGE_LABELS: Record<string, string> = {
     sconosciuto: 'Sconosciuto', ignoto: 'Non contattato', conosciuto: 'Conosciuto',
-    incarico: 'Incarico', venduto: 'Venduto', locato: 'Locato', disponibile: 'Disponibile',
+    incarico: 'Incarico', venduto: 'Venduto', locato: 'Locato',
   }
 
   const listings = ((listingsRes.data ?? []) as Array<{ id: string; address: string; city: string; price: number; property_type: string }>)

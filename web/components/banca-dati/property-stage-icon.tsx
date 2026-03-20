@@ -1,7 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { Eye, EyeOff, User, FileText, CheckCircle, Home, RefreshCw, HelpCircle } from 'lucide-react'
+import { Eye, EyeOff, FileText, CheckCircle, Home, HelpCircle } from 'lucide-react'
 
 export type PropertyStage =
   | 'sconosciuto'
@@ -10,7 +10,6 @@ export type PropertyStage =
   | 'incarico'
   | 'venduto'
   | 'locato'
-  | 'disponibile'
 
 const STAGE_CONFIG: Record<PropertyStage, {
   label: string
@@ -60,13 +59,6 @@ const STAGE_CONFIG: Record<PropertyStage, {
     color: 'text-purple-600',
     bg: 'bg-purple-50 dark:bg-purple-950',
     description: 'Contratto di locazione attivo',
-  },
-  disponibile: {
-    label: 'Disponibile',
-    icon: RefreshCw,
-    color: 'text-teal-600',
-    bg: 'bg-teal-50 dark:bg-teal-950',
-    description: 'Contratto scaduto, immobile di nuovo disponibile',
   },
 }
 

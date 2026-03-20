@@ -11,7 +11,7 @@ export const metadata = { title: 'Analytics — CasaAI' }
 
 const STAGE_LABELS: Record<string, string> = {
   sconosciuto: 'Sconosciuto', ignoto: 'Non contattato', conosciuto: 'Conosciuto',
-  incarico: 'Incarico', venduto: 'Venduto', locato: 'Locato', disponibile: 'Disponibile',
+  incarico: 'Incarico', venduto: 'Venduto', locato: 'Locato',
 }
 
 const STAGE_COLORS: Record<string, string> = {
@@ -21,10 +21,9 @@ const STAGE_COLORS: Record<string, string> = {
   incarico: 'bg-amber-500',
   venduto: 'bg-green-500',
   locato: 'bg-purple-500',
-  disponibile: 'bg-teal-400',
 }
 
-const STAGE_ORDER = ['sconosciuto', 'ignoto', 'conosciuto', 'incarico', 'venduto', 'locato', 'disponibile']
+const STAGE_ORDER = ['sconosciuto', 'ignoto', 'conosciuto', 'incarico', 'venduto', 'locato']
 
 export default async function AnalyticsPage({
   searchParams,

@@ -66,7 +66,6 @@ const ADVANCE_LABELS: Record<string, string> = {
   incarico: 'Avvia Incarico',
   venduto: 'Segna come Venduto',
   locato: 'Segna come Locato',
-  conosciuto_from_locato: 'Locazione scaduta',
 }
 
 interface PropertyContact {

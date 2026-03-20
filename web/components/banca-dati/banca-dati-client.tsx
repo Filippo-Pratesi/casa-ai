@@ -12,7 +12,7 @@ import { DISPOSITION_CONFIG } from './disposition-icon'
 import { BancaDatiFilters } from './banca-dati-filters'
 import { BancaDatiTable } from './banca-dati-table'
 
-const STAGES: PropertyStage[] = ['sconosciuto', 'ignoto', 'conosciuto', 'incarico', 'venduto', 'locato', 'disponibile']
+const STAGES: PropertyStage[] = ['sconosciuto', 'ignoto', 'conosciuto', 'incarico', 'venduto', 'locato']
 
 const DEFAULT_WIDTHS: Record<string, number> = {
   city: 90, zone: 90, sub_zone: 70, street: 160, civic: 52,

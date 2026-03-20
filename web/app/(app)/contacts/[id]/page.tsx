@@ -218,7 +218,7 @@ export default async function ContactDetailPage({
 
   const STAGE_LABELS: Record<string, string> = {
     sconosciuto: 'Sconosciuto', ignoto: 'Non contattato', conosciuto: 'Conosciuto',
-    incarico: 'Incarico', venduto: 'Venduto', locato: 'Locato', disponibile: 'Disponibile',
+    incarico: 'Incarico', venduto: 'Venduto', locato: 'Locato',
   }
   const STAGE_COLORS: Record<string, string> = {
     sconosciuto: 'bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300',
@@ -227,7 +227,6 @@ export default async function ContactDetailPage({
     incarico: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
     venduto: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300',
     locato: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300',
-    disponibile: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300',
   }
   const ROLE_LABELS: Record<string, string> = {
     proprietario: 'Proprietario', moglie_marito: 'Moglie/Marito', figlio_figlia: 'Figlio/Figlia',

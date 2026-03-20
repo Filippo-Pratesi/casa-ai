@@ -30,7 +30,6 @@ export function LinkedPropertyCard({ property }: LinkedPropertyCardProps) {
     incarico: 'Incarico',
     venduto: 'Venduto',
     locato: 'Locato',
-    disponibile: 'Disponibile',
   }
 
   return (

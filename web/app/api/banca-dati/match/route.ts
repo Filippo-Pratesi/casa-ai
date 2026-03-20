@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 // Stages that use pre-computed match_results (calculated nightly)
-const STORED_STAGES = ['conosciuto', 'incarico', 'disponibile']
+const STORED_STAGES = ['conosciuto', 'incarico']
 // Stages that compute on-demand without caching (ad-hoc, no AI)
 const ADHOC_STAGES = ['sconosciuto']
 // All others (ignoto, venduto, locato) → not_eligible
