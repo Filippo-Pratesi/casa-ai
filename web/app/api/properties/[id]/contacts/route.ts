@@ -39,8 +39,9 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
   const workspaceId = await getWorkspaceId(user.id)
   if (!workspaceId) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 404 })
 
+  const adminClient = createAdminClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await (adminClient as any)
     .from('property_contacts')
     .select('id, role, is_primary, notes, created_at, contacts(id, name, phone, email, type)')
     .eq('property_id', id)
@@ -75,8 +76,9 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
   }
 
   // Verify property belongs to workspace
+  const admin = createAdminClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: prop } = await (supabase as any)
+  const { data: prop } = await (admin as any)
     .from('properties')
     .select('id')
     .eq('id', id)
@@ -100,7 +102,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       : contactTypeFromRole(role)
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: newContact, error: createError } = await (supabase as any)
+    const { data: newContact, error: createError } = await (admin as any)
       .from('contacts')
       .insert({
         workspace_id: workspaceId,
@@ -121,7 +123,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     contactId = body.contact_id
     // Verify the contact belongs to the workspace
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: existingContact } = await (supabase as any)
+    const { data: existingContact } = await (admin as any)
       .from('contacts')
       .select('id')
       .eq('id', contactId)
@@ -145,7 +147,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: link, error: linkError } = await (supabase as any)
+  const { data: link, error: linkError } = await (admin as any)
     .from('property_contacts')
     .insert(linkPayload)
     .select('id')
@@ -159,7 +161,6 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
   }
 
   // Auto-event: contact added
-  const admin = createAdminClient()
   const ROLE_IT: Record<string, string> = {
     proprietario: 'Proprietario', moglie_marito: 'Moglie/Marito', figlio_figlia: 'Figlio/Figlia',
     vicino: 'Vicino', portiere: 'Portiere', amministratore: 'Amministratore',
