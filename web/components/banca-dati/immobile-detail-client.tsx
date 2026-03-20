@@ -473,40 +473,11 @@ export function ImmobileDetailClient({
                   <div>
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <p className="text-sm font-medium">{property.owner_contact.name}</p>
-                      {/* Badge V/A: Venditore (arancio) / Acquirente (verde) */}
-                      {(() => {
-                        const contactTypes: string[] = Array.isArray(property.owner_contact.types)
-                          ? property.owner_contact.types
-                          : property.owner_contact.type ? [property.owner_contact.type] : []
-                        const isSeller = contactTypes.includes('seller')
-                        const isBuyer = contactTypes.includes('buyer') || contactTypes.includes('renter')
-                        const isOnlySeller = isSeller && !isBuyer
-                        const tooltip = isSeller && isBuyer
-                          ? 'Venditore e acquirente'
-                          : isOnlySeller
-                          ? 'Solo venditore'
-                          : isBuyer
-                          ? 'Solo acquirente'
-                          : null
-                        if (!tooltip) return null
-                        return (
-                          <span
-                            title={tooltip}
-                            className={cn(
-                              'inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[9px] font-bold border leading-none',
-                              isSeller && isBuyer
-                                ? 'bg-purple-50 text-purple-600 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800'
-                                : isOnlySeller
-                                ? 'bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800'
-                                : 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800'
-                            )}
-                          >
-                            {isSeller && <span>V</span>}
-                            {isSeller && isBuyer && <span className="opacity-40">/</span>}
-                            {isBuyer && <span>A</span>}
-                          </span>
-                        )
-                      })()}
+                      <ContactTypeBadges
+                        types={property.owner_contact.types}
+                        type={property.owner_contact.type}
+                        size="xs"
+                      />
                     </div>
                     {property.owner_contact.phone && (
                       <a href={`tel:${property.owner_contact.phone}`} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
