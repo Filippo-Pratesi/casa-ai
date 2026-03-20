@@ -10,6 +10,7 @@ export const PROPERTY_ROLE_LABELS: Record<string, string> = {
   moglie_marito: 'Moglie/Marito',
   figlio_figlia: 'Figlio/Figlia',
   genitore: 'Genitore',
+  fratello_sorella: 'Fratello/Sorella',
   parente_altro: 'Parente altro',
   vicino: 'Vicino',
   portiere: 'Portiere',

@@ -6,7 +6,7 @@ type RouteContext = { params: Promise<{ id: string }> }
 
 const VALID_ROLES = [
   'proprietario', 'venditore', 'acquirente',
-  'moglie_marito', 'figlio_figlia', 'genitore', 'parente_altro', 'vicino', 'portiere',
+  'moglie_marito', 'figlio_figlia', 'genitore', 'fratello_sorella', 'parente_altro', 'vicino', 'portiere',
   'amministratore', 'avvocato', 'commercialista', 'precedente_proprietario',
   'inquilino', 'altro',
 ]
@@ -201,7 +201,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
   // Auto-event: contact added
   const ROLE_IT: Record<string, string> = {
     proprietario: 'Proprietario', moglie_marito: 'Moglie/Marito', figlio_figlia: 'Figlio/Figlia',
-    genitore: 'Genitore', parente_altro: 'Parente altro',
+    genitore: 'Genitore', fratello_sorella: 'Fratello/Sorella', parente_altro: 'Parente altro',
     vicino: 'Vicino', portiere: 'Portiere', amministratore: 'Amministratore',
     avvocato: 'Avvocato', commercialista: 'Commercialista',
     precedente_proprietario: 'Ex proprietario', inquilino: 'Inquilino', altro: 'Altro',
@@ -261,8 +261,9 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
   const FAMILY_RULES: Record<string, FamilyRule> = {
     figlio_figlia: { relType: 'figlio_figlia', relContactA: 'P', relContactB: 'C', reciprocalRole: 'genitore' },
     genitore:      { relType: 'figlio_figlia', relContactA: 'C', relContactB: 'P', reciprocalRole: 'figlio_figlia' },
-    moglie_marito: { relType: 'moglie_marito', relContactA: 'P', relContactB: 'C', reciprocalRole: 'moglie_marito' },
-    parente_altro: { relType: 'parente_altro', relContactA: 'P', relContactB: 'C', reciprocalRole: 'parente_altro' },
+    moglie_marito:    { relType: 'moglie_marito',    relContactA: 'P', relContactB: 'C', reciprocalRole: 'moglie_marito' },
+    fratello_sorella: { relType: 'fratello_sorella', relContactA: 'P', relContactB: 'C', reciprocalRole: 'fratello_sorella' },
+    parente_altro:    { relType: 'parente_altro',    relContactA: 'P', relContactB: 'C', reciprocalRole: 'parente_altro' },
   }
 
   const familyRule = FAMILY_RULES[role]
