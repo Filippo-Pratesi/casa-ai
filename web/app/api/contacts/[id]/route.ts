@@ -81,6 +81,10 @@ export async function PATCH(
   if ('min_sqm' in body) allowed.min_sqm = typeof body.min_sqm === 'number' ? body.min_sqm : null
   if ('min_rooms' in body) allowed.min_rooms = typeof body.min_rooms === 'number' ? body.min_rooms : null
   if ('desired_features' in body) allowed.desired_features = Array.isArray(body.desired_features) ? body.desired_features : []
+  if ('codice_fiscale' in body) allowed.codice_fiscale = typeof body.codice_fiscale === 'string' ? body.codice_fiscale.trim() || null : null
+  if ('partita_iva' in body) allowed.partita_iva = typeof body.partita_iva === 'string' ? body.partita_iva.trim() || null : null
+  if ('professione' in body) allowed.professione = typeof body.professione === 'string' ? body.professione.trim() || null : null
+  if ('data_nascita' in body) allowed.data_nascita = typeof body.data_nascita === 'string' ? body.data_nascita || null : null
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)

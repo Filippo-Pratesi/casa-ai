@@ -104,6 +104,10 @@ export async function POST(req: NextRequest) {
     min_sqm: typeof body.min_sqm === 'number' ? body.min_sqm : null,
     min_rooms: typeof body.min_rooms === 'number' ? body.min_rooms : null,
     desired_features: Array.isArray(body.desired_features) ? body.desired_features : [],
+    codice_fiscale: typeof body.codice_fiscale === 'string' ? body.codice_fiscale.trim() || null : null,
+    partita_iva: typeof body.partita_iva === 'string' ? body.partita_iva.trim() || null : null,
+    professione: typeof body.professione === 'string' ? body.professione.trim() || null : null,
+    data_nascita: typeof body.data_nascita === 'string' ? body.data_nascita || null : null,
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

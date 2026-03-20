@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Loader2, Building2, User } from 'lucide-react'
+import { ArrowLeft, Loader2, Building2, User, Plus, UserPlus } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
@@ -11,10 +11,13 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { AddressAutocomplete } from './address-autocomplete'
 import { CityAutocomplete } from './city-autocomplete'
 import { ZoneSelector } from './zone-selector'
 import { NearbyPropertiesPanel } from './nearby-properties-panel'
+import { ContactForm } from '@/components/contacts/contact-form'
+import { ContactTypeBadges } from '@/components/contacts/contact-type-badges'
 import { toast } from 'sonner'
 
 interface NearbyProperty {
@@ -35,6 +38,16 @@ interface NearbyResult {
   nearby: NearbyProperty[]
 }
 
+interface ContactResult {
+  id: string
+  name: string
+  phone: string | null
+  email: string | null
+  type: string | null
+  types?: string[] | null
+  roles?: string[] | null
+}
+
 interface NuovoImmobileClientProps {
   agentDefaultZones: { name: string; city: string }[]
   agents?: { id: string; name: string }[]
@@ -47,8 +60,6 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
   const [submitting, setSubmitting] = useState(false)
   const [selectedAgentId, setSelectedAgentId] = useState<string>(currentUserId ?? '')
 
-  // Address is split into street (from autocomplete) + civico (house number)
-  // Coordinates are resolved only after both street and civico are set.
   const [street, setStreet] = useState('')
   const [civico, setCivico] = useState('')
   const [city, setCity] = useState('')
@@ -63,10 +74,11 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
 
   // Contact linking
   const [contactSearch, setContactSearch] = useState('')
-  const [contactResults, setContactResults] = useState<{ id: string; name: string; phone: string | null }[]>([])
-  const [selectedContact, setSelectedContact] = useState<{ id: string; name: string } | null>(null)
+  const [contactResults, setContactResults] = useState<ContactResult[]>([])
+  const [selectedContact, setSelectedContact] = useState<ContactResult | null>(null)
   const [contactRole, setContactRole] = useState('proprietario')
   const [searchingContacts, setSearchingContacts] = useState(false)
+  const [showNewContactDialog, setShowNewContactDialog] = useState(false)
 
   const [transactionType, setTransactionType] = useState('')
   const [propertyType, setPropertyType] = useState('')
@@ -77,7 +89,6 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
 
   const civicGeoDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Auto-set zone from agent defaults when city changes
   useEffect(() => {
     if (city && !zone) {
       const defaultZone = agentDefaultZones.find((z) => z.city.toLowerCase() === city.toLowerCase())
@@ -85,14 +96,10 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
     }
   }, [city, zone, agentDefaultZones])
 
-  // When street or civico change: geocode the full address to get precise coordinates.
-  // Coordinates are only fetched when BOTH street and civico are non-empty,
-  // ensuring the nearby search uses a building-level point (not a street centroid).
   useEffect(() => {
     if (civicGeoDebounceRef.current) clearTimeout(civicGeoDebounceRef.current)
 
     if (!street.trim() || !civico.trim()) {
-      // No precise address yet — clear coordinates
       setLatitude(null)
       setLongitude(null)
       return
@@ -119,19 +126,14 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
     return () => { if (civicGeoDebounceRef.current) clearTimeout(civicGeoDebounceRef.current) }
   }, [street, civico, cityProximity])
 
-  // Load nearby when precise coordinates are available (requires both street + civico)
   useEffect(() => {
-    if (!latitude || !longitude) {
-      setNearby(null)
-      return
-    }
+    if (!latitude || !longitude) { setNearby(null); return }
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 5000)
     setLoadingNearby(true)
     fetch(`/api/properties/nearby?lat=${latitude}&lng=${longitude}&radius=100`, { signal: controller.signal })
       .then((r) => r.json())
       .then((data: unknown) => {
-        // Guard against error responses — only update state if response has expected shape
         const typed = data as Partial<NearbyResult>
         if (typed && Array.isArray(typed.same_building) && Array.isArray(typed.nearby)) {
           setNearby(typed as NearbyResult)
@@ -143,13 +145,8 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
   }, [latitude, longitude])
 
   function handleAddressSelect(suggestion: { address: string; city: string; latitude: number; longitude: number }) {
-    // Set the street name only — coordinates are resolved when the civic number is entered.
     setStreet(suggestion.address)
-    // Auto-fill city from Mapbox if not already set by CityAutocomplete
-    if (!city && suggestion.city) {
-      setCity(suggestion.city)
-    }
-    // Clear any previously resolved coordinates until civic is entered
+    if (!city && suggestion.city) setCity(suggestion.city)
     setLatitude(null)
     setLongitude(null)
   }
@@ -170,13 +167,25 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
     }
   }
 
+  function selectContact(c: ContactResult) {
+    setSelectedContact(c)
+    setContactSearch(c.name)
+    setContactResults([])
+  }
+
+  function handleNewContactSuccess(contact: { id: string; name: string }) {
+    // Treat newly created contact as selected (minimal record — fetch full details)
+    setSelectedContact({ id: contact.id, name: contact.name, phone: null, email: null, type: 'seller', types: ['seller'], roles: ['seller'] })
+    setContactSearch(contact.name)
+    setShowNewContactDialog(false)
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!street.trim()) { toast.error('L\'indirizzo è obbligatorio'); return }
     if (!city.trim()) { toast.error('La città è obbligatoria'); return }
     if (!zone.trim()) { toast.error('La zona è obbligatoria'); return }
 
-    // Combined address for storage
     const address = civico.trim() ? `${street.trim()} ${civico.trim()}` : street.trim()
 
     setSubmitting(true)
@@ -203,7 +212,6 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
       }
       const { id } = await res.json()
 
-      // Link contact if selected
       if (selectedContact) {
         try {
           await fetch(`/api/properties/${id}/contacts`, {
@@ -211,7 +219,6 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contact_id: selectedContact.id, role: contactRole }),
           })
-          // If proprietario: patch owner_contact_id then advance to conosciuto
           if (contactRole === 'proprietario') {
             await fetch(`/api/properties/${id}`, {
               method: 'PATCH',
@@ -224,14 +231,13 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
               body: JSON.stringify({ target_stage: 'conosciuto' }),
             })
           } else {
-            // Any other contact: advance to ignoto
             await fetch(`/api/properties/${id}/advance`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ target_stage: 'ignoto' }),
             })
           }
-        } catch { /* non-fatal: property still created */ }
+        } catch { /* non-fatal */ }
       }
 
       toast.success('Immobile aggiunto alla banca dati')
@@ -266,7 +272,6 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
             <h2 className="font-semibold text-sm">Localizzazione</h2>
           </div>
 
-          {/* City */}
           <div className="space-y-1.5">
             <Label>Città *</Label>
             <CityAutocomplete
@@ -275,13 +280,11 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
               onSelect={(s) => {
                 setCity(s.city)
                 setCityProximity(`${s.longitude},${s.latitude}`)
-                // Reset zone if city changed
                 setZone('')
               }}
             />
           </div>
 
-          {/* Street + Civic number on the same row */}
           <div className="space-y-1.5">
             <Label>Via / Indirizzo *</Label>
             <div className="flex gap-2">
@@ -304,7 +307,6 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
               </div>
             </div>
 
-            {/* Coordinate status */}
             {!hasPreciseAddress && street.trim() && (
               <p className="text-xs text-muted-foreground">
                 Inserisci il numero civico per ottenere le coordinate precise e cercare immobili vicini.
@@ -328,7 +330,6 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
             )}
           </div>
 
-          {/* Zone */}
           <div className="space-y-1.5">
             <Label>Zona *</Label>
             <ZoneSelector
@@ -341,7 +342,6 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
             />
           </div>
 
-          {/* Doorbell */}
           <div className="space-y-1.5">
             <Label>Campanello / Interno</Label>
             <Input
@@ -351,7 +351,6 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
             />
           </div>
 
-          {/* Building notes */}
           <div className="space-y-1.5">
             <Label>Note palazzo</Label>
             <Textarea
@@ -362,7 +361,6 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
             />
           </div>
 
-          {/* Transaction type + property type */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Tipo operazione</Label>
@@ -392,8 +390,9 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
               </Select>
             </div>
           </div>
-          {/* Agent selector (admin only) */}
-          {isAdmin && agents.length > 1 && (
+
+          {/* Agent selector — admin only */}
+          {isAdmin && agents.length > 0 && (
             <div className="space-y-1.5">
               <Label>Agente assegnato</Label>
               <Select value={selectedAgentId || 'none'} onValueChange={(v) => setSelectedAgentId(!v || v === 'none' ? '' : v)}>
@@ -410,7 +409,7 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
           )}
         </Card>
 
-        {/* Nearby properties — shown only when precise coordinates are available */}
+        {/* Nearby properties */}
         <NearbyPropertiesPanel nearby={nearby} loading={loadingNearby} />
 
         {/* Optional initial note */}
@@ -433,53 +432,91 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
           <p className="text-xs text-muted-foreground -mt-2">Aggiungere un proprietario avanzerà automaticamente lo stage a Conosciuto.</p>
 
           <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label>Cerca contatto</Label>
-              <div className="relative">
-                <Input
-                  placeholder="Nome, telefono..."
-                  value={contactSearch}
-                  onChange={(e) => searchContacts(e.target.value)}
-                  autoComplete="off"
-                />
-                {searchingContacts && (
-                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
+            {/* Search existing contacts */}
+            {!selectedContact && (
+              <div className="space-y-1.5">
+                <Label>Cerca tra i tuoi contatti</Label>
+                <div className="relative">
+                  <Input
+                    placeholder="Nome, telefono, email..."
+                    value={contactSearch}
+                    onChange={(e) => searchContacts(e.target.value)}
+                    autoComplete="off"
+                  />
+                  {searchingContacts && (
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
+                  )}
+                </div>
+                {contactResults.length > 0 && (
+                  <div className="rounded-lg border border-border shadow-sm max-h-48 overflow-auto">
+                    {contactResults.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => selectContact(c)}
+                        className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/50 border-b border-border/50 last:border-0"
+                      >
+                        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">
+                          {c.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-sm">{c.name}</p>
+                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                            {c.phone && <span className="text-xs text-muted-foreground">{c.phone}</span>}
+                            {c.email && <span className="text-xs text-muted-foreground">{c.email}</span>}
+                          </div>
+                        </div>
+                        <ContactTypeBadges types={c.roles ?? c.types} type={c.type} size="xs" className="shrink-0" />
+                      </button>
+                    ))}
+                  </div>
                 )}
               </div>
-              {contactResults.length > 0 && !selectedContact && (
-                <div className="rounded-lg border border-border max-h-40 overflow-auto">
-                  {contactResults.map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => { setSelectedContact(c); setContactSearch(c.name); setContactResults([]) }}
-                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/50"
-                    >
-                      <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">
-                        {c.name.charAt(0).toUpperCase()}
+            )}
+
+            {/* Selected contact */}
+            {selectedContact && (
+              <div className="rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950 px-3 py-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center text-xs font-bold text-green-700 dark:text-green-300 shrink-0">
+                      {selectedContact.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm text-green-700 dark:text-green-400">{selectedContact.name}</p>
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                        {selectedContact.phone && <span className="text-xs text-muted-foreground">{selectedContact.phone}</span>}
+                        <ContactTypeBadges types={selectedContact.roles ?? selectedContact.types} type={selectedContact.type} size="xs" />
                       </div>
-                      <div>
-                        <p className="font-medium">{c.name}</p>
-                        {c.phone && <p className="text-xs text-muted-foreground">{c.phone}</p>}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-              {selectedContact && (
-                <div className="flex items-center justify-between rounded-lg bg-green-50 dark:bg-green-950 px-3 py-2">
-                  <p className="text-sm text-green-700 dark:text-green-400">✓ {selectedContact.name}</p>
+                    </div>
+                  </div>
                   <button
                     type="button"
                     onClick={() => { setSelectedContact(null); setContactSearch('') }}
-                    className="text-xs text-muted-foreground hover:text-foreground"
+                    className="text-xs text-muted-foreground hover:text-foreground shrink-0"
                   >
                     Rimuovi
                   </button>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
+            {/* Create new contact CTA */}
+            {!selectedContact && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">o</span>
+                <button
+                  type="button"
+                  onClick={() => setShowNewContactDialog(true)}
+                  className="inline-flex items-center gap-1 text-xs text-[oklch(0.57_0.20_33)] hover:underline font-medium"
+                >
+                  <UserPlus className="h-3 w-3" />
+                  Crea nuovo contatto
+                </button>
+              </div>
+            )}
+
+            {/* Role selector */}
             {selectedContact && (
               <div className="space-y-1.5">
                 <Label>Ruolo nell&apos;immobile</Label>
@@ -516,6 +553,23 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
           </Button>
         </div>
       </form>
+
+      {/* New contact dialog */}
+      <Dialog open={showNewContactDialog} onOpenChange={setShowNewContactDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Nuovo contatto
+            </DialogTitle>
+          </DialogHeader>
+          <ContactForm
+            mode="create"
+            onSuccess={handleNewContactSuccess}
+            defaultValues={{ types: ['seller'] }}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

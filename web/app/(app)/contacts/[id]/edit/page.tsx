@@ -38,6 +38,8 @@ export default async function EditContactPage({
   const contact = data as {
     name: string; type: string; roles: string[] | null; email: string | null; phone: string | null
     city_of_residence: string | null; address_of_residence: string | null
+    codice_fiscale: string | null; partita_iva: string | null
+    professione: string | null; data_nascita: string | null
     notes: string | null; budget_min: number | null; budget_max: number | null
     preferred_cities: string[]; preferred_types: string[]
     min_sqm: number | null; min_rooms: number | null
@@ -50,6 +52,10 @@ export default async function EditContactPage({
     phone: contact.phone ?? '',
     city_of_residence: contact.city_of_residence ?? '',
     address_of_residence: contact.address_of_residence ?? '',
+    codice_fiscale: contact.codice_fiscale ?? '',
+    partita_iva: contact.partita_iva ?? '',
+    professione: contact.professione ?? '',
+    data_nascita: contact.data_nascita ?? '',
     notes: contact.notes ?? '',
     budget_min: contact.budget_min?.toString() ?? '',
     budget_max: contact.budget_max?.toString() ?? '',

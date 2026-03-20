@@ -26,19 +26,52 @@ const PROPERTY_TYPES = [
   { value: 'garage', label: 'Garage' },
 ]
 
-interface ContactFormProps {
+export interface ContactFormDefaultValues {
+  /** Legacy full name — will be split into first_name/last_name */
+  name?: string
+  first_name?: string
+  last_name?: string
+  types?: string[]
+  email?: string
+  phone?: string
+  city_of_residence?: string
+  address_of_residence?: string
+  codice_fiscale?: string
+  partita_iva?: string
+  professione?: string
+  data_nascita?: string
+  notes?: string
+  budget_min?: string
+  budget_max?: string
+  preferred_cities?: string
+  preferred_types?: string[]
+  min_sqm?: string
+  min_rooms?: string
+}
+
+export interface ContactFormProps {
   mode: 'create' | 'edit'
   contactId?: string
-  defaultValues?: Partial<FormState>
+  defaultValues?: ContactFormDefaultValues
+  /**
+   * When provided: skip page navigation after save, call this instead.
+   * Also hides the "Collega immobile" section (not needed when embedded).
+   */
+  onSuccess?: (contact: { id: string; name: string }) => void
 }
 
 interface FormState {
-  name: string
+  first_name: string
+  last_name: string
   types: string[]
   email: string
   phone: string
   city_of_residence: string
   address_of_residence: string
+  codice_fiscale: string
+  partita_iva: string
+  professione: string
+  data_nascita: string
   notes: string
   budget_min: string
   budget_max: string
@@ -48,13 +81,24 @@ interface FormState {
   min_rooms: string
 }
 
+function splitName(name: string): { first_name: string; last_name: string } {
+  const idx = name.indexOf(' ')
+  if (idx === -1) return { first_name: name, last_name: '' }
+  return { first_name: name.substring(0, idx), last_name: name.substring(idx + 1) }
+}
+
 const INITIAL: FormState = {
-  name: '',
+  first_name: '',
+  last_name: '',
   types: ['buyer'],
   email: '',
   phone: '',
   city_of_residence: '',
   address_of_residence: '',
+  codice_fiscale: '',
+  partita_iva: '',
+  professione: '',
+  data_nascita: '',
   notes: '',
   budget_min: '',
   budget_max: '',
@@ -64,19 +108,49 @@ const INITIAL: FormState = {
   min_rooms: '',
 }
 
+function resolveInitial(defaults?: ContactFormDefaultValues): FormState {
+  if (!defaults) return { ...INITIAL }
+  const nameParts = defaults.name ? splitName(defaults.name) : {}
+  return {
+    ...INITIAL,
+    first_name: defaults.first_name ?? nameParts.first_name ?? '',
+    last_name: defaults.last_name ?? nameParts.last_name ?? '',
+    types: defaults.types ?? ['buyer'],
+    email: defaults.email ?? '',
+    phone: defaults.phone ?? '',
+    city_of_residence: defaults.city_of_residence ?? '',
+    address_of_residence: defaults.address_of_residence ?? '',
+    codice_fiscale: defaults.codice_fiscale ?? '',
+    partita_iva: defaults.partita_iva ?? '',
+    professione: defaults.professione ?? '',
+    data_nascita: defaults.data_nascita ?? '',
+    notes: defaults.notes ?? '',
+    budget_min: defaults.budget_min ?? '',
+    budget_max: defaults.budget_max ?? '',
+    preferred_cities: defaults.preferred_cities ?? '',
+    preferred_types: defaults.preferred_types ?? [],
+    min_sqm: defaults.min_sqm ?? '',
+    min_rooms: defaults.min_rooms ?? '',
+  }
+}
+
 const isBuyerLike = (types: string[]) => types.includes('buyer') || types.includes('renter')
 
-export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps) {
+export function ContactForm({ mode, contactId, defaultValues, onSuccess }: ContactFormProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
-  const [form, setForm] = useState<FormState>({ ...INITIAL, ...defaultValues })
+  const [form, setForm] = useState<FormState>(() => resolveInitial(defaultValues))
   const [showPrefs, setShowPrefs] = useState(
     !!(defaultValues?.budget_min || defaultValues?.budget_max ||
        defaultValues?.preferred_cities || defaultValues?.min_rooms || defaultValues?.min_sqm ||
        (defaultValues?.preferred_types && (defaultValues.preferred_types as string[]).length > 0))
   )
+  const [showExtra, setShowExtra] = useState(
+    !!(defaultValues?.codice_fiscale || defaultValues?.partita_iva ||
+       defaultValues?.professione || defaultValues?.data_nascita)
+  )
 
-  // Property linking state (create mode only)
+  // Property linking state (create mode standalone only)
   const [propertySearch, setPropertySearch] = useState('')
   const [propertyResults, setPropertyResults] = useState<{ id: string; address: string; city: string; stage: string }[]>([])
   const [selectedProperty, setSelectedProperty] = useState<{ id: string; address: string; city: string; stage: string } | null>(null)
@@ -91,7 +165,6 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
     setForm((prev) => {
       const current = prev.types
       if (current.includes(value)) {
-        // Don't allow deselecting the last type
         if (current.length === 1) return prev
         return { ...prev, types: current.filter((t) => t !== value) }
       }
@@ -109,21 +182,23 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
   }
 
   function buildPayload() {
+    const name = [form.first_name.trim(), form.last_name.trim()].filter(Boolean).join(' ')
     return {
-      name: form.name.trim(),
+      name,
       types: form.types,
-      type: form.types[0], // primary type for backward compat
+      type: form.types[0],
       email: form.email.trim() || null,
       phone: form.phone.trim() || null,
       city_of_residence: form.city_of_residence.trim() || null,
       address_of_residence: form.address_of_residence.trim() || null,
+      codice_fiscale: form.codice_fiscale.trim() || null,
+      partita_iva: form.partita_iva.trim() || null,
+      professione: form.professione.trim() || null,
+      data_nascita: form.data_nascita || null,
       notes: form.notes.trim() || null,
       budget_min: form.budget_min ? Number(form.budget_min) : null,
       budget_max: form.budget_max ? Number(form.budget_max) : null,
-      preferred_cities: form.preferred_cities
-        .split(',')
-        .map((c) => c.trim())
-        .filter(Boolean),
+      preferred_cities: form.preferred_cities.split(',').map((c) => c.trim()).filter(Boolean),
       preferred_types: form.preferred_types,
       min_sqm: form.min_sqm ? Number(form.min_sqm) : null,
       min_rooms: form.min_rooms ? Number(form.min_rooms) : null,
@@ -148,10 +223,9 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!form.name.trim()) {
-      toast.error('Il nome è obbligatorio')
-      return
-    }
+    const name = [form.first_name.trim(), form.last_name.trim()].filter(Boolean).join(' ')
+    if (!name) { toast.error('Il nome è obbligatorio'); return }
+
     startTransition(async () => {
       try {
         const url = mode === 'create' ? '/api/contacts' : `/api/contacts/${contactId}`
@@ -164,8 +238,8 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || 'Errore nel salvataggio')
 
-        // Link property if selected (only on create)
-        if (mode === 'create' && selectedProperty && data.id) {
+        // Link property if selected (only standalone create)
+        if (mode === 'create' && !onSuccess && selectedProperty && data.id) {
           try {
             await fetch(`/api/properties/${selectedProperty.id}/contacts`, {
               method: 'POST',
@@ -196,8 +270,13 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
         }
 
         toast.success(mode === 'create' ? 'Cliente aggiunto' : 'Cliente aggiornato')
-        router.push(mode === 'create' ? `/contacts/${data.id}` : `/contacts/${contactId}`)
-        router.refresh()
+
+        if (onSuccess) {
+          onSuccess({ id: data.id, name })
+        } else {
+          router.push(mode === 'create' ? `/contacts/${data.id}` : `/contacts/${contactId}`)
+          router.refresh()
+        }
       } catch (err) {
         toast.error(err instanceof Error ? err.message : 'Errore imprevisto')
       }
@@ -207,7 +286,7 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
   return (
     <form onSubmit={handleSubmit} className="max-w-xl space-y-0 divide-y divide-border">
 
-      {/* Tipo cliente — multi-select */}
+      {/* Tipo cliente */}
       <section className="pt-0 pb-6 space-y-3">
         <div>
           <h2 className="text-base font-semibold">Tipo cliente</h2>
@@ -243,15 +322,27 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
       <section className="py-6 space-y-4">
         <h2 className="text-base font-semibold">Dati anagrafici</h2>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="name">Nome e cognome *</Label>
-          <Input
-            id="name"
-            placeholder="Mario Rossi"
-            value={form.name}
-            onChange={(e) => update('name', e.target.value)}
-            required
-          />
+        {/* Nome + Cognome */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="first_name">Nome *</Label>
+            <Input
+              id="first_name"
+              placeholder="Mario"
+              value={form.first_name}
+              onChange={(e) => update('first_name', e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="last_name">Cognome <span className="text-muted-foreground font-normal">(opzionale)</span></Label>
+            <Input
+              id="last_name"
+              placeholder="Rossi"
+              value={form.last_name}
+              onChange={(e) => update('last_name', e.target.value)}
+            />
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -308,6 +399,68 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
             onChange={(e) => update('notes', e.target.value)}
           />
         </div>
+
+        {/* Extra details toggle */}
+        <button
+          type="button"
+          onClick={() => setShowExtra((v) => !v)}
+          className="flex w-full items-center justify-between text-left pt-1"
+        >
+          <span className="text-sm font-medium text-muted-foreground">
+            Altri dettagli <span className="text-xs font-normal">(cod. fiscale, professione…)</span>
+          </span>
+          {showExtra
+            ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
+            : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+          }
+        </button>
+
+        {showExtra && (
+          <div className="space-y-4 pt-1">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="codice_fiscale">Codice fiscale</Label>
+                <Input
+                  id="codice_fiscale"
+                  placeholder="RSSMRA80A01H501Z"
+                  value={form.codice_fiscale}
+                  onChange={(e) => update('codice_fiscale', e.target.value.toUpperCase())}
+                  maxLength={16}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="partita_iva">Partita IVA</Label>
+                <Input
+                  id="partita_iva"
+                  placeholder="12345678901"
+                  value={form.partita_iva}
+                  onChange={(e) => update('partita_iva', e.target.value)}
+                  maxLength={11}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="professione">Professione</Label>
+                <Input
+                  id="professione"
+                  placeholder="Imprenditore, Medico…"
+                  value={form.professione}
+                  onChange={(e) => update('professione', e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="data_nascita">Data di nascita</Label>
+                <Input
+                  id="data_nascita"
+                  type="date"
+                  value={form.data_nascita}
+                  onChange={(e) => update('data_nascita', e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Preferenze ricerca — solo per acquirenti/affittuari */}
@@ -323,9 +476,7 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
                 Preferenze ricerca
                 <span className="ml-2 text-xs font-normal text-muted-foreground">(opzionale)</span>
               </h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Budget, zone e caratteristiche desiderate
-              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">Budget, zone e caratteristiche desiderate</p>
             </div>
             {showPrefs
               ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -338,61 +489,28 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="budget_min">Budget minimo (€)</Label>
-                  <Input
-                    id="budget_min"
-                    type="number"
-                    min="0"
-                    placeholder="150.000"
-                    value={form.budget_min}
-                    onChange={(e) => update('budget_min', e.target.value)}
-                  />
+                  <Input id="budget_min" type="number" min="0" placeholder="150.000" value={form.budget_min} onChange={(e) => update('budget_min', e.target.value)} />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="budget_max">Budget massimo (€)</Label>
-                  <Input
-                    id="budget_max"
-                    type="number"
-                    min="0"
-                    placeholder="350.000"
-                    value={form.budget_max}
-                    onChange={(e) => update('budget_max', e.target.value)}
-                  />
+                  <Input id="budget_max" type="number" min="0" placeholder="350.000" value={form.budget_max} onChange={(e) => update('budget_max', e.target.value)} />
                 </div>
               </div>
 
               <div className="space-y-1.5">
                 <Label htmlFor="preferred_cities">Zone / Città preferite</Label>
-                <Input
-                  id="preferred_cities"
-                  placeholder="Milano, Monza, Lecco"
-                  value={form.preferred_cities}
-                  onChange={(e) => update('preferred_cities', e.target.value)}
-                />
+                <Input id="preferred_cities" placeholder="Milano, Monza, Lecco" value={form.preferred_cities} onChange={(e) => update('preferred_cities', e.target.value)} />
                 <p className="text-xs text-muted-foreground">Separa più città con una virgola</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="min_rooms">Locali minimi</Label>
-                  <Input
-                    id="min_rooms"
-                    type="number"
-                    min="1"
-                    placeholder="3"
-                    value={form.min_rooms}
-                    onChange={(e) => update('min_rooms', e.target.value)}
-                  />
+                  <Input id="min_rooms" type="number" min="1" placeholder="3" value={form.min_rooms} onChange={(e) => update('min_rooms', e.target.value)} />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="min_sqm">Superficie minima (m²)</Label>
-                  <Input
-                    id="min_sqm"
-                    type="number"
-                    min="1"
-                    placeholder="70"
-                    value={form.min_sqm}
-                    onChange={(e) => update('min_sqm', e.target.value)}
-                  />
+                  <Input id="min_sqm" type="number" min="1" placeholder="70" value={form.min_sqm} onChange={(e) => update('min_sqm', e.target.value)} />
                 </div>
               </div>
 
@@ -420,8 +538,8 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
         </section>
       )}
 
-      {/* Collega immobile — solo in creazione */}
-      {mode === 'create' && (
+      {/* Collega immobile — solo creazione standalone (non embedded) */}
+      {mode === 'create' && !onSuccess && (
         <section className="py-6 space-y-4">
           <div>
             <h2 className="text-base font-semibold">Collega immobile <span className="ml-2 text-xs font-normal text-muted-foreground">(opzionale)</span></h2>
@@ -432,18 +550,10 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
             <div className="space-y-1.5">
               <Label>Cerca immobile in banca dati</Label>
               <div className="relative">
-                <Input
-                  placeholder="Inizia a digitare via, città..."
-                  value={propertySearch}
-                  onChange={(e) => searchProperties(e.target.value)}
-                  autoComplete="off"
-                />
-                {searchingProperties && (
-                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
-                )}
+                <Input placeholder="Inizia a digitare via, città..." value={propertySearch} onChange={(e) => searchProperties(e.target.value)} autoComplete="off" />
+                {searchingProperties && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />}
               </div>
 
-              {/* Autocomplete dropdown */}
               {propertyResults.length > 0 && !selectedProperty && (
                 <div className="rounded-lg border border-border shadow-sm max-h-48 overflow-auto">
                   {propertyResults.map((p) => (
@@ -464,31 +574,20 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
                 </div>
               )}
 
-              {/* Selected property confirmation */}
               {selectedProperty && (
                 <div className="flex items-center justify-between rounded-lg bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 px-3 py-2">
                   <div className="flex items-center gap-2">
                     <MapPin className="h-3.5 w-3.5 text-green-600 dark:text-green-400 shrink-0" />
                     <p className="text-sm text-green-700 dark:text-green-400 font-medium">{selectedProperty.address}, {selectedProperty.city}</p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => { setSelectedProperty(null); setPropertySearch('') }}
-                    className="text-xs text-muted-foreground hover:text-foreground ml-3"
-                  >
-                    Rimuovi
-                  </button>
+                  <button type="button" onClick={() => { setSelectedProperty(null); setPropertySearch('') }} className="text-xs text-muted-foreground hover:text-foreground ml-3">Rimuovi</button>
                 </div>
               )}
 
-              {/* Create new property link */}
               {!selectedProperty && (
                 <div className="flex items-center gap-1.5 pt-0.5">
                   <span className="text-xs text-muted-foreground">o</span>
-                  <Link
-                    href="/banca-dati/nuovo"
-                    className="inline-flex items-center gap-1 text-xs text-[oklch(0.57_0.20_33)] hover:underline font-medium"
-                  >
+                  <Link href="/banca-dati/nuovo" className="inline-flex items-center gap-1 text-xs text-[oklch(0.57_0.20_33)] hover:underline font-medium">
                     <Plus className="h-3 w-3" />
                     Crea nuovo immobile in banca dati
                   </Link>
@@ -496,7 +595,6 @@ export function ContactForm({ mode, contactId, defaultValues }: ContactFormProps
               )}
             </div>
 
-            {/* Role selector */}
             {selectedProperty && (
               <div className="space-y-1.5">
                 <Label>Ruolo nel contatto</Label>
