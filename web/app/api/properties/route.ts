@@ -8,7 +8,8 @@ export async function GET(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
-  const { data: profileData } = await supabase
+  const admin = createAdminClient()
+  const { data: profileData } = await admin
     .from('users')
     .select('workspace_id')
     .eq('id', user.id)
@@ -33,7 +34,7 @@ export async function GET(req: NextRequest) {
   const offset = (page - 1) * per_page
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let query = (supabase as any)
+  let query = (admin as any)
     .from('properties')
     .select('*', { count: 'exact' })
     .eq('workspace_id', profile.workspace_id)
