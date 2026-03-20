@@ -36,7 +36,7 @@ export default async function EditContactPage({
   if (error || !data) notFound()
 
   const contact = data as {
-    name: string; type: string; roles: string[] | null; email: string | null; phone: string | null
+    name: string; type: string; types: string[] | null; email: string | null; phone: string | null
     city_of_residence: string | null; address_of_residence: string | null
     codice_fiscale: string | null; partita_iva: string | null
     professione: string | null; data_nascita: string | null
@@ -47,7 +47,7 @@ export default async function EditContactPage({
 
   const defaultValues = {
     name: contact.name,
-    types: (contact.roles && contact.roles.length > 0) ? contact.roles : [contact.type],
+    types: (contact.types && contact.types.length > 0) ? contact.types : [contact.type],
     email: contact.email ?? '',
     phone: contact.phone ?? '',
     city_of_residence: contact.city_of_residence ?? '',

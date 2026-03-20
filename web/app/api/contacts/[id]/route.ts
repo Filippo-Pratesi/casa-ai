@@ -63,11 +63,11 @@ export async function PATCH(
     const types = (body.types as unknown[]).filter((t): t is string => typeof t === 'string' && validTypes.includes(t))
     if (types.length > 0) {
       allowed.type = types[0]
-      allowed.roles = types
+      allowed.types = types
     }
   } else if (typeof body.type === 'string' && validTypes.includes(body.type)) {
     allowed.type = body.type
-    allowed.roles = [body.type]
+    allowed.types = [body.type]
   }
   if ('email' in body) allowed.email = typeof body.email === 'string' ? body.email.trim() || null : null
   if ('phone' in body) allowed.phone = typeof body.phone === 'string' ? body.phone.trim() || null : null

@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
     agent_id: user.id,
     name,
     type,
-    roles: types,
+    types: types,
     email: typeof body.email === 'string' ? body.email.trim() || null : null,
     phone: typeof body.phone === 'string' ? body.phone.trim() || null : null,
     city_of_residence: typeof body.city_of_residence === 'string' ? body.city_of_residence.trim() || null : null,

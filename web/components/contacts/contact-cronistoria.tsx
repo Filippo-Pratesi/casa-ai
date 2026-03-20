@@ -138,7 +138,7 @@ export function ContactCronistoria({ contactId, initialEvents }: ContactCronisto
         {events.length === 0 ? (
           <p className="text-sm text-muted-foreground py-2">Nessun evento registrato</p>
         ) : (
-          <ul role="list" className="border-l-2 border-border pl-4 space-y-3">
+          <ul role="list" className="border-l-2 border-border pl-4 space-y-3 max-h-[70vh] overflow-y-auto overscroll-contain pr-1">
             {displayedEvents.map((ev) => {
               const iconName = EVENT_ICON_NAMES[ev.event_type as keyof typeof EVENT_ICON_NAMES] ?? 'FileText'
               const Icon = ICON_COMPONENTS[iconName]
