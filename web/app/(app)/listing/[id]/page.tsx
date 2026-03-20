@@ -644,7 +644,7 @@ export default async function ListingDetailPage({
           <GenerateContentButton listingId={listing.id} />
         </div>
       )}
-    </div>{/* end main content column */}
+    </div>
 
     {/* Right sidebar: cronistoria */}
     {cronistoriaEvents.length > 0 && (
@@ -679,7 +679,7 @@ export default async function ListingDetailPage({
         </div>
       </div>
     )}
-    </div>{/* end grid */}
-    </div>{/* end max-w-6xl */}
+    </div>
+    </div>
   )
 }
