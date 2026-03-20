@@ -243,7 +243,9 @@ export default async function ContactDetailPage({
   )
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 pb-12">
+    <div className="max-w-6xl mx-auto pb-12">
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 items-start">
+    <div className="space-y-6">
       {/* Nav */}
       <div className="flex items-center justify-between animate-in-1">
         <div className="flex items-center gap-2">
@@ -545,11 +547,13 @@ export default async function ContactDetailPage({
         </div>
       )}
 
-      {/* Cronistoria contatto */}
-      <ContactCronistoria
-        contactId={id}
-        initialEvents={cronistoriaEvents}
-      />
+      {/* Cronistoria — mobile only */}
+      <div className="lg:hidden">
+        <ContactCronistoria
+          contactId={id}
+          initialEvents={cronistoriaEvents}
+        />
+      </div>
 
       {/* Activity timeline — B2: semantic list markup */}
       {appointments && appointments.length > 0 && (
@@ -566,6 +570,17 @@ export default async function ContactDetailPage({
           </ul>
         </div>
       )}
+    </div>
+
+    {/* Right sidebar: cronistoria */}
+    <div className="hidden lg:block lg:sticky lg:top-4">
+      <ContactCronistoria
+        contactId={id}
+        initialEvents={cronistoriaEvents}
+      />
+    </div>
+
+    </div>
     </div>
   )
 }
