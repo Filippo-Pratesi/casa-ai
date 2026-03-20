@@ -13,54 +13,104 @@ Real estate AI SaaS for Italian agencies. The app lives in `./web/`.
 - **Social:** Meta Graph API (Instagram integration)
 - **Calendar:** Google Calendar API
 - **PDF:** @react-pdf/renderer
+- **Maps:** Mapbox (geocoding + address autocomplete)
 
 ## Project Structure
 
 ```
 web/
 ├── app/
-│   ├── (app)/          # Protected routes (dashboard, listings, contacts, etc.)
-│   │   ├── listing/[id]/edit/  # Listing edit page with tone regeneration
-│   │   └── ...         # archive, campaigns, calendar, contacts, notifications,
-│   │                   #   plans, settings, team, todos
-│   ├── (auth)/         # Login/signup flows
-│   ├── api/            # API routes:
-│   │   ├── ai-assistant/       # AI chat widget endpoint
-│   │   ├── archive/export/     # Archive CSV/JSON export
+│   ├── (app)/              # Protected routes
+│   │   ├── admin/          # Admin panel
+│   │   ├── analytics/      # Analytics dashboard
+│   │   ├── archive/        # Archived contacts/listings
+│   │   ├── banca-dati/     # Property database (lifecycle management)
+│   │   ├── calendar/       # Appointments
+│   │   ├── campaigns/      # Email/WhatsApp campaigns
+│   │   ├── contabilita/    # Invoicing & accounting
+│   │   ├── contacts/       # CRM contacts
+│   │   ├── dashboard/      # Main dashboard
+│   │   ├── listing/        # Property listings (annunci)
+│   │   ├── mls/            # MLS integration
+│   │   ├── notifications/  # Notification center
+│   │   ├── plans/          # Subscription plans
+│   │   ├── profile/        # User profile
+│   │   ├── proposte/       # Purchase proposals
+│   │   ├── settings/       # Workspace settings
+│   │   └── todos/          # Task management
+│   ├── (auth)/             # Login/signup flows
+│   ├── api/                # API routes
+│   │   ├── agent-zones/    # Agent zone defaults
+│   │   ├── ai-assistant/   # AI chat widget
 │   │   ├── appointments/
-│   │   ├── auth/
-│   │   ├── billing/
-│   │   ├── calendar/
+│   │   ├── archive/        # CSV/JSON export
+│   │   ├── banca-dati/     # Property DB helpers
+│   │   ├── billing/        # Stripe webhooks + billing
+│   │   ├── calendar/       # Google Calendar sync
 │   │   ├── campaigns/
-│   │   ├── contacts/
-│   │   ├── group/
-│   │   ├── listing/[id]/update/  # Listing update + tone regeneration
+│   │   ├── catasto/        # Cadastral data
+│   │   ├── contacts/       # CRM CRUD
+│   │   ├── cron/           # Scheduled jobs (lease expiry, etc.)
+│   │   ├── geocode/        # Mapbox geocoding proxy
+│   │   ├── group/          # Multi-workspace group
+│   │   ├── invoices/       # Invoicing CRUD + PDF + email
+│   │   ├── listing/        # Listing CRUD + AI generation
+│   │   ├── match-engine/   # Contact↔property matching
 │   │   ├── notifications/
 │   │   ├── profile/
-│   │   ├── search/             # Global search endpoint
-│   │   ├── social/
+│   │   ├── properties/     # Banca Dati CRUD + stage transitions
+│   │   ├── proposals/      # Purchase proposals CRUD + PDF
+│   │   ├── search/         # Global search
+│   │   ├── settings/
+│   │   ├── social/         # Instagram publishing
 │   │   ├── todos/
-│   │   ├── track/
-│   │   └── workspace/
-│   ├── not-found.tsx   # Custom 404 page
-│   └── p/              # Public property pages
-├── components/         # React components organized by feature
-│   ├── ai-assistant/   # AI widget (ai-widget.tsx, ai-widget-gate.tsx)
-│   ├── shared/         # Reusable UI components
-│   └── ui/             # shadcn/ui primitives
-├── hooks/              # Custom React hooks (use-mobile.ts)
+│   │   ├── track/          # Analytics tracking
+│   │   ├── workspace/
+│   │   └── zones/          # Zone + sub-zone management
+│   ├── not-found.tsx
+│   └── p/                  # Public property pages
+├── components/             # Feature-organized React components
+│   ├── ai-assistant/       # AI chat widget
+│   ├── analytics/
+│   ├── archive/
+│   ├── banca-dati/         # Property DB UI components
+│   ├── calendar/
+│   ├── campaigns/
+│   ├── contabilita/        # Invoicing UI
+│   ├── contacts/           # CRM UI + cronistoria
+│   ├── dashboard/
+│   ├── listing/
+│   ├── notifications/
+│   ├── proposals/
+│   ├── settings/
+│   ├── shared/             # Reusable components (AttachmentsSection, etc.)
+│   └── ui/                 # shadcn/ui primitives
+├── hooks/
 ├── lib/
-│   ├── supabase/       # Supabase client (browser + server)
-│   ├── i18n/           # Internationalization (Italian)
-│   ├── gemini.ts       # Google AI wrapper
-│   ├── deepseek.ts     # DeepSeek wrapper
-│   ├── facebook.ts     # Meta Graph API
+│   ├── supabase/           # Browser + server + admin clients
+│   ├── i18n/               # Italian translations
+│   ├── contact-event-types.ts  # Contact cronistoria event config
+│   ├── contact-utils.ts
+│   ├── gemini.ts           # Google AI wrapper
+│   ├── deepseek.ts
+│   ├── facebook.ts         # Meta Graph API
 │   ├── google-calendar.ts
-│   ├── plan-limits.ts  # Subscription tier logic
-│   └── utils.ts        # General utilities (cn, etc.)
-├── public/             # Static assets (SVG icons)
+│   ├── match-scoring.ts    # Deterministic contact↔property scoring
+│   ├── omi-valuation.ts    # OMI property valuation
+│   ├── plan-limits.ts      # Subscription tier logic
+│   └── utils.ts
+├── docs/
+│   └── specs/              # Technical specs for implemented features
+│       ├── SPEC-DATABASE.md
+│       ├── SPEC-API.md
+│       ├── SPEC-UI.md
+│       ├── SPEC-AFFITTI.md
+│       ├── SPEC-PDF-TEMPLATES.md
+│       ├── SPEC-SICUREZZA.md
+│       ├── SPEC-TESTING.md
+│       └── REQUISITI-STRUMENTI.md
 └── supabase/
-    └── migrations/     # 23 numbered SQL migration files (001–023)
+    └── migrations/         # 68 numbered SQL migration files (001–068)
 ```
 
 ## Commands
@@ -73,13 +123,31 @@ cd casa-ai/web && npm run lint     # ESLint
 
 ## Database
 
-Supabase PostgreSQL with RLS policies. All tables are workspace-scoped (multi-tenant).
+Supabase PostgreSQL with RLS. All tables are workspace-scoped (multi-tenant). Uses `createAdminClient()` (service role) in all API routes — never the user JWT client for DB writes.
 
-Key entities: workspaces, users, listings, contacts, appointments, campaigns, notifications, todos, google_calendar_tokens, listing_stats, price_history, floor_plans.
+**Core tables:** workspaces, users, listings, contacts, appointments, campaigns, notifications, todos, google_calendar_tokens, listing_stats, price_history, floor_plans, archived_contacts, archived_listings
 
-Enums: `user_role` (admin/agent), `property_type` (apartment/house/villa/commercial/land/garage/other), `tone` (standard/luxury/approachable/investment), `listing_status` (draft/published), `workspace_plan` (trial/starter/growth/network), `contact_type` (buyer/seller/renter/landlord/other).
+**Banca Dati tables:** properties, property_events, zones, sub_zones, agent_zones, property_contacts
 
-**Important:** When changing the schema, always create a new migration file with the next number in `web/supabase/migrations/` (current highest: 042). Never modify existing migration files.
+**Finance tables:** invoices, proposals
+
+**Other:** match_results, contact_events, omi_zones
+
+**Key enums:**
+- `user_role`: admin / agent
+- `property_type`: apartment / house / villa / commercial / land / garage / other
+- `property_stage`: sconosciuto / ignoto / conosciuto / incarico / venduto / locato
+- `owner_disposition`: non_specificato / vuole_vendere / non_vuole_vendere / indeciso / incarico_firmato / appena_acquistato
+- `tone`: standard / luxury / approachable / investment
+- `listing_status`: draft / published
+- `workspace_plan`: trial / starter / growth / network
+- `contact_type`: buyer / seller / renter / landlord / other
+- `lease_type`: standard / concordato / transitorio / studenti
+- `proposal_type`: acquisto / locazione
+
+**Important:** When changing the schema, always create a new migration file with the next number in `web/supabase/migrations/` (current highest: **068**). Never modify existing migration files.
+
+**Contact types:** Contacts support multiple types via the `types` (text[]) column alongside the legacy `type` column. Always write both when updating. The `types` array is the source of truth for filtering and display.
 
 ## Environment Variables
 
@@ -89,6 +157,7 @@ See `web/.env.local.example` for required vars:
 - `OPENAI_API_KEY`
 - `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`
 - `NEXT_PUBLIC_APP_URL`
+- `NEXT_PUBLIC_MAPBOX_TOKEN`
 
 ## Coding Conventions
 
@@ -97,106 +166,71 @@ See `web/.env.local.example` for required vars:
 - Use `cn()` from `lib/utils.ts` for conditional class merging
 - API routes go in `app/api/[feature]/route.ts`
 - Feature components go in `components/[feature]/`
-- Always validate workspace_id in API routes (see SECURITY_AUDIT.md for known gaps)
-- Use Supabase RLS as the primary access control layer
+- **Always use `createAdminClient()`** in API routes for DB operations (RLS blocks user-JWT queries on cross-table lookups)
+- Always validate `workspace_id` in API routes (see `SECURITY_AUDIT.md` for known gaps)
 - Toast notifications use Sonner
+- Detail pages use two-column layout on desktop: `grid grid-cols-1 lg:grid-cols-[1fr_300px]` with sticky right sidebar for cronistoria
 
 ## Git & Commits
 
-**MANDATORY:** Commit after every code change using conventional commits format:
-- `feat:` for new features
-- `fix:` for bug fixes
-- `refactor:` for code refactoring
-- `docs:` for documentation
-- `style:` for formatting/styling
-- `test:` for tests
-- `chore:` for maintenance
+**MANDATORY:** Commit after every code change using conventional commits:
+- `feat:` new features
+- `fix:` bug fixes
+- `refactor:` refactoring
+- `docs:` documentation
+- `chore:` maintenance
 
-**At session end:** If approaching token limit, request explicit user approval to commit and push before closing the session. Never leave uncommitted work.
+**At session end:** If approaching token limit, commit and push before closing. Never leave uncommitted work.
 
-## Recent Changes (March 2026)
+## Implemented Features (Current State)
 
-**Sprint H — Accounting & Proposals (complete, branch `sprint-h-accounting-proposals`, March 18):**
-- **Contabilità module** — Full invoicing with IVA/ritenuta/cassa, PDF export, Resend email, mark-paid. DB migration 024. Pages: `/contabilita`, `/contabilita/nuova`, `/contabilita/[id]`. API: `/api/invoices` (full CRUD + mark-paid + send + pdf + next-number).
-- **Proposte d'acquisto** — Purchase proposals with vincoli (mutuo/vendita/perizia), caparra, seller counter-proposal. DB migration 025. Pages: `/proposte`, `/proposte/nuova`, `/proposte/[id]`, `/proposte/[id]/counter-offer`. API: `/api/proposals` (full CRUD + respond + pdf + counter-offer + next-number).
-- Dark mode: lifted background to oklch(0.155), softer foreground, sidebar gradient uses brighter values
-- Fixed hydration mismatch (`suppressHydrationWarning` on `<html>`)
-- 26 bug/UX fixes across 2 review rounds: auth null guards, mobile hover-only actions, dark mode TYPE_COLORS, sidebar CasaAI gradient, loading skeletons, missing invoice detail page, broken proposal action buttons
-- See `web/SPRINT-H-CHANGES.md` for full details
+### Annunci (Listings)
+Full listing lifecycle: create → AI content generation (Gemini/GPT-4o/DeepSeek per tone) → publish → social share → archive. Tone regeneration per-section. PDF brochure. MLS toggle. Valuation widget (OMI). Price history. Floor plan upload. Stats tracking.
 
-**Sprint F — UX Redesign (complete, commit `83eba84`, March 17-18):**
-- "Warm futurism" design system overhaul — 51 improvements across all major pages
-- Redesigned: dashboard (bento stat cards), listings, contacts, calendar, campaigns, archive, settings, notifications, todos
-- New components: AI assistant chat widget (`/components/ai-assistant/`), archive export, notification preferences
-- New pages: `listing/[id]/edit` (edit + per-tone regeneration), custom 404
-- New API routes: `ai-assistant`, `archive/export`, `search`, `listing/[id]/update`
-- Global: spring animations, gradient treatments, glass/blur effects, dark mode refinements
-- See `web/UX CHANGES IMPLEMENTED.md` for full details (51 items)
+### Banca Dati Immobiliare
+Property discovery-to-sale lifecycle management:
+- **Stages:** sconosciuto → ignoto → conosciuto → incarico → venduto/locato
+- **Cronistoria:** append-only event log on each property
+- **Multi-contact roles:** proprietario, moglie/marito, avvocato, vicino, etc.
+- **Zone management:** zones + sub-zones, agent default zones
+- **Vicinanza search:** properties within radius via Haversine
+- **Geocoding:** Mapbox address autocomplete + coordinates
+- **Incarico:** digital signing flow, PDF contract generation (vendita + locazione)
+- **Locazioni:** automatic notifications at 90/60/30/0 days before expiry
+- **Auto-events:** stage changes, contact links, incarico signing, sale completion
 
-## Sprint I — Banca Dati Immobiliare (Completo, branch `sprint-i-banca-dati`, Marzo 2026)
+### CRM Contatti
+- Multi-type contacts (`types[]`: buyer, seller, renter, landlord, other)
+- Cronistoria with auto-events (linked property, type change, incarico, sale)
+- Buyer preference matching against Banca Dati (deterministic + AI scoring)
+- Privacy consent (GDPR), birthday reminders, attachments
+- Contact detail page: two-column layout, cronistoria sticky right sidebar
+- Filtering works across all types in `types[]`, not just primary `type`
 
-**Status:** All phases 0-7 complete. 15 migrations applied to live DB.
+### Contabilità
+Invoicing with IVA / ritenuta d'acconto / cassa previdenziale. PDF export. Email via Resend. Mark-paid. Auto invoice numbering.
 
-**Live DB:** 164 properties, 246 events, 5 zones, 25 annunci linked — seed data applied.
+### Proposte d'acquisto
+Purchase proposals with vincoli (mutuo/vendita/perizia), caparra tracking, seller counter-proposal flow. PDF generation.
 
-### Overview
-Fundamental architecture change: add **property lifecycle management** from discovery through sale/rental. Every property discovered by agents enters the database and is tracked through all stages (sconosciuto → ignoto → conosciuto → incarico → venduto/locato → disponibile) with complete chronistoria (append-only event log), multi-role contacts, zone management, and automatic notifications.
+### Calendar
+Appointments with Google Calendar sync. Contact linking.
 
-### Key Features
-- **Property lifecycle stages** with automatic and manual state transitions
-- **Owner disposition tracking** — seller intent with auto-updates (incarico_firmato, appena_acquistato with 3-month reset)
-- **Cronistoria** — append-only event log capturing every interaction
-- **Multi-contact system** — multiple roles per property (proprietario, moglie, vicino, avvocato, etc.)
-- **Zone management** — zones + sub-zones with agent defaults, substitution UI
-- **Vicinanza search** — properties within 100m radius using Haversine distance
-- **Locazioni cycle** — rental with automatic notifications at 90/60/30/0 days before expiry
-- **PDF contracts** — vendita and locazione templates with automatic field population
-- **Mapbox geocoding** — address autocomplete and coordinate validation
+### Campaigns
+Email/WhatsApp campaigns to contact segments.
 
-### Specification Files
-All technical specifications are documented in separate files in `web/`:
+### Match Engine
+Contact ↔ property matching: deterministic scoring (budget, rooms, sqm, city, type) + AI adjustment layer. Results stored in `match_results` table.
 
-| File | Content |
-|------|---------|
-| `SPEC-DATABASE.md` | Schema: 6 new tables (properties, property_events, zones, sub_zones, agent_zones, property_contacts), 6 enums, RLS policies, indices, Haversine function |
-| `SPEC-API.md` | 15+ API endpoints with request/response specs, validation, stage advancement logic, geocoding proxy, vicinanza search |
-| `SPEC-UI.md` | 3 new pages (/banca-dati, /banca-dati/nuovo, /banca-dati/[id]), sidebar restructure, progressive form, timeline component |
-| `SPEC-AFFITTI.md` | Rental lifecycle (incarico→locato→disponibile), 4 automatic notifications, lease_type enum, proposal locazione with canone_agevolato |
-| `SPEC-PDF-TEMPLATES.md` | 2 contract templates (vendita, locazione), 20+ field placeholders, dropdown auto-population, email+WhatsApp sending |
-| `SPEC-SICUREZZA.md` | Security checklist: RLS policies, workspace isolation, input validation, rate limiting, XSS prevention, GPS coordinate protection |
-| `SPEC-TESTING.md` | 70+ test cases covering all features, mock data (30+ properties, 5+ zones, 15+ contacts, 50+ events) |
-| `REQUISITI-STRUMENTI.md` | Mapbox setup (free token: 100k requests/month), PDF templates (user-provided), future Google Maps + property valuation APIs |
+### AI Assistant
+Chat widget available on all pages, workspace-scoped context.
 
-### Development Workflow
-
-**Phase Structure:** Each of 9 phases (0–8) ends with a commit and PLAN update:
-1. **Phase 0** (✅ complete): Specification files drafted, committed with `docs: Sprint I — specifiche tecniche Banca Dati Immobiliare`
-2. **Phase 1** (in progress): 7 database migrations (028–034) — create properties, events, zones, contacts tables, update existing tables for RLS
-3. **Phase 2**: API backend — CRUD, geocoding, stage advancement, vicinanza, cron notifications
-4. **Phase 3**: UI — list, create, detail pages, sidebar redesign, zone management
-5. **Phase 4**: Incarico & PDF — contract generation, email/WhatsApp sending
-6. **Phase 5**: Integration — contacts page, annunci auto-creation, dashboard card
-7. **Phase 6**: Testing & mock data — run all 70+ test cases
-8. **Phase 7**: Security review — RLS, isolation, validation, rate limiting
-9. **Phase 8**: Ralph Loop (5 iterations) — explore and propose UX improvements
-
-**Commit Protocol (MANDATORY):**
-- After each phase completion: create commit with `feat:` or `docs:` prefix
-- Include phase number in message: `feat: Sprint I Fase X — [summary]`
-- Update `PLAN.md` in commit: mark completed phase, describe changes, note blockers
-
-**PLAN Update Protocol:**
-- File: `PLAN-Client Discovery.md` (or specified plan document)
-- Update after each phase with: completion date, what was built, what's next, any adjustments
-- Keep PLAN and code in sync — if implementation changes approach, update PLAN before next phase
-
-### Database Additions (Phase 1)
-**New tables:** properties, property_events, zones, sub_zones, agent_zones, property_contacts
-**New enums:** property_stage, owner_disposition, property_event_type, proposal_type, lease_type, property_contact_role
-**Modified tables:** contacts (add roles[], codice_fiscale, partita_iva), listings (add property_id), proposals (add proposal_type + rental fields)
-**RLS policies:** All new tables scoped to workspace_id
-**See:** `SPEC-DATABASE.md` for complete schema
+### Analytics
+Dashboard stats, listing performance tracking.
 
 ## Known Issues
 
-See `web/SECURITY_AUDIT.md` for 11 security findings (2 critical, 3 high) that need remediation. Key gaps: missing workspace_id checks in some API routes, no rate limiting, no CORS config.
+See `web/SECURITY_AUDIT.md` for 11 security findings (2 critical, 3 high). Key gaps:
+- Missing `workspace_id` checks in some API routes
+- No rate limiting on API endpoints
+- No CORS configuration
