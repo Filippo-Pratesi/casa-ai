@@ -501,6 +501,7 @@ export function ImmobileDetailClient({
             <div className="max-h-[calc(100vh-180px)] overflow-y-auto pr-0.5">
               <EventTimeline
                 propertyId={property.id}
+                workspaceId={property.workspace_id ?? ''}
                 events={events}
                 onEventAdded={reloadEvents}
               />

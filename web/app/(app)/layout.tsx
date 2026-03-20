@@ -9,6 +9,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { AiWidgetGate } from '@/components/ai-assistant/ai-widget-gate'
 import { CommandPalette } from '@/components/shared/command-palette'
 import { ErrorBoundary } from '@/components/shared/error-boundary'
+import { OfflineSyncIndicator } from '@/components/shared/offline-sync-indicator'
 import type { User, Workspace, Group } from '@/lib/supabase/types'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -125,6 +126,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       />
       <SidebarInset>
         <AppHeader />
+        <OfflineSyncIndicator />
         <main className="flex-1 p-6 lg:p-8 bg-muted/20 min-h-[calc(100vh-3.5rem)]">
           <ErrorBoundary>
             {children}

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
 import { DashboardClient } from '@/components/dashboard/dashboard-client'
 import type { Listing } from '@/lib/supabase/types'
 
@@ -47,6 +48,7 @@ export default async function DashboardPage() {
   const isAdmin = profile?.role === 'admin' || profile?.role === 'group_admin'
 
   return (
+    <Suspense>
     <DashboardClient
       listings={listings.map(l => ({
         id: l.id,
@@ -72,5 +74,6 @@ export default async function DashboardPage() {
       }}
       isAdmin={isAdmin}
     />
+    </Suspense>
   )
 }

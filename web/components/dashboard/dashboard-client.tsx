@@ -1,16 +1,32 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { PlusSquare, FileText, Euro, Maximize2, Home, User, Users, CalendarDays, TrendingUp, LayoutGrid, List, Search, X, Download, ChevronUp, ChevronDown, ChevronsUpDown, Sparkles, ArrowUpRight, Building2 } from 'lucide-react'
+import { PlusSquare, FileText, Euro, Maximize2, Home, User, Users, CalendarDays, TrendingUp, LayoutGrid, List, Search, X, Download, ChevronUp, ChevronDown, ChevronsUpDown, Sparkles, ArrowUpRight, Building2, Rss } from 'lucide-react'
 import { useI18n } from '@/lib/i18n/context'
 import { TYPE_COLORS, TYPE_ACTIVE, formatDate } from './dashboard-types'
 import type { Listing, DashboardClientProps } from './dashboard-types'
 import { ListingCard } from './listing-card'
 import { ListingRow } from './listing-row'
+import { ActivityFeed } from './activity-feed'
 
 export function DashboardClient({ listings, stats, isAdmin }: DashboardClientProps) {
   const { t } = useI18n()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const activeTab = searchParams.get('tab') === 'feed' ? 'feed' : 'annunci'
+
+  function setTab(tab: 'annunci' | 'feed') {
+    const params = new URLSearchParams(searchParams.toString())
+    if (tab === 'annunci') {
+      params.delete('tab')
+    } else {
+      params.set('tab', tab)
+    }
+    router.replace(`?${params.toString()}`, { scroll: false })
+  }
+
   const [viewMode, setViewMode] = useState<'card' | 'list'>('card')
   const [activeTypes, setActiveTypes] = useState<Set<string>>(new Set())
   const [citySearch, setCitySearch] = useState('')
@@ -175,48 +191,91 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
             </span>
           </div>
           <p className="text-muted-foreground text-sm mt-0.5">
-            {filtered.length !== listings.length
-              ? `${filtered.length} ${t('listings.subtitleFiltered')} ${listings.length} ${t('listings.subtitle')}`
-              : `${listings.length} ${t('listings.subtitle')}`}
+            {activeTab === 'feed'
+              ? 'Attività recente del workspace'
+              : filtered.length !== listings.length
+                ? `${filtered.length} ${t('listings.subtitleFiltered')} ${listings.length} ${t('listings.subtitle')}`
+                : `${listings.length} ${t('listings.subtitle')}`}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {/* View toggle */}
-          <div className="flex rounded-lg border border-border bg-card overflow-hidden">
-            <button
-              onClick={() => setViewMode('card')}
-              title={t('common.viewCard')}
-              className={`p-2 transition-all duration-200 ${viewMode === 'card' ? 'bg-[oklch(0.57_0.20_33)] text-white' : 'text-muted-foreground hover:bg-muted'}`}
-            >
-              <LayoutGrid className="h-3.5 w-3.5" />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              title={t('common.viewList')}
-              className={`p-2 transition-all duration-200 ${viewMode === 'list' ? 'bg-[oklch(0.57_0.20_33)] text-white' : 'text-muted-foreground hover:bg-muted'}`}
-            >
-              <List className="h-3.5 w-3.5" />
-            </button>
-          </div>
-          {isAdmin && (
-            <button
-              onClick={() => downloadCSV(filtered)}
-              title={t('listings.export')}
-              className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-muted transition-all duration-200"
-            >
-              <Download className="h-3.5 w-3.5" />
-              {t('listings.export')}
-            </button>
+          {activeTab === 'annunci' && (
+            <>
+              {/* View toggle */}
+              <div className="flex rounded-lg border border-border bg-card overflow-hidden">
+                <button
+                  onClick={() => setViewMode('card')}
+                  title={t('common.viewCard')}
+                  className={`p-2 transition-all duration-200 ${viewMode === 'card' ? 'bg-[oklch(0.57_0.20_33)] text-white' : 'text-muted-foreground hover:bg-muted'}`}
+                >
+                  <LayoutGrid className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  title={t('common.viewList')}
+                  className={`p-2 transition-all duration-200 ${viewMode === 'list' ? 'bg-[oklch(0.57_0.20_33)] text-white' : 'text-muted-foreground hover:bg-muted'}`}
+                >
+                  <List className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              {isAdmin && (
+                <button
+                  onClick={() => downloadCSV(filtered)}
+                  title={t('listings.export')}
+                  className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-muted transition-all duration-200"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  {t('listings.export')}
+                </button>
+              )}
+              <Link
+                href="/listing/new"
+                className="btn-ai flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold"
+              >
+                <PlusSquare className="h-4 w-4" />
+                {t('listings.new')}
+              </Link>
+            </>
           )}
-          <Link
-            href="/listing/new"
-            className="btn-ai flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold"
-          >
-            <PlusSquare className="h-4 w-4" />
-            {t('listings.new')}
-          </Link>
         </div>
       </div>
+
+      {/* Tab switcher */}
+      <div className="flex items-center gap-1 rounded-xl border border-border bg-card p-1 w-fit animate-in-2">
+        <button
+          onClick={() => setTab('annunci')}
+          className={`flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-medium transition-all duration-200 ${
+            activeTab === 'annunci'
+              ? 'bg-[oklch(0.57_0.20_33)] text-white shadow-sm'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+          }`}
+        >
+          <FileText className="h-3.5 w-3.5" />
+          Annunci
+        </button>
+        <button
+          onClick={() => setTab('feed')}
+          className={`flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-medium transition-all duration-200 ${
+            activeTab === 'feed'
+              ? 'bg-[oklch(0.57_0.20_33)] text-white shadow-sm'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+          }`}
+        >
+          <Rss className="h-3.5 w-3.5" />
+          Feed
+        </button>
+      </div>
+
+      {/* Feed tab */}
+      {activeTab === 'feed' && (
+        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm animate-in-3">
+          <ActivityFeed />
+        </div>
+      )}
+
+      {/* Annunci tab content */}
+      {activeTab === 'annunci' && (
+      <div className="contents">
 
       {/* Stats — 5 equal cards in a single row */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -388,6 +447,9 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
           </div>
           </div>
         </div>
+      )}
+
+      </div>
       )}
     </div>
   )

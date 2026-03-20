@@ -8,7 +8,7 @@ import {
   Phone, Mail, Eye, MessageSquare, FileText, Home, CheckCircle,
   AlertCircle, RefreshCw, Star, StickyNote, Users, Building2,
   Megaphone, TrendingUp, Package, MoreHorizontal, Plus, X, Clock,
-  UserPlus, ArrowLeftRight,
+  UserPlus, ArrowLeftRight, WifiOff,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'sonner'
+import { enqueue } from '@/lib/offline-queue'
 
 export interface PropertyEvent {
   id: string
@@ -104,12 +105,20 @@ const QUICK_NOTE_TYPES = ['nota', 'telefonata', 'visita', 'citofono', 'email_inv
 
 interface EventTimelineProps {
   propertyId: string
+  workspaceId: string
   events: PropertyEvent[]
   onEventAdded?: () => void
+  onOptimisticAdd?: (event: PropertyEvent) => void
 }
 
 // Inline quick-note form (no modal)
-function QuickNoteForm({ propertyId, onSaved, onCancel }: { propertyId: string; onSaved: () => void; onCancel: () => void }) {
+function QuickNoteForm({ propertyId, workspaceId, onSaved, onCancel, onOptimisticAdd }: {
+  propertyId: string
+  workspaceId: string
+  onSaved: () => void
+  onCancel: () => void
+  onOptimisticAdd?: (event: PropertyEvent) => void
+}) {
   const [type, setType] = useState('nota')
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -122,6 +131,35 @@ function QuickNoteForm({ propertyId, onSaved, onCancel }: { propertyId: string; 
       return
     }
     setSubmitting(true)
+
+    // Offline mode: queue the event locally and show optimistic UI
+    if (!navigator.onLine) {
+      enqueue({
+        property_id: propertyId,
+        workspace_id: workspaceId,
+        type,
+        content: title.trim(),
+      })
+      onOptimisticAdd?.({
+        id: `offline-${Date.now()}`,
+        event_type: type,
+        title: title.trim(),
+        description: description.trim() || null,
+        sentiment: null,
+        contact_id: null,
+        agent_id: '',
+        agent_name: 'Tu (offline)',
+        event_date: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+      })
+      toast.info('Nota salvata offline — verrà sincronizzata alla riconnessione', {
+        icon: <WifiOff className="h-4 w-4" />,
+      })
+      setSubmitting(false)
+      onSaved()
+      return
+    }
+
     try {
       const res = await fetch(`/api/properties/${propertyId}/events`, {
         method: 'POST',
@@ -211,18 +249,26 @@ function DurationBadge({ from, to }: { from: string; to: string }) {
   )
 }
 
-export function EventTimeline({ propertyId, events, onEventAdded }: EventTimelineProps) {
+export function EventTimeline({ propertyId, workspaceId, events, onEventAdded }: EventTimelineProps) {
   const [showForm, setShowForm] = useState(false)
   const [filterType, setFilterType] = useState('all')
+  const [optimisticEvents, setOptimisticEvents] = useState<PropertyEvent[]>([])
+
+  // Merge server events with optimistic (offline) events
+  const allEvents = [...optimisticEvents, ...events]
 
   // Gather unique event types present in the list for the filter
-  const presentTypes = Array.from(new Set(events.map(e => e.event_type))).sort()
+  const presentTypes = Array.from(new Set(allEvents.map(e => e.event_type))).sort()
 
-  const filtered = filterType === 'all' ? events : events.filter(e => e.event_type === filterType)
+  const filtered = filterType === 'all' ? allEvents : allEvents.filter(e => e.event_type === filterType)
 
   function handleSaved() {
     setShowForm(false)
     onEventAdded?.()
+  }
+
+  function handleOptimisticAdd(event: PropertyEvent) {
+    setOptimisticEvents(prev => [event, ...prev])
   }
 
   return (
@@ -269,8 +315,10 @@ export function EventTimeline({ propertyId, events, onEventAdded }: EventTimelin
       {showForm && (
         <QuickNoteForm
           propertyId={propertyId}
+          workspaceId={workspaceId}
           onSaved={handleSaved}
           onCancel={() => setShowForm(false)}
+          onOptimisticAdd={handleOptimisticAdd}
         />
       )}
 
