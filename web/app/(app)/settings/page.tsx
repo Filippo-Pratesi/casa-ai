@@ -14,6 +14,7 @@ import { ImportContacts } from '@/components/settings/import-contacts'
 import { NotificationPreferences } from '@/components/settings/notification-preferences'
 import { InvoiceRemindersToggle } from '@/components/settings/invoice-reminders-toggle'
 import { AgentZoneAssignment } from '@/components/settings/agent-zone-assignment'
+import { ZoneManagement } from '@/components/settings/zone-management'
 import { OmiUpload } from '@/components/settings/omi-upload'
 import { getPlanConfig } from '@/lib/plan-limits'
 import { getTranslations } from '@/lib/i18n/server'
@@ -107,8 +108,16 @@ export default async function SettingsPage({
     sub_zone_name: string | null
     city: string
   }
+  interface ZoneWithSubs {
+    id: string
+    name: string
+    city: string
+    omi_zone_code: string | null
+    sub_zones: { id: string; name: string }[]
+  }
   let agentZoneAssignments: AgentZoneRow[] = []
   let allZones: { id: string; name: string; city: string }[] = []
+  let allZonesWithSubs: ZoneWithSubs[] = []
   let allSubZones: { id: string; name: string; zone_id: string }[] = []
   let hasGroupAdmin = false
 
@@ -122,7 +131,7 @@ export default async function SettingsPage({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (admin as any)
         .from('zones')
-        .select('id, name, city')
+        .select('id, name, city, omi_zone_code, sub_zones(id, name)')
         .eq('workspace_id', profile.workspace_id)
         .order('city')
         .order('name'),
@@ -149,7 +158,8 @@ export default async function SettingsPage({
       sub_zone_name: row.sub_zone?.name ?? null,
       city: row.zone?.city ?? '',
     }))
-    allZones = (zonesRes.data ?? []) as { id: string; name: string; city: string }[]
+    allZonesWithSubs = (zonesRes.data ?? []) as ZoneWithSubs[]
+    allZones = allZonesWithSubs.map((z) => ({ id: z.id, name: z.name, city: z.city }))
     allSubZones = (subZonesRes.data ?? []) as { id: string; name: string; zone_id: string }[]
     hasGroupAdmin = (groupAdminRes.count ?? 0) > 0
   }
@@ -269,11 +279,24 @@ export default async function SettingsPage({
             </CardContent>
           </Card>
 
+          {/* Zone management */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Gestione Zone</CardTitle>
+              <CardDescription>
+                Crea, rinomina o elimina le zone di lavoro. Puoi associare il codice OMI per collegare la zona alle valutazioni ufficiali.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ZoneManagement initialZones={allZonesWithSubs} />
+            </CardContent>
+          </Card>
+
           {/* Agent zone assignments */}
           {allZones.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Assegnazione agenti per zona</CardTitle>
+                <CardTitle>Assegnazione Zona</CardTitle>
                 <CardDescription>
                   Definisci quale agente riceve automaticamente i nuovi immobili per ogni zona.
                 </CardDescription>

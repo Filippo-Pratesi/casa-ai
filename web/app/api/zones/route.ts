@@ -66,11 +66,13 @@ export async function POST(req: NextRequest) {
   if (!city) return NextResponse.json({ error: 'La città è obbligatoria' }, { status: 400 })
   if (!name) return NextResponse.json({ error: 'Il nome è obbligatorio' }, { status: 400 })
 
+  const omiZoneCode = typeof body.omi_zone_code === 'string' ? body.omi_zone_code.trim() || null : null
+
   const admin = createAdminClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (admin as any)
     .from('zones')
-    .insert({ workspace_id: userProfile.workspace_id, city, name })
+    .insert({ workspace_id: userProfile.workspace_id, city, name, omi_zone_code: omiZoneCode })
     .select('id')
     .single()
 
@@ -106,9 +108,12 @@ export async function PATCH(req: NextRequest) {
 
   const zoneId = typeof body.id === 'string' ? body.id : ''
   const newName = typeof body.new_name === 'string' ? body.new_name.trim() : ''
+  const omiZoneCode = 'omi_zone_code' in body
+    ? (typeof body.omi_zone_code === 'string' ? body.omi_zone_code.trim() || null : null)
+    : undefined // undefined = not provided, don't update
 
   if (!zoneId) return NextResponse.json({ error: 'ID zona obbligatorio' }, { status: 400 })
-  if (!newName) return NextResponse.json({ error: 'Il nuovo nome è obbligatorio' }, { status: 400 })
+  if (!newName && omiZoneCode === undefined) return NextResponse.json({ error: 'Nessun campo da aggiornare' }, { status: 400 })
 
   const admin = createAdminClient()
 
@@ -124,24 +129,28 @@ export async function PATCH(req: NextRequest) {
   if (!zone) return NextResponse.json({ error: 'Zona non trovata' }, { status: 404 })
 
   const oldName = (zone as { name: string; city: string }).name
+  const updatePayload: Record<string, unknown> = {}
+  if (newName) updatePayload.name = newName
+  if (omiZoneCode !== undefined) updatePayload.omi_zone_code = omiZoneCode
 
-  // Update zone name
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error: updateError } = await (admin as any)
     .from('zones')
-    .update({ name: newName })
+    .update(updatePayload)
     .eq('id', zoneId)
     .eq('workspace_id', userProfile.workspace_id)
 
-  if (updateError) return NextResponse.json({ error: 'Errore nel rinomino zona' }, { status: 500 })
+  if (updateError) return NextResponse.json({ error: 'Errore nel salvataggio zona' }, { status: 500 })
 
-  // Update properties that reference the old zone name
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (admin as any)
-    .from('properties')
-    .update({ zone: newName })
-    .eq('workspace_id', userProfile.workspace_id)
-    .eq('zone', oldName)
+  // If name changed, update properties that reference the old zone name
+  if (newName && newName !== oldName) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (admin as any)
+      .from('properties')
+      .update({ zone: newName })
+      .eq('workspace_id', userProfile.workspace_id)
+      .eq('zone', oldName)
+  }
 
   return NextResponse.json({ success: true })
 }
