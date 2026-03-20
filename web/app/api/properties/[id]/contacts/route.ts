@@ -50,7 +50,17 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
 
   if (error) return NextResponse.json({ error: 'Errore nel recupero contatti' }, { status: 500 })
 
-  return NextResponse.json({ contacts: data ?? [] })
+  // Deduplicate server-side: keep only one row per (contact_id, role) combination
+  type RawRow = { id: string; role: string; is_primary: boolean; notes: string | null; created_at: string; contact: { id: string } | null }
+  const seen = new Set<string>()
+  const deduped = (data as RawRow[] ?? []).filter(row => {
+    const key = `${row.contact?.id ?? row.id}::${row.role}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+
+  return NextResponse.json({ contacts: deduped })
 }
 
 // POST /api/properties/[id]/contacts — associate or create+associate a contact

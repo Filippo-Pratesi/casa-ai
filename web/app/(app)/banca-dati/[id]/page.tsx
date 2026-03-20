@@ -55,11 +55,21 @@ export default async function ImmobileDetailPage({ params }: { params: Promise<{
 
   // Load property contacts with roles (include types for multi-type badges)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: contactsData } = await (admin as any)
+  const { data: rawContactsData } = await (admin as any)
     .from('property_contacts')
     .select('id, role, is_primary, notes, contact:contacts(id, name, phone, email, type, types)')
     .eq('property_id', id)
     .order('is_primary', { ascending: false })
+
+  // Deduplicate: keep only one row per (contact_id, role) to prevent display duplicates
+  const seenContactRoles = new Set<string>()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const contactsData = (rawContactsData as any[] ?? []).filter((row: any) => {
+    const key = `${row.contact?.id ?? row.id}::${row.role}`
+    if (seenContactRoles.has(key)) return false
+    seenContactRoles.add(key)
+    return true
+  })
 
   // Load last 20 events
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
