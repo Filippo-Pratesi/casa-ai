@@ -245,12 +245,24 @@ export function CadastralPanel({
         </Card>
       )}
 
-      {/* Card Stima di Valore */}
+      {/* Card Stime OMI */}
       {(valuation || rentalValuation || loadingValuation || valuationError) && (
-        <Card className="p-5 space-y-4">
+        <Card className="p-4 space-y-3">
+          {/* Titolo dinamico con semestre */}
           <div className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-primary" />
-            <h3 className="font-semibold text-sm">Stima Indicativa di Valore</h3>
+            <TrendingUp className="h-4 w-4 text-primary shrink-0" />
+            <h3 className="font-semibold text-sm">
+              {(valuation ?? rentalValuation)
+                ? (() => {
+                    const sem = (valuation ?? rentalValuation)!.semestre // es. "2025_2"
+                    const parts = sem.split('_')
+                    if (parts.length === 2) {
+                      return `Stime Dati OMI — ${parts[1]}° semestre ${parts[0]}`
+                    }
+                    return `Stime Dati OMI — ${sem}`
+                  })()
+                : 'Stime Dati OMI'}
+            </h3>
           </div>
 
           {loadingValuation && !valuation && !rentalValuation && (
@@ -267,79 +279,63 @@ export function CadastralPanel({
             </div>
           )}
 
-          {/* Acquisto */}
-          {valuation && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                <TrendingUp className="h-3 w-3" />
-                Acquisto
-              </div>
-              <div className="bg-primary/5 rounded-lg p-4 text-center">
-                <p className="text-xl font-bold text-primary">
-                  {formatCurrency(valuation.valore_min)} — {formatCurrency(valuation.valore_max)}
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {formatCurrency(valuation.valore_min_mq)} — {formatCurrency(valuation.valore_max_mq)} /mq
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <p className="text-xs text-muted-foreground">Semestre</p>
-                  <p className="font-medium">{valuation.semestre}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Fonte</p>
-                  <Badge variant="outline" className="text-xs">
-                    {valuation.fonte === 'csv_omi' ? 'CSV OMI' : '3eurotools'}
-                  </Badge>
-                </div>
-                {valuation.stato_conservazione && (
-                  <div className="col-span-2">
-                    <p className="text-xs text-muted-foreground">Stato conservazione</p>
-                    <p className="font-medium capitalize">{valuation.stato_conservazione}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Affitto */}
-          {rentalValuation && (
-            <div className="space-y-3 pt-3 border-t">
-              <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                <Home className="h-3 w-3" />
-                Affitto mensile stimato
-              </div>
-              <div className="bg-emerald-500/5 rounded-lg p-4 text-center">
-                <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
-                  {formatCurrency(rentalValuation.valore_min)}/mese — {formatCurrency(rentalValuation.valore_max)}/mese
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {formatCurrency(rentalValuation.valore_min_mq)} — {formatCurrency(rentalValuation.valore_max_mq)} /mq/mese
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <p className="text-xs text-muted-foreground">Semestre</p>
-                  <p className="font-medium">{rentalValuation.semestre}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Fonte</p>
-                  <Badge variant="outline" className="text-xs">
-                    {rentalValuation.fonte === 'csv_omi' ? 'CSV OMI' : '3eurotools'}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Disclaimer comune */}
+          {/* Acquisto + Affitto side by side */}
           {(valuation || rentalValuation) && (
-            <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded p-2">
+            <div className="grid grid-cols-2 gap-2">
+              {/* Acquisto */}
+              {valuation ? (
+                <div className="bg-primary/5 rounded-lg p-3 space-y-1">
+                  <div className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+                    <TrendingUp className="h-3 w-3" />
+                    Acquisto
+                  </div>
+                  <p className="text-sm font-bold text-primary leading-tight">
+                    {formatCurrency(valuation.valore_min)}<br />
+                    {formatCurrency(valuation.valore_max)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatCurrency(valuation.valore_min_mq)}–{formatCurrency(valuation.valore_max_mq)} /mq
+                  </p>
+                  {valuation.stato_conservazione && (
+                    <Badge variant="outline" className="text-[10px] px-1 py-0 mt-1 capitalize">
+                      {valuation.stato_conservazione}
+                    </Badge>
+                  )}
+                </div>
+              ) : (
+                <div className="bg-muted/30 rounded-lg p-3 flex items-center justify-center text-xs text-muted-foreground">
+                  N/D
+                </div>
+              )}
+
+              {/* Affitto */}
+              {rentalValuation ? (
+                <div className="bg-emerald-500/5 rounded-lg p-3 space-y-1">
+                  <div className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+                    <Home className="h-3 w-3" />
+                    Affitto/mese
+                  </div>
+                  <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 leading-tight">
+                    {formatCurrency(rentalValuation.valore_min)}<br />
+                    {formatCurrency(rentalValuation.valore_max)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatCurrency(rentalValuation.valore_min_mq)}–{formatCurrency(rentalValuation.valore_max_mq)} /mq
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-muted/30 rounded-lg p-3 flex items-center justify-center text-xs text-muted-foreground">
+                  N/D
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Fonte + disclaimer */}
+          {(valuation || rentalValuation) && (
+            <div className="flex items-start gap-1.5 text-xs text-muted-foreground bg-muted/40 rounded p-2">
               <Info className="h-3 w-3 mt-0.5 shrink-0" />
-              <p>{(valuation ?? rentalValuation)!.disclaimer}</p>
+              <p>Stime indicative OMI — Agenzia delle Entrate. Non costituisce perizia certificata.</p>
             </div>
           )}
         </Card>
