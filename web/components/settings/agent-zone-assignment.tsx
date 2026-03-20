@@ -212,7 +212,11 @@ export function AgentZoneAssignment({
               onValueChange={(v) => setNewAgentId(!v || v === 'none' ? '' : v)}
             >
               <SelectTrigger className="h-9 text-sm">
-                <SelectValue placeholder="Seleziona agente" />
+                <span className={cn('truncate', !newAgentId && 'text-muted-foreground')}>
+                  {newAgentId
+                    ? agentDisplayName(agents.find(a => a.id === newAgentId) ?? {})
+                    : 'Seleziona agente'}
+                </span>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Seleziona agente…</SelectItem>
@@ -255,7 +259,11 @@ export function AgentZoneAssignment({
               disabled={!newCity}
             >
               <SelectTrigger className={cn('h-9 text-sm', !newCity && 'opacity-50 cursor-not-allowed')}>
-                <SelectValue placeholder={newCity ? 'Seleziona zona' : 'Prima seleziona la città'} />
+                <span className={cn('truncate', !newZoneId && 'text-muted-foreground')}>
+                  {newZoneId
+                    ? (cityZones.find(z => z.id === newZoneId)?.name ?? 'Zona')
+                    : newCity ? 'Seleziona zona' : 'Prima seleziona la città'}
+                </span>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Seleziona zona…</SelectItem>
