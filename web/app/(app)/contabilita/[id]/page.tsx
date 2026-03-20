@@ -65,24 +65,18 @@ export default async function InvoiceDetailPage({ params }: Params) {
         {/* Actions */}
         <div className="flex items-center gap-2 shrink-0">
           {invoice.status === 'bozza' && (
-            <Button variant="outline" size="sm" asChild>
-              <Link href={`/contabilita/${id}/modifica`}>
-                <Pencil className="h-4 w-4 mr-1.5" />
-                Modifica
-              </Link>
+            <Button variant="outline" size="sm" render={<Link href={`/contabilita/${id}/modifica`} />}>
+              <Pencil className="h-4 w-4 mr-1.5" />
+              Modifica
             </Button>
           )}
-          <Button variant="outline" size="sm" asChild>
-            <a href={`/api/invoices/${id}/pdf`} target="_blank">
-              <Download className="h-4 w-4 mr-1.5" />
-              PDF
-            </a>
+          <Button variant="outline" size="sm" render={<a href={`/api/invoices/${id}/pdf`} target="_blank" />}>
+            <Download className="h-4 w-4 mr-1.5" />
+            PDF
           </Button>
-          <Button variant="outline" size="sm" asChild>
-            <a href={`/api/invoices/${id}/xml`} download>
-              <FileCode className="h-4 w-4 mr-1.5" />
-              XML
-            </a>
+          <Button variant="outline" size="sm" render={<a href={`/api/invoices/${id}/xml`} download />}>
+            <FileCode className="h-4 w-4 mr-1.5" />
+            XML
           </Button>
         </div>
       </div>

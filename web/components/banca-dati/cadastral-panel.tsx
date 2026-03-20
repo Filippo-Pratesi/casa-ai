@@ -84,10 +84,8 @@ function InfoTooltip({ content }: { content: string }) {
   return (
     <TooltipProvider>
       <Tooltip>
-        <TooltipTrigger asChild>
-          <button type="button" className="inline-flex items-center cursor-help text-muted-foreground hover:text-foreground transition-colors">
-            <Info className="h-3 w-3" />
-          </button>
+        <TooltipTrigger render={<button type="button" className="inline-flex items-center cursor-help text-muted-foreground hover:text-foreground transition-colors" />}>
+          <Info className="h-3 w-3" />
         </TooltipTrigger>
         <TooltipContent side="top" className="max-w-[260px] text-xs leading-snug">
           {content}

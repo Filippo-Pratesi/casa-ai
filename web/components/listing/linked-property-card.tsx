@@ -51,15 +51,13 @@ export function LinkedPropertyCard({ property }: LinkedPropertyCardProps) {
             </div>
           </div>
           <Button
-            asChild
             variant="ghost"
             size="icon"
             className="h-8 w-8 shrink-0"
             title="Visualizza in Banca Dati"
+            render={<Link href={`/banca-dati/${property.id}`} />}
           >
-            <Link href={`/banca-dati/${property.id}`}>
-              <ExternalLink className="h-4 w-4" />
-            </Link>
+            <ExternalLink className="h-4 w-4" />
           </Button>
         </div>
 
@@ -75,28 +73,24 @@ export function LinkedPropertyCard({ property }: LinkedPropertyCardProps) {
               <div className="space-y-1 mt-2">
                 {property.owner_contact.email && (
                   <Button
-                    asChild
                     variant="ghost"
                     size="sm"
                     className="h-auto p-0 justify-start text-xs text-muted-foreground hover:text-foreground"
+                    render={<a href={`mailto:${property.owner_contact.email}`} />}
                   >
-                    <a href={`mailto:${property.owner_contact.email}`}>
-                      <Mail className="h-3.5 w-3.5 mr-2" />
-                      {property.owner_contact.email}
-                    </a>
+                    <Mail className="h-3.5 w-3.5 mr-2" />
+                    {property.owner_contact.email}
                   </Button>
                 )}
                 {property.owner_contact.phone && (
                   <Button
-                    asChild
                     variant="ghost"
                     size="sm"
                     className="h-auto p-0 justify-start text-xs text-muted-foreground hover:text-foreground"
+                    render={<a href={`tel:${property.owner_contact.phone}`} />}
                   >
-                    <a href={`tel:${property.owner_contact.phone}`}>
-                      <Phone className="h-3.5 w-3.5 mr-2" />
-                      {property.owner_contact.phone}
-                    </a>
+                    <Phone className="h-3.5 w-3.5 mr-2" />
+                    {property.owner_contact.phone}
                   </Button>
                 )}
               </div>

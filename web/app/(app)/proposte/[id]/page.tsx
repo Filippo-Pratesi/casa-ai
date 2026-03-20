@@ -75,21 +75,15 @@ export default async function PropostaDetailPage({ params }: Params) {
 
         {/* Actions */}
         <div className="flex items-center gap-2 shrink-0">
-          <Button variant="outline" size="sm" asChild>
-            <a href={`/api/proposals/${id}/pdf`} target="_blank">
-              <Download className="h-4 w-4 mr-1.5" />
-              PDF
-            </a>
+          <Button variant="outline" size="sm" render={<a href={`/api/proposals/${id}/pdf`} target="_blank" />}>
+            <Download className="h-4 w-4 mr-1.5" />
+            PDF
           </Button>
           {proposal.status === 'inviata' && (
-            <>
-              <Button variant="outline" size="sm" asChild>
-                <Link href={`/proposte/${id}/counter-offer`}>
-                  <ArrowLeftRight className="h-4 w-4 mr-1.5" />
-                  Controproposta
-                </Link>
-              </Button>
-            </>
+            <Button variant="outline" size="sm" render={<Link href={`/proposte/${id}/counter-offer`} />}>
+              <ArrowLeftRight className="h-4 w-4 mr-1.5" />
+              Controproposta
+            </Button>
           )}
         </div>
       </div>
