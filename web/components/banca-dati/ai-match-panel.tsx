@@ -111,7 +111,7 @@ export function AiMatchPanel({ propertyId }: AiMatchPanelProps) {
 
       {status === 'not_eligible' && (
         <p className="text-sm text-muted-foreground">
-          Il match è disponibile per immobili in fase conosciuto, incarico o disponibile.
+          Match non disponibile per immobili venduti o locati.
         </p>
       )}
 

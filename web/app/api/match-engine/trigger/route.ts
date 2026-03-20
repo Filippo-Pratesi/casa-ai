@@ -37,6 +37,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Annuncio non trovato per questo immobile' }, { status: 404 })
   }
 
+  // Fetch property stage — AI only for incarico
+  const { data: propData } = await admin
+    .from('properties')
+    .select('stage')
+    .eq('id', property_id)
+    .single()
+  const propertyStage: string = (propData as { stage: string } | null)?.stage ?? ''
+
   // Step 1: Deterministic scoring
   const contactTypes = ['buyer', 'renter']
   let allMatches: Array<{ contact_id: string; name: string; type: string; score: number }> = []
@@ -71,10 +79,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, matches: 0 })
   }
 
-  // Step 2: AI adjustment via DeepSeek
+  // Step 2: AI adjustment via DeepSeek — only for incarico stage
   let aiAdjustments: Record<string, { adjustment: number; reason: string }> = {}
   const apiKey = process.env.DEEPSEEK_API_KEY
-  if (apiKey) {
+  if (apiKey && propertyStage === 'incarico') {
     try {
       aiAdjustments = await getAIAdjustments(apiKey, listing, top5)
     } catch (err) {

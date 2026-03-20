@@ -17,10 +17,10 @@ export async function POST(req: NextRequest) {
   let aiCallsMade = 0
 
   try {
-    // Find all published listings with match_stale = true
+    // Find all published listings with match_stale = true, include property stage
     const { data: staleListings } = await admin
       .from('listings')
-      .select('id, property_id, workspace_id, address, city, price, rooms, sqm, property_type')
+      .select('id, property_id, workspace_id, address, city, price, rooms, sqm, property_type, properties!listings_property_id_fkey(stage)')
       .eq('status', 'published')
       .eq('match_stale', true)
       .limit(100) // Process max 100 per cron run
@@ -31,7 +31,9 @@ export async function POST(req: NextRequest) {
 
     for (const listing of staleListings) {
       try {
-        const result = await computeMatchesForListing(admin, listing)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const propertyStage: string = (listing as any).properties?.stage ?? ''
+        const result = await computeMatchesForListing(admin, listing, propertyStage)
         propertiesProcessed++
         matchesCreated += result.matchesUpserted
         aiCallsMade += result.aiCalls
@@ -79,7 +81,8 @@ interface ListingRow {
 async function computeMatchesForListing(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   admin: any,
-  listing: ListingRow
+  listing: ListingRow,
+  propertyStage: string
 ): Promise<{ matchesUpserted: number; aiCalls: number }> {
   const price = listing.price ?? 0
   const city = listing.city
@@ -116,12 +119,12 @@ async function computeMatchesForListing(
 
   if (top5.length === 0) return { matchesUpserted: 0, aiCalls: 0 }
 
-  // AI enhancement via DeepSeek
+  // AI enhancement via DeepSeek — only for incarico stage
   let aiAdjustments: Record<string, { adjustment: number; reason: string }> = {}
   let aiCalls = 0
 
   const apiKey = process.env.DEEPSEEK_API_KEY
-  if (apiKey && top5.length > 0) {
+  if (apiKey && top5.length > 0 && propertyStage === 'incarico') {
     try {
       const adjustments = await getAIAdjustments(apiKey, listing, top5)
       aiAdjustments = adjustments
