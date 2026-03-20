@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Send, FileText, Paperclip, X, Mail, MessageCircle } from 'lucide-react'
+import { ArrowLeft, Send, FileText, Paperclip, X, Mail, MessageCircle, Users } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
+import { RecipientSelector } from './recipient-selector'
 
 const TEMPLATES = [
   {
@@ -39,31 +40,26 @@ const TEMPLATES = [
   },
 ]
 
-const CONTACT_TYPES = [
-  { value: 'all', label: 'Tutti i contatti' },
-  { value: 'buyer', label: 'Solo acquirenti' },
-  { value: 'seller', label: 'Solo venditori' },
-  { value: 'renter', label: 'Solo affittuari' },
-]
-
 interface CampaignComposerProps {
   cities: string[]
-  totalContacts: number
   listingId?: string | null
   listingAddress?: string | null
 }
 
-export function CampaignComposer({ cities, totalContacts, listingId, listingAddress }: CampaignComposerProps) {
+export function CampaignComposer({ cities, listingId, listingAddress }: CampaignComposerProps) {
   const router = useRouter()
   const [channel, setChannel] = useState<'email' | 'whatsapp'>('email')
   const [template, setTemplate] = useState('custom')
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
-  const [recipientType, setRecipientType] = useState('all')
-  const [cityFilter, setCityFilter] = useState('')
+  const [selectedContactIds, setSelectedContactIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(false)
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleSelectionChange = useCallback((ids: Set<string>) => {
+    setSelectedContactIds(ids)
+  }, [])
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0] ?? null
@@ -86,11 +82,15 @@ export function CampaignComposer({ cities, totalContacts, listingId, listingAddr
 
   async function handleSend(sendNow: boolean) {
     if (channel === 'email' && !subject.trim()) {
-      toast.error('Inserisci l\'oggetto della email')
+      toast.error("Inserisci l'oggetto della email")
       return
     }
     if (!body.trim()) {
       toast.error('Compila il testo del messaggio')
+      return
+    }
+    if (selectedContactIds.size === 0) {
+      toast.error('Seleziona almeno un destinatario')
       return
     }
     setLoading(true)
@@ -104,10 +104,7 @@ export function CampaignComposer({ cities, totalContacts, listingId, listingAddr
           body_html: channel === 'email' ? body.replace(/\n/g, '<br/>') : body,
           body_text: body,
           template,
-          recipient_filter: {
-            type: recipientType,
-            city: cityFilter || undefined,
-          },
+          contact_ids: Array.from(selectedContactIds),
           send: sendNow,
           ...(listingId ? { listing_id: listingId } : {}),
         }),
@@ -126,9 +123,11 @@ export function CampaignComposer({ cities, totalContacts, listingId, listingAddr
       }
 
       if (sendNow) {
-        toast.success(channel === 'whatsapp'
-          ? `Link WhatsApp generato per ${data.sent} contatti`
-          : `Campagna inviata a ${data.sent} contatti`)
+        toast.success(
+          channel === 'whatsapp'
+            ? `Link WhatsApp generato per ${data.sent} contatti`
+            : `Campagna inviata a ${data.sent} contatti`
+        )
       } else {
         toast.success('Bozza salvata')
       }
@@ -140,6 +139,8 @@ export function CampaignComposer({ cities, totalContacts, listingId, listingAddr
     }
   }
 
+  const selectedCount = selectedContactIds.size
+
   return (
     <div className="space-y-6 pt-6">
       {/* Header */}
@@ -150,16 +151,28 @@ export function CampaignComposer({ cities, totalContacts, listingId, listingAddr
         <div>
           <h1 className="text-xl font-extrabold tracking-tight">Nuova campagna</h1>
           <p className="text-sm text-muted-foreground">
-            {channel === 'whatsapp' ? `${totalContacts} contatti con numero di telefono` : `${totalContacts} contatti con email disponibili`}
+            {selectedCount > 0
+              ? `${selectedCount} ${selectedCount === 1 ? 'destinatario selezionato' : 'destinatari selezionati'}`
+              : channel === 'whatsapp'
+                ? 'Seleziona destinatari con numero di telefono'
+                : 'Seleziona destinatari con email'}
           </p>
         </div>
       </div>
+
       {/* Linked listing banner */}
       {listingId && listingAddress && (
         <div className="flex items-center gap-2 rounded-xl border border-[oklch(0.57_0.20_33/0.3)] bg-[oklch(0.57_0.20_33/0.06)] px-4 py-2.5">
           <span className="text-xs text-muted-foreground">Annuncio collegato:</span>
-          <span className="text-sm font-semibold text-[oklch(0.40_0.16_33)] dark:text-[oklch(0.75_0.12_33)] truncate flex-1">{listingAddress}</span>
-          <Link href={`/listing/${listingId}`} className="text-xs text-[oklch(0.57_0.20_33)] hover:underline shrink-0">Vedi annuncio</Link>
+          <span className="text-sm font-semibold text-[oklch(0.40_0.16_33)] dark:text-[oklch(0.75_0.12_33)] truncate flex-1">
+            {listingAddress}
+          </span>
+          <Link
+            href={`/listing/${listingId}`}
+            className="text-xs text-[oklch(0.57_0.20_33)] hover:underline shrink-0"
+          >
+            Vedi annuncio
+          </Link>
         </div>
       )}
 
@@ -192,7 +205,8 @@ export function CampaignComposer({ cities, totalContacts, listingId, listingAddr
         </div>
         {channel === 'whatsapp' && (
           <p className="mt-2 text-xs text-muted-foreground">
-            La campagna WhatsApp genera un testo pre-compilato che aprirai in WhatsApp Web per ogni contatto con numero di telefono.
+            La campagna WhatsApp genera un testo pre-compilato che aprirai in WhatsApp Web per ogni
+            contatto con numero di telefono.
           </p>
         )}
       </div>
@@ -239,7 +253,11 @@ export function CampaignComposer({ cities, totalContacts, listingId, listingAddr
           value={body}
           onChange={e => setBody(e.target.value)}
           rows={10}
-          placeholder={channel === 'whatsapp' ? 'Scrivi il messaggio WhatsApp…' : 'Scrivi qui il corpo della mail…'}
+          placeholder={
+            channel === 'whatsapp'
+              ? 'Scrivi il messaggio WhatsApp…'
+              : 'Scrivi qui il corpo della mail…'
+          }
           className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.3)] resize-none font-mono"
         />
       </div>
@@ -247,12 +265,17 @@ export function CampaignComposer({ cities, totalContacts, listingId, listingAddr
       {/* Attachment — email only */}
       {channel === 'email' && (
         <div>
-          <label className="block text-xs font-medium text-muted-foreground mb-1">Allegato (opzionale)</label>
+          <label className="block text-xs font-medium text-muted-foreground mb-1">
+            Allegato (opzionale)
+          </label>
           {attachmentFile ? (
             <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2">
               <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
               <span className="text-sm text-foreground truncate flex-1">{attachmentFile.name}</span>
-              <button onClick={removeAttachment} className="rounded p-0.5 hover:bg-muted transition-colors">
+              <button
+                onClick={removeAttachment}
+                className="rounded p-0.5 hover:bg-muted transition-colors"
+              >
                 <X className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
             </div>
@@ -277,44 +300,30 @@ export function CampaignComposer({ cities, totalContacts, listingId, listingAddr
 
       {/* Recipients */}
       <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-3">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Destinatari</p>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs text-muted-foreground mb-1">Tipo cliente</label>
-            <select
-              value={recipientType}
-              onChange={e => setRecipientType(e.target.value)}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.3)]"
-            >
-              {CONTACT_TYPES.map(t => (
-                <option key={t.value} value={t.value}>{t.label}</option>
-              ))}
-            </select>
-          </div>
-          {cities.length > 0 && (
-            <div>
-              <label className="block text-xs text-muted-foreground mb-1">Filtro città</label>
-              <select
-                value={cityFilter}
-                onChange={e => setCityFilter(e.target.value)}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.3)]"
-              >
-                <option value="">Tutte le città</option>
-                {cities.map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-          )}
+        <div className="flex items-center gap-2">
+          <Users className="h-3.5 w-3.5 text-muted-foreground" />
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            Destinatari
+          </p>
         </div>
+        <RecipientSelector
+          cities={cities}
+          listingId={listingId}
+          channel={channel}
+          selectedIds={selectedContactIds}
+          onSelectionChange={handleSelectionChange}
+        />
       </div>
 
       {/* WhatsApp info */}
       {channel === 'whatsapp' && (
         <div className="rounded-xl border border-green-200 bg-green-50 dark:border-green-900/40 dark:bg-green-900/10 p-4 space-y-1.5">
-          <p className="text-xs font-semibold text-green-800 dark:text-green-300">Come funziona la campagna WhatsApp</p>
+          <p className="text-xs font-semibold text-green-800 dark:text-green-300">
+            Come funziona la campagna WhatsApp
+          </p>
           <p className="text-xs text-green-700 dark:text-green-400 leading-relaxed">
-            Dopo aver salvato, potrai aprire WhatsApp Web per ogni contatto con numero di telefono. Il messaggio sarà pre-compilato e pronto da inviare.
+            Dopo aver salvato, potrai aprire WhatsApp Web per ogni contatto con numero di telefono.
+            Il messaggio sarà pre-compilato e pronto da inviare.
           </p>
         </div>
       )}
@@ -330,8 +339,16 @@ export function CampaignComposer({ cities, totalContacts, listingId, listingAddr
               : 'btn-ai'
           }`}
         >
-          {channel === 'whatsapp' ? <MessageCircle className="h-4 w-4" /> : <Send className="h-4 w-4" />}
-          {loading ? 'Salvataggio…' : channel === 'whatsapp' ? 'Salva campagna WhatsApp' : 'Invia ora'}
+          {channel === 'whatsapp' ? (
+            <MessageCircle className="h-4 w-4" />
+          ) : (
+            <Send className="h-4 w-4" />
+          )}
+          {loading
+            ? 'Salvataggio…'
+            : channel === 'whatsapp'
+              ? 'Salva campagna WhatsApp'
+              : 'Invia ora'}
         </button>
         <button
           onClick={() => handleSend(false)}

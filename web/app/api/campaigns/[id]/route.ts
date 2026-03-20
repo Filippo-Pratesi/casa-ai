@@ -52,7 +52,10 @@ export async function PATCH(
   const bodyHtml = typeof body.body_html === 'string' ? body.body_html.trim() : undefined
   const bodyText = typeof body.body_text === 'string' ? body.body_text.trim() : undefined
   const template = typeof body.template === 'string' ? body.template : undefined
-  const recipientFilter = body.recipient_filter as Record<string, unknown> | undefined
+  const explicitContactIds = Array.isArray(body.contact_ids) ? (body.contact_ids as string[]) : null
+  const recipientFilter = explicitContactIds
+    ? { mode: 'explicit', contact_ids: explicitContactIds }
+    : (body.recipient_filter as Record<string, unknown> | undefined)
   const sendNow = body.send === true
 
   if (subject !== undefined && !subject) {
@@ -90,27 +93,39 @@ export async function PATCH(
   const finalSubject = (subject ?? '') || ''
   const finalBodyHtml = (bodyHtml ?? '') || ''
   const finalBodyText = (bodyText ?? finalBodyHtml.replace(/<[^>]+>/g, '')) || ''
-  const finalFilter = (recipientFilter ?? { type: 'all' }) as Record<string, unknown>
 
-  // Resolve recipients
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let contactsQuery = (admin as any)
-    .from('contacts')
-    .select('id, name, email')
-    .eq('workspace_id', profile.workspace_id)
-    .not('email', 'is', null)
-    .neq('email', '')
-
-  const filterType = finalFilter.type as string
-  if (filterType && filterType !== 'all') {
-    contactsQuery = contactsQuery.eq('type', filterType)
+  // Resolve recipients — explicit list takes priority
+  let recipients: { id: string; name: string; email: string }[] = []
+  if (explicitContactIds && explicitContactIds.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (admin as any)
+      .from('contacts')
+      .select('id, name, email')
+      .eq('workspace_id', profile.workspace_id)
+      .in('id', explicitContactIds)
+      .not('email', 'is', null)
+      .neq('email', '')
+    recipients = (data ?? []) as { id: string; name: string; email: string }[]
+  } else {
+    // Legacy filter-based resolution
+    const finalFilter = (recipientFilter ?? { type: 'all' }) as Record<string, unknown>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let contactsQuery = (admin as any)
+      .from('contacts')
+      .select('id, name, email')
+      .eq('workspace_id', profile.workspace_id)
+      .not('email', 'is', null)
+      .neq('email', '')
+    const filterType = finalFilter.type as string
+    if (filterType && filterType !== 'all') {
+      contactsQuery = contactsQuery.eq('type', filterType)
+    }
+    if (typeof finalFilter.city === 'string' && finalFilter.city) {
+      contactsQuery = contactsQuery.ilike('city_of_residence', `%${finalFilter.city}%`)
+    }
+    const { data: contactsData } = await contactsQuery
+    recipients = (contactsData ?? []) as { id: string; name: string; email: string }[]
   }
-  if (typeof finalFilter.city === 'string' && finalFilter.city) {
-    contactsQuery = contactsQuery.ilike('city_of_residence', `%${finalFilter.city}%`)
-  }
-
-  const { data: contactsData } = await contactsQuery
-  const recipients = (contactsData ?? []) as { id: string; name: string; email: string }[]
 
   if (recipients.length === 0) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

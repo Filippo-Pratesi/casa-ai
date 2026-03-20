@@ -8,7 +8,7 @@ interface CampaignRecord {
   subject: string
   body_text: string
   template: string
-  recipient_filter: { type: string; city?: string } | null
+  recipient_filter: { type?: string; city?: string; mode?: string; contact_ids?: string[] } | null
   status: string
   workspace_id: string
 }
@@ -47,25 +47,23 @@ export default async function EditCampaignPage({
   if (!campaign) notFound()
   if (campaign.status !== 'draft') redirect('/campaigns')
 
-  // Fetch contacts for targeting options
+  // Fetch all cities for filter chips
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: contactsData } = await (admin as any)
     .from('contacts')
-    .select('type, city_of_residence')
+    .select('city_of_residence')
     .eq('workspace_id', profile.workspace_id)
-    .not('email', 'is', null)
-    .neq('email', '')
+    .not('city_of_residence', 'is', null)
+    .neq('city_of_residence', '')
 
-  const contacts = (contactsData ?? []) as { type: string; city_of_residence: string | null }[]
+  const contacts = (contactsData ?? []) as { city_of_residence: string }[]
   const cities = [...new Set(contacts.map(c => c.city_of_residence).filter(Boolean) as string[])].sort()
-  const totalContacts = contacts.length
 
   return (
     <div className="max-w-2xl mx-auto pb-12">
       <CampaignEditClient
         campaign={campaign}
         cities={cities}
-        totalContacts={totalContacts}
       />
     </div>
   )

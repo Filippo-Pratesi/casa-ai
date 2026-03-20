@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Send, FileText, Trash2 } from 'lucide-react'
+import { ArrowLeft, Send, FileText, Trash2, Users } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
+import { RecipientSelector } from './recipient-selector'
 
 const TEMPLATES = [
   {
@@ -39,37 +40,41 @@ const TEMPLATES = [
   },
 ]
 
-const CONTACT_TYPES = [
-  { value: 'all', label: 'Tutti i contatti' },
-  { value: 'buyer', label: 'Solo acquirenti' },
-  { value: 'seller', label: 'Solo venditori' },
-  { value: 'renter', label: 'Solo affittuari' },
-]
-
 interface CampaignEditClientProps {
   campaign: {
     id: string
     subject: string
     body_text: string
     template: string
-    recipient_filter: { type: string; city?: string } | null
+    recipient_filter: { type?: string; city?: string; mode?: string; contact_ids?: string[] } | null
   }
   cities: string[]
-  totalContacts: number
 }
 
-export function CampaignEditClient({ campaign, cities, totalContacts }: CampaignEditClientProps) {
-  const router = useRouter()
+function getInitialSelectedIds(
+  filter: CampaignEditClientProps['campaign']['recipient_filter']
+): Set<string> {
+  if (filter?.mode === 'explicit' && Array.isArray(filter.contact_ids)) {
+    return new Set<string>(filter.contact_ids)
+  }
+  return new Set<string>()
+}
 
-  const initialFilter = campaign.recipient_filter ?? { type: 'all' }
+export function CampaignEditClient({ campaign, cities }: CampaignEditClientProps) {
+  const router = useRouter()
 
   const [template, setTemplate] = useState(campaign.template || 'custom')
   const [subject, setSubject] = useState(campaign.subject)
   const [body, setBody] = useState(campaign.body_text)
-  const [recipientType, setRecipientType] = useState(initialFilter.type || 'all')
-  const [cityFilter, setCityFilter] = useState(initialFilter.city ?? '')
+  const [selectedContactIds, setSelectedContactIds] = useState<Set<string>>(
+    () => getInitialSelectedIds(campaign.recipient_filter)
+  )
   const [loading, setLoading] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
+
+  const handleSelectionChange = useCallback((ids: Set<string>) => {
+    setSelectedContactIds(ids)
+  }, [])
 
   function applyTemplate(id: string) {
     setTemplate(id)
@@ -85,6 +90,10 @@ export function CampaignEditClient({ campaign, cities, totalContacts }: Campaign
       toast.error('Compila oggetto e corpo della mail')
       return
     }
+    if (sendNow && selectedContactIds.size === 0) {
+      toast.error('Seleziona almeno un destinatario')
+      return
+    }
     setLoading(true)
     try {
       const res = await fetch(`/api/campaigns/${campaign.id}`, {
@@ -95,10 +104,7 @@ export function CampaignEditClient({ campaign, cities, totalContacts }: Campaign
           body_html: body.replace(/\n/g, '<br/>'),
           body_text: body,
           template,
-          recipient_filter: {
-            type: recipientType,
-            city: cityFilter || undefined,
-          },
+          contact_ids: Array.from(selectedContactIds),
           send: sendNow,
         }),
       })
@@ -145,6 +151,8 @@ export function CampaignEditClient({ campaign, cities, totalContacts }: Campaign
     }
   }
 
+  const selectedCount = selectedContactIds.size
+
   return (
     <div className="space-y-6 pt-6">
       {/* Header */}
@@ -154,7 +162,11 @@ export function CampaignEditClient({ campaign, cities, totalContacts }: Campaign
         </Link>
         <div>
           <h1 className="text-xl font-extrabold tracking-tight">Modifica bozza</h1>
-          <p className="text-sm text-muted-foreground">{totalContacts} contatti con email disponibili</p>
+          <p className="text-sm text-muted-foreground">
+            {selectedCount > 0
+              ? `${selectedCount} ${selectedCount === 1 ? 'destinatario selezionato' : 'destinatari selezionati'}`
+              : 'Seleziona destinatari con email'}
+          </p>
         </div>
       </div>
 
@@ -204,36 +216,19 @@ export function CampaignEditClient({ campaign, cities, totalContacts }: Campaign
 
         {/* Recipients */}
         <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-3">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Destinatari</p>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs text-muted-foreground mb-1">Tipo cliente</label>
-              <select
-                value={recipientType}
-                onChange={e => setRecipientType(e.target.value)}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.3)]"
-              >
-                {CONTACT_TYPES.map(t => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
-                ))}
-              </select>
-            </div>
-            {cities.length > 0 && (
-              <div>
-                <label className="block text-xs text-muted-foreground mb-1">Filtro città</label>
-                <select
-                  value={cityFilter}
-                  onChange={e => setCityFilter(e.target.value)}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.3)]"
-                >
-                  <option value="">Tutte le città</option>
-                  {cities.map(c => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-              </div>
-            )}
+          <div className="flex items-center gap-2">
+            <Users className="h-3.5 w-3.5 text-muted-foreground" />
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Destinatari
+            </p>
           </div>
+          <RecipientSelector
+            cities={cities}
+            listingId={null}
+            channel="email"
+            selectedIds={selectedContactIds}
+            onSelectionChange={handleSelectionChange}
+          />
         </div>
 
         {/* Actions */}

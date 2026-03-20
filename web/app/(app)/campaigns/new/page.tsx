@@ -24,18 +24,17 @@ export default async function NewCampaignPage({
   const params = searchParams ? await searchParams : {}
   const listingId = params.listing_id ?? null
 
-  // Fetch contacts with valid email for campaign targeting
+  // Fetch all cities for filter chips (channel-specific contact filtering happens in the API)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: contactsData } = await (admin as any)
     .from('contacts')
-    .select('type, city_of_residence')
+    .select('city_of_residence')
     .eq('workspace_id', profile.workspace_id)
-    .not('email', 'is', null)
-    .neq('email', '')
+    .not('city_of_residence', 'is', null)
+    .neq('city_of_residence', '')
 
-  const contacts = (contactsData ?? []) as { type: string; city_of_residence: string | null }[]
+  const contacts = (contactsData ?? []) as { city_of_residence: string }[]
   const cities = [...new Set(contacts.map(c => c.city_of_residence).filter(Boolean) as string[])].sort()
-  const totalContacts = contacts.length
 
   // Fetch listing info if listing_id is provided
   let listingAddress: string | null = null
@@ -54,7 +53,6 @@ export default async function NewCampaignPage({
     <div className="max-w-2xl mx-auto pb-12">
       <CampaignComposer
         cities={cities}
-        totalContacts={totalContacts}
         listingId={listingId}
         listingAddress={listingAddress}
       />

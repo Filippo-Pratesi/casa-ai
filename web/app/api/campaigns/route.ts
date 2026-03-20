@@ -64,32 +64,52 @@ export async function POST(req: NextRequest) {
   const bodyHtml = typeof body.body_html === 'string' ? body.body_html.trim() : ''
   const bodyText = typeof body.body_text === 'string' ? body.body_text.trim() : bodyHtml.replace(/<[^>]+>/g, '')
   const template = typeof body.template === 'string' ? body.template : 'custom'
-  const recipientFilter = (body.recipient_filter as Record<string, unknown>) ?? { type: 'all' }
+  const explicitContactIds = Array.isArray(body.contact_ids) ? (body.contact_ids as string[]) : null
   const sendNow = body.send === true
 
-  if (!subject || !bodyHtml) {
-    return NextResponse.json({ error: 'Oggetto e corpo obbligatori' }, { status: 400 })
+  if (channel === 'email' && !subject) {
+    return NextResponse.json({ error: 'Oggetto obbligatorio per email' }, { status: 400 })
+  }
+  if (!bodyHtml) {
+    return NextResponse.json({ error: 'Corpo obbligatorio' }, { status: 400 })
   }
 
-  // Resolve recipients
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let contactsQuery = (admin as any)
-    .from('contacts')
-    .select('id, name, email')
-    .eq('workspace_id', profile.workspace_id)
-    .not('email', 'is', null)
-    .neq('email', '')
-
-  const filterType = recipientFilter.type as string
-  if (filterType && filterType !== 'all') {
-    contactsQuery = contactsQuery.eq('type', filterType)
+  // Resolve recipients — explicit list takes priority over filter-based
+  let recipients: { id: string; name: string; email: string; phone?: string | null }[] = []
+  if (explicitContactIds && explicitContactIds.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let q = (admin as any)
+      .from('contacts')
+      .select('id, name, email, phone')
+      .eq('workspace_id', profile.workspace_id)
+      .in('id', explicitContactIds)
+    if (channel === 'whatsapp') {
+      q = q.not('phone', 'is', null).neq('phone', '')
+    } else {
+      q = q.not('email', 'is', null).neq('email', '')
+    }
+    const { data } = await q
+    recipients = (data ?? []) as { id: string; name: string; email: string; phone: string | null }[]
+  } else {
+    // Legacy filter-based resolution
+    const recipientFilter = (body.recipient_filter as Record<string, unknown>) ?? { type: 'all' }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let contactsQuery = (admin as any)
+      .from('contacts')
+      .select('id, name, email')
+      .eq('workspace_id', profile.workspace_id)
+      .not('email', 'is', null)
+      .neq('email', '')
+    const filterType = recipientFilter.type as string
+    if (filterType && filterType !== 'all') {
+      contactsQuery = contactsQuery.eq('type', filterType)
+    }
+    if (typeof recipientFilter.city === 'string' && recipientFilter.city) {
+      contactsQuery = contactsQuery.ilike('city_of_residence', `%${recipientFilter.city}%`)
+    }
+    const { data: contactsData } = await contactsQuery
+    recipients = (contactsData ?? []) as { id: string; name: string; email: string }[]
   }
-  if (typeof recipientFilter.city === 'string' && recipientFilter.city) {
-    contactsQuery = contactsQuery.ilike('city_of_residence', `%${recipientFilter.city}%`)
-  }
-
-  const { data: contactsData } = await contactsQuery
-  const recipients = (contactsData ?? []) as { id: string; name: string; email: string }[]
 
   // Save campaign record
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -103,7 +123,9 @@ export async function POST(req: NextRequest) {
       body_html: bodyHtml,
       body_text: bodyText,
       template,
-      recipient_filter: recipientFilter,
+      recipient_filter: explicitContactIds
+        ? { mode: 'explicit', contact_ids: explicitContactIds }
+        : (body.recipient_filter as Record<string, unknown>) ?? { type: 'all' },
       status: sendNow ? 'sending' : 'draft',
     })
     .select('id')
