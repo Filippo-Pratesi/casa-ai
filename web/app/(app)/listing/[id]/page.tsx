@@ -17,7 +17,6 @@ import { ShareButton } from '@/components/listing/share-button'
 import { BrochureButton } from '@/components/listing/brochure-button'
 import { ExportButton } from '@/components/listing/export-button'
 import { PriceHistory } from '@/components/listing/price-history'
-import { ValuationWidget } from '@/components/listing/valuation-widget'
 import { FloorPlanUploader } from '@/components/listing/floor-plan-uploader'
 import { ListingStats } from '@/components/listing/listing-stats'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -125,21 +124,6 @@ export default async function ListingDetailPage({
   const photos = (listing.photos_urls ?? []) as string[]
   const features = (listing.features ?? []) as string[]
 
-  // Fetch sold comparables for valuation widget
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let comparablesQuery = (admin as any)
-    .from('archived_listings')
-    .select('address, price, sqm, rooms')
-    .eq('workspace_id', listing.workspace_id)
-    .eq('sold', true)
-    .limit(5)
-  if (listing.city) comparablesQuery = comparablesQuery.ilike('city', listing.city)
-  if (listing.rooms != null) {
-    comparablesQuery = comparablesQuery.gte('rooms', listing.rooms - 1).lte('rooms', listing.rooms + 1)
-  }
-  const { data: comparablesData } = await comparablesQuery
-
-  const comparables = (comparablesData ?? []) as { address: string; price: number; sqm: number; rooms: number }[]
 
   // Fetch workspace members for "mark as sold" flow
   const { data: profileData } = await admin
@@ -448,14 +432,6 @@ export default async function ListingDetailPage({
         />
       </div>
 
-      {/* Valuation widget */}
-      {comparables.length > 0 && listing.price != null && listing.sqm != null && (
-        <ValuationWidget
-          currentPrice={listing.price}
-          currentSqm={listing.sqm}
-          comparables={comparables}
-        />
-      )}
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

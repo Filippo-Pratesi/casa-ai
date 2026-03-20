@@ -606,69 +606,100 @@ export function ImmobileDetailClient({
             </div>
             {contacts.length === 0 ? (
               <p className="text-sm text-muted-foreground">Nessun contatto associato</p>
-            ) : (
-              <div className="space-y-2">
-                {contacts.map((pc) => (
-                  <div key={pc.id} className="flex items-center justify-between gap-2 rounded-lg border border-border/50 p-2.5">
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      {pc.contact?.id ? (
-                        <Link href={`/contacts/${pc.contact.id}`} className="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity">
-                          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-bold shrink-0">
-                            {pc.contact.name?.charAt(0)?.toUpperCase() ?? '?'}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium truncate underline-offset-2 hover:underline">{pc.contact.name ?? 'Sconosciuto'}</p>
-                            <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                              <span className="text-[10px] font-medium rounded bg-muted/80 border border-border/60 px-1.5 py-0.5 text-muted-foreground">{ROLE_LABELS[pc.role] ?? pc.role}</span>
-                              {pc.contact.types || pc.contact.type ? (
-                                <ContactTypeBadges types={pc.contact.types} type={pc.contact.type} size="xs" />
-                              ) : null}
+            ) : (() => {
+              // Deduplicate: group by contact.id, merging roles for same person
+              type GroupedContact = {
+                ids: string[]
+                roles: string[]
+                contact: PropertyContact['contact']
+              }
+              const grouped: GroupedContact[] = []
+              const byContactId = new Map<string, GroupedContact>()
+              for (const pc of contacts) {
+                const key = pc.contact?.id
+                if (key) {
+                  const existing = byContactId.get(key)
+                  if (existing) {
+                    existing.ids.push(pc.id)
+                    if (!existing.roles.includes(pc.role)) existing.roles.push(pc.role)
+                  } else {
+                    const entry: GroupedContact = { ids: [pc.id], roles: [pc.role], contact: pc.contact }
+                    byContactId.set(key, entry)
+                    grouped.push(entry)
+                  }
+                } else {
+                  grouped.push({ ids: [pc.id], roles: [pc.role], contact: pc.contact })
+                }
+              }
+
+              return (
+                <div className="space-y-2">
+                  {grouped.map((g) => (
+                    <div key={g.ids[0]} className="flex items-center justify-between gap-2 rounded-lg border border-border/50 p-2.5">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        {g.contact?.id ? (
+                          <Link href={`/contacts/${g.contact.id}`} className="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-bold shrink-0">
+                              {g.contact.name?.charAt(0)?.toUpperCase() ?? '?'}
                             </div>
-                          </div>
-                        </Link>
-                      ) : (
-                        <>
-                          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-bold shrink-0">
-                            {pc.contact?.name?.charAt(0)?.toUpperCase() ?? '?'}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium truncate">{pc.contact?.name ?? 'Sconosciuto'}</p>
-                            <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                              <span className="text-[10px] font-medium rounded bg-muted/80 border border-border/60 px-1.5 py-0.5 text-muted-foreground">{ROLE_LABELS[pc.role] ?? pc.role}</span>
-                              {pc.contact?.types || pc.contact?.type ? (
-                                <ContactTypeBadges types={pc.contact?.types} type={pc.contact?.type} size="xs" />
-                              ) : null}
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium truncate underline-offset-2 hover:underline">{g.contact.name ?? 'Sconosciuto'}</p>
+                              <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                                {g.roles.map((role) => (
+                                  <span key={role} className="text-[10px] font-medium rounded bg-muted/80 border border-border/60 px-1.5 py-0.5 text-muted-foreground">{ROLE_LABELS[role] ?? role}</span>
+                                ))}
+                                {g.contact.types || g.contact.type ? (
+                                  <ContactTypeBadges types={g.contact.types} type={g.contact.type} size="xs" />
+                                ) : null}
+                              </div>
                             </div>
-                          </div>
-                        </>
-                      )}
+                          </Link>
+                        ) : (
+                          <>
+                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-bold shrink-0">
+                              {g.contact?.name?.charAt(0)?.toUpperCase() ?? '?'}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium truncate">{g.contact?.name ?? 'Sconosciuto'}</p>
+                              <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                                {g.roles.map((role) => (
+                                  <span key={role} className="text-[10px] font-medium rounded bg-muted/80 border border-border/60 px-1.5 py-0.5 text-muted-foreground">{ROLE_LABELS[role] ?? role}</span>
+                                ))}
+                                {g.contact?.types || g.contact?.type ? (
+                                  <ContactTypeBadges types={g.contact?.types} type={g.contact?.type} size="xs" />
+                                ) : null}
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {g.contact?.phone && (
+                          <a href={`tel:${g.contact.phone}`} className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'h-7 w-7')}>
+                            <Phone className="h-3 w-3" />
+                          </a>
+                        )}
+                        {g.contact?.id && (
+                          <Link href={`/contacts/${g.contact.id}`} className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'h-7 w-7')}>
+                            <ExternalLink className="h-3 w-3" />
+                          </Link>
+                        )}
+                        {(isAdmin || isOwner) && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-destructive hover:text-destructive"
+                            onClick={async () => { for (const id of g.ids) await handleRemoveContact(id) }}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      {pc.contact?.phone && (
-                        <a href={`tel:${pc.contact.phone}`} className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'h-7 w-7')}>
-                          <Phone className="h-3 w-3" />
-                        </a>
-                      )}
-                      {pc.contact?.id && (
-                        <Link href={`/contacts/${pc.contact.id}`} className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'h-7 w-7')}>
-                          <ExternalLink className="h-3 w-3" />
-                        </Link>
-                      )}
-                      {(isAdmin || isOwner) && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-destructive hover:text-destructive"
-                          onClick={() => handleRemoveContact(pc.id)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )
+            })()}
           </Card>
 
           {/* Incarico details */}
