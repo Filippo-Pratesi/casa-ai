@@ -177,15 +177,30 @@ export const BancaDatiFilters = React.memo(function BancaDatiFilters({
             onValueChange={(v) => onDispositionChange(!v || v === 'all' ? '' : v)}
           >
             <SelectTrigger className="h-8 w-[160px] text-sm">
-              <span className="truncate">
+              <span className="truncate flex items-center gap-1.5">
                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {selectedDisposition ? ((DISPOSITION_CONFIG as any)[selectedDisposition]?.label ?? selectedDisposition) : 'Tutti'}
+                {selectedDisposition ? (
+                  <>
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    <span className={(DISPOSITION_CONFIG as any)[selectedDisposition]?.color}>
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                      {(DISPOSITION_CONFIG as any)[selectedDisposition]?.symbol}
+                    </span>
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    {(DISPOSITION_CONFIG as any)[selectedDisposition]?.label ?? selectedDisposition}
+                  </>
+                ) : 'Tutti'}
               </span>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tutti</SelectItem>
               {Object.entries(DISPOSITION_CONFIG).map(([key, cfg]) => (
-                <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
+                <SelectItem key={key} value={key}>
+                  <span className="flex items-center gap-1.5">
+                    <span className={cfg.color}>{cfg.symbol}</span>
+                    {cfg.label}
+                  </span>
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>

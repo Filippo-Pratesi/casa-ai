@@ -78,6 +78,7 @@ export function BancaDatiClient({
   const [showLegend, setShowLegend] = useState(false)
   const [colWidths, setColWidths] = useState(DEFAULT_WIDTHS)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const streetDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Ref to the search input — used to prevent URL re-syncs from overwriting
   // text the user is actively typing (race between debounce + server re-render).
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -125,6 +126,30 @@ export function BancaDatiClient({
   }, [pathname, router, initialFilters]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current) }, [])
+  useEffect(() => () => { if (streetDebounceRef.current) clearTimeout(streetDebounceRef.current) }, [])
+
+  // Debounced street change — real-time filter as the user types
+  const handleStreetChange = useCallback((value: string) => {
+    setStreetText(value)
+    if (streetDebounceRef.current) clearTimeout(streetDebounceRef.current)
+    streetDebounceRef.current = setTimeout(() => {
+      const params = new URLSearchParams()
+      const current = {
+        stage: initialFilters.stage, city: initialFilters.city,
+        zone: initialFilters.zone, agent_id: initialFilters.agent_id,
+        disposition: initialFilters.disposition, transaction_type: initialFilters.transaction_type,
+        sort: initialFilters.sort, viewMode: initialFilters.viewMode,
+        q: searchText, street: value, civic: civicText, page: '1',
+      }
+      Object.entries(current).forEach(([k, v]) => {
+        if (!v) return
+        if (k === 'sort' && v === 'updated_at_desc') return
+        if (k === 'viewMode' && v === 'list') return
+        params.set(k, v)
+      })
+      router.push(`${pathname}?${params.toString()}`)
+    }, 500)
+  }, [pathname, router, initialFilters, searchText, civicText]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sync URL→input ONLY when the user is NOT typing (input not focused).
   // This prevents the server re-render triggered by debounce from overwriting
@@ -218,6 +243,7 @@ export function BancaDatiClient({
       <div className="flex flex-wrap gap-1.5 items-center">
         {STAGES.map((stage) => {
           const config = STAGE_CONFIG[stage]
+          const StageIcon = config.icon
           const count = countByStage[stage] ?? 0
           const pct = totalAll > 0 ? Math.round((count / totalAll) * 100) : 0
           const isActive = initialFilters.stage === stage
@@ -232,6 +258,7 @@ export function BancaDatiClient({
                   : 'border-border bg-background text-muted-foreground hover:bg-muted hover:scale-[1.02]'
               }`}
             >
+              <StageIcon className="h-3 w-3 shrink-0" />
               {config.label}
               <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums ${isActive ? 'bg-black/10 dark:bg-white/20' : 'bg-muted'}`}>
                 {count}
@@ -260,11 +287,16 @@ export function BancaDatiClient({
         }}
         searchInputRef={searchInputRef}
         streetText={streetText}
-        onStreetTextChange={setStreetText}
+        onStreetTextChange={handleStreetChange}
         onStreetCommit={() => {
+          if (streetDebounceRef.current) clearTimeout(streetDebounceRef.current)
           if (streetText !== initialFilters.street) updateUrl({ street: streetText, page: '1' })
         }}
-        onStreetClear={() => { setStreetText(''); updateUrl({ street: '', page: '1' }) }}
+        onStreetClear={() => {
+          if (streetDebounceRef.current) clearTimeout(streetDebounceRef.current)
+          setStreetText('')
+          updateUrl({ street: '', page: '1' })
+        }}
         civicText={civicText}
         onCivicTextChange={setCivicText}
         onCivicCommit={() => {

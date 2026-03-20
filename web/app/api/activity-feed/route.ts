@@ -38,13 +38,18 @@ export async function GET() {
       .order('event_date', { ascending: false })
       .limit(20),
 
-    // Upcoming appointments — next 7 days
+    // Upcoming appointments — up to end of tomorrow
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (admin as any).from('appointments')
       .select('id, title, type, starts_at, contact_name, contact_id, status')
       .eq('workspace_id', wid)
       .gte('starts_at', new Date().toISOString())
-      .lte('starts_at', new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString())
+      .lte('starts_at', (() => {
+        const endOfTomorrow = new Date()
+        endOfTomorrow.setDate(endOfTomorrow.getDate() + 1)
+        endOfTomorrow.setHours(23, 59, 59, 999)
+        return endOfTomorrow.toISOString()
+      })())
       .neq('status', 'cancelled')
       .order('starts_at', { ascending: true })
       .limit(10),

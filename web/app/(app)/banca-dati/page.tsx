@@ -58,13 +58,13 @@ export default async function BancaDatiPage({
   const viewMode = params.viewMode ?? 'list'
   const per_page = 50
 
-  const SORT_MAP: Record<string, { col: string; asc: boolean }> = {
+  const SORT_MAP: Record<string, { col: string; asc: boolean; nullsFirst?: boolean }> = {
     updated_at_desc: { col: 'updated_at', asc: false },
     updated_at_asc:  { col: 'updated_at', asc: true },
     city_asc:        { col: 'city', asc: true },
     city_desc:       { col: 'city', asc: false },
-    value_desc:      { col: 'estimated_value', asc: false },
-    value_asc:       { col: 'estimated_value', asc: true },
+    value_desc:      { col: 'estimated_value', asc: false, nullsFirst: false },
+    value_asc:       { col: 'estimated_value', asc: true, nullsFirst: false },
   }
   const sortOpt = SORT_MAP[sort] ?? SORT_MAP.updated_at_desc
 
@@ -78,7 +78,7 @@ export default async function BancaDatiPage({
       agent:users!properties_agent_id_fkey(name)
     `, { count: 'exact' })
     .eq('workspace_id', profile.workspace_id)
-    .order(sortOpt.col, { ascending: sortOpt.asc })
+    .order(sortOpt.col, { ascending: sortOpt.asc, nullsFirst: sortOpt.nullsFirst ?? true })
     .range((page - 1) * per_page, page * per_page - 1)
 
   if (stage) query = query.eq('stage', stage)
@@ -94,9 +94,12 @@ export default async function BancaDatiPage({
   if (q) {
     query = query.or(`address.ilike.%${q}%,city.ilike.%${q}%,zone.ilike.%${q}%`)
   }
-  // Via filter: matches street portion of address (before house number)
+  // Via filter: split into words so "via dandolo" finds "Via Enrico Dandolo 29"
   if (street) {
-    query = query.ilike('address', `%${street}%`)
+    const words = street.trim().split(/\s+/).filter((w: string) => w.length > 0)
+    for (const word of words) {
+      query = query.ilike('address', `%${word}%`)
+    }
   }
   // Civico filter: matches numeric portion of address
   if (civic) {
