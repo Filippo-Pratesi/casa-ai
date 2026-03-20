@@ -177,6 +177,35 @@ export function ImmobileDetailClient({
   // Add contact dialog
   const [addContactOpen, setAddContactOpen] = useState(false)
 
+  // First-contact stage prompt state
+  const [stagePrompt, setStagePrompt] = useState<{ contactName: string } | null>(null)
+  const [advancingFromPrompt, setAdvancingFromPrompt] = useState(false)
+
+  async function handleFirstContactStageChoice(wasContacted: boolean) {
+    setAdvancingFromPrompt(true)
+    const targetStage = wasContacted ? 'conosciuto' : 'ignoto'
+    try {
+      // For 'ignoto', we need at least one detail; for 'conosciuto', owner_contact_id must be set.
+      // Both conditions should be met by this point. Use force=true to bypass strict validation.
+      const res = await fetch(`/api/properties/${property.id}/advance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target_stage: targetStage, force: true }),
+      })
+      if (res.ok) {
+        const { property: updated } = await res.json()
+        setProperty(updated)
+        toast.success(wasContacted ? 'Stato aggiornato: Contattato' : 'Stato aggiornato: Non contattato')
+        await reloadEvents()
+      }
+    } catch {
+      // non-blocking
+    } finally {
+      setAdvancingFromPrompt(false)
+      setStagePrompt(null)
+    }
+  }
+
   const canAdvance = isAdmin || isOwner
   // For incarico stage, next step depends on transaction_type: affitto → locato, else → venduto
   const nextStage: PropertyStage | null = property.stage === 'incarico'
@@ -261,6 +290,7 @@ export function ImmobileDetailClient({
       }
       setContacts((prev) => prev.filter((c) => c.id !== linkId))
       toast.success('Contatto rimosso')
+      await reloadEvents()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Errore nella rimozione')
     }
@@ -445,6 +475,10 @@ export function ImmobileDetailClient({
               )}
             </div>
             <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+              <div className="col-span-2 flex items-center gap-2">
+                <span className="text-muted-foreground">Stato:</span>
+                <PropertyStageBadge stage={property.stage} />
+              </div>
               {property.property_type && <div><span className="text-muted-foreground">Tipo:</span> <span className="font-medium">{PROPERTY_TYPE_IT[property.property_type] ?? property.property_type}</span></div>}
               {property.sqm && <div><span className="text-muted-foreground">Superficie:</span> <span className="font-medium">{property.sqm} mq</span></div>}
               {property.rooms && <div><span className="text-muted-foreground">Locali:</span> <span className="font-medium">{property.rooms}</span></div>}
@@ -727,16 +761,60 @@ export function ImmobileDetailClient({
         open={addContactOpen}
         onOpenChange={setAddContactOpen}
         propertyId={property.id}
-        onAdded={async () => {
+        onAdded={async ({ role, contactName }) => {
           const cRes = await fetch(`/api/properties/${property.id}/contacts`)
           if (cRes.ok) {
             const cData = await cRes.json()
             setContacts(Array.isArray(cData.contacts) ? cData.contacts : [])
-          } else {
-            toast.error('Contatto aggiunto ma impossibile ricaricare la lista')
+          }
+          await reloadEvents()
+          // First-contact stage prompt: only if this is the first contact, role is proprietario, and stage is sconosciuto
+          if (contacts.length === 0 && role === 'proprietario' && property.stage === 'sconosciuto') {
+            setStagePrompt({ contactName })
           }
         }}
       />
+
+      {/* First-contact stage prompt */}
+      {stagePrompt && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-5 shadow-xl space-y-4">
+            <div className="space-y-1">
+              <p className="font-semibold text-sm">Hai già contattato il proprietario?</p>
+              <p className="text-xs text-muted-foreground">
+                {stagePrompt.contactName} è stato aggiunto come Proprietario. Aggiorna automaticamente lo stato dell&apos;immobile.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                className="flex-1"
+                size="sm"
+                disabled={advancingFromPrompt}
+                onClick={() => handleFirstContactStageChoice(true)}
+              >
+                {advancingFromPrompt ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : null}
+                Sì, l&apos;ho contattato
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1"
+                size="sm"
+                disabled={advancingFromPrompt}
+                onClick={() => handleFirstContactStageChoice(false)}
+              >
+                No, non ancora
+              </Button>
+            </div>
+            <button
+              type="button"
+              className="text-xs text-muted-foreground hover:text-foreground w-full text-center"
+              onClick={() => setStagePrompt(null)}
+            >
+              Salta per ora
+            </button>
+          </div>
+        </div>
+      )}
 
       <EditDetailsDialog
         open={editDetailsOpen}

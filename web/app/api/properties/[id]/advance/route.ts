@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 type RouteContext = { params: Promise<{ id: string }> }
 
@@ -10,8 +11,9 @@ const STAGE_ORDER: Record<string, number> = {
   venduto: 4, locato: 4, disponibile: 5,
 }
 
-async function getWorkspaceAndRole(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
-  const { data } = await supabase
+async function getWorkspaceAndRole(userId: string) {
+  const admin = createAdminClient()
+  const { data } = await admin
     .from('users')
     .select('workspace_id, role')
     .eq('id', userId)
@@ -26,7 +28,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
-  const userProfile = await getWorkspaceAndRole(supabase, user.id)
+  const userProfile = await getWorkspaceAndRole(user.id)
   if (!userProfile) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 404 })
 
   let body: Record<string, unknown>
@@ -38,14 +40,17 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
 
   const targetStage = typeof body.target_stage === 'string' ? body.target_stage : ''
   const reason = typeof body.reason === 'string' ? body.reason.trim() || null : null
+  const force = body.force === true
 
   if (!VALID_STAGES.includes(targetStage)) {
     return NextResponse.json({ error: 'Fase non valida' }, { status: 400 })
   }
 
+  const admin = createAdminClient()
+
   // Fetch current property
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: property, error: fetchError } = await (supabase as any)
+  const { data: property, error: fetchError } = await (admin as any)
     .from('properties')
     .select('*')
     .eq('id', id)
@@ -68,15 +73,17 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     )
   }
 
-  // Validate stage-specific requirements
-  const validationError = validateStageAdvance(p, targetStage, reason)
-  if (validationError) {
-    return NextResponse.json({ error: validationError }, { status: 400 })
+  // Validate stage-specific requirements (skip if force=true)
+  if (!force) {
+    const validationError = validateStageAdvance(p, targetStage, reason)
+    if (validationError) {
+      return NextResponse.json({ error: validationError }, { status: 400 })
+    }
   }
 
   // If target is venduto, check for accepted proposals (allow with reason)
   if (targetStage === 'venduto' && !reason) {
-    const hasProposal = await checkAcceptedProposal(supabase, p, userProfile.workspace_id)
+    const hasProposal = await checkAcceptedProposal(admin, p, userProfile.workspace_id)
     if (!hasProposal) {
       return NextResponse.json(
         { error: 'Nessuna proposta accettata trovata. Fornire un motivo per procedere.' },
@@ -89,7 +96,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
   const updatePayload = buildUpdatePayload(targetStage)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: updated, error: updateError } = await (supabase as any)
+  const { data: updated, error: updateError } = await (admin as any)
     .from('properties')
     .update({ stage: targetStage, ...updatePayload })
     .eq('id', id)
@@ -103,7 +110,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
 
   // Create cambio_stage event
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase as any)
+  await (admin as any)
     .from('property_events')
     .insert({
       workspace_id: userProfile.workspace_id,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // GET /api/contacts — list workspace contacts
 export async function GET(req: NextRequest) {
@@ -7,7 +8,8 @@ export async function GET(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
-  const { data: profileData } = await supabase
+  const admin = createAdminClient()
+  const { data: profileData } = await admin
     .from('users')
     .select('workspace_id')
     .eq('id', user.id)
@@ -51,7 +53,7 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
-  const { data: profileData } = await supabase
+  const { data: profileData } = await createAdminClient()
     .from('users')
     .select('workspace_id')
     .eq('id', user.id)

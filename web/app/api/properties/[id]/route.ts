@@ -105,6 +105,16 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
   }
 
   const admin = createAdminClient()
+
+  // If disposition is changing, fetch old value for the event log
+  let oldDisposition: string | null = null
+  if ('owner_disposition' in update) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: current } = await (admin as any)
+      .from('properties').select('owner_disposition').eq('id', id).eq('workspace_id', workspaceId).single()
+    oldDisposition = (current as { owner_disposition?: string } | null)?.owner_disposition ?? null
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (admin as any)
     .from('properties')
@@ -115,6 +125,25 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     .single()
 
   if (error || !data) return NextResponse.json({ error: "Errore nell'aggiornamento immobile" }, { status: 500 })
+
+  // Auto-event: disposition change
+  if ('owner_disposition' in update && update.owner_disposition !== oldDisposition) {
+    const DISP_IT: Record<string, string> = {
+      non_definito: 'Non definito', vende: 'Vuole vendere', non_vende: 'Non vuole vendere',
+      forse: 'In dubbio', aspetta_prezzo: 'Aspetta prezzo giusto',
+      incarico_firmato: 'Incarico firmato', appena_acquistato: 'Appena acquistato',
+    }
+    const oldLabel = DISP_IT[oldDisposition ?? ''] ?? oldDisposition ?? '—'
+    const newLabel = DISP_IT[update.owner_disposition as string] ?? update.owner_disposition
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (admin as any).from('property_events').insert({
+      workspace_id: workspaceId,
+      property_id: id,
+      agent_id: user.id,
+      event_type: 'cambio_disposizione',
+      title: `Stato proprietario: ${oldLabel} → ${newLabel}`,
+    })
+  }
 
   return NextResponse.json({ property: data })
 }

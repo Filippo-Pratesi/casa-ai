@@ -24,8 +24,19 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
   const workspaceId = await getWorkspaceId(user.id)
   if (!workspaceId) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 404 })
 
+  const admin = createAdminClient()
+
+  // Fetch contact info before deleting for the event log
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
+  const { data: linkRow } = await (admin as any)
+    .from('property_contacts')
+    .select('role, contacts(name)')
+    .eq('id', contact_link_id)
+    .eq('workspace_id', workspaceId)
+    .single()
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (admin as any)
     .from('property_contacts')
     .delete()
     .eq('id', contact_link_id)
@@ -33,6 +44,28 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
     .eq('workspace_id', workspaceId)
 
   if (error) return NextResponse.json({ error: "Errore nella rimozione del contatto" }, { status: 500 })
+
+  // Auto-event: contact removed
+  if (linkRow) {
+    const ROLE_IT: Record<string, string> = {
+      proprietario: 'Proprietario', moglie_marito: 'Moglie/Marito', figlio_figlia: 'Figlio/Figlia',
+      vicino: 'Vicino', portiere: 'Portiere', amministratore: 'Amministratore',
+      avvocato: 'Avvocato', commercialista: 'Commercialista',
+      precedente_proprietario: 'Ex proprietario', inquilino: 'Inquilino', altro: 'Altro',
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const row = linkRow as any
+    const contactName = row.contacts?.name ?? 'Contatto'
+    const roleLabel = ROLE_IT[row.role] ?? row.role
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (admin as any).from('property_events').insert({
+      workspace_id: workspaceId,
+      property_id: id,
+      agent_id: user.id,
+      event_type: 'contatto_rimosso',
+      title: `${contactName} rimosso (ruolo: ${roleLabel})`,
+    })
+  }
 
   return NextResponse.json({ success: true })
 }

@@ -146,5 +146,27 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: "Errore nell'associazione del contatto" }, { status: 500 })
   }
 
-  return NextResponse.json({ id: (link as { id: string }).id }, { status: 201 })
+  // Auto-event: contact added
+  const admin = createAdminClient()
+  const ROLE_IT: Record<string, string> = {
+    proprietario: 'Proprietario', moglie_marito: 'Moglie/Marito', figlio_figlia: 'Figlio/Figlia',
+    vicino: 'Vicino', portiere: 'Portiere', amministratore: 'Amministratore',
+    avvocato: 'Avvocato', commercialista: 'Commercialista',
+    precedente_proprietario: 'Ex proprietario', inquilino: 'Inquilino', altro: 'Altro',
+  }
+  // Resolve contact name for the event
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: contactRow } = await (admin as any)
+    .from('contacts').select('name').eq('id', contactId).single()
+  const contactName = (contactRow as { name?: string } | null)?.name ?? 'Contatto'
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (admin as any).from('property_events').insert({
+    workspace_id: workspaceId,
+    property_id: id,
+    agent_id: user.id,
+    event_type: 'contatto_aggiunto',
+    title: `${contactName} aggiunto come ${ROLE_IT[role] ?? role}`,
+  })
+
+  return NextResponse.json({ id: (link as { id: string }).id, contact_id: contactId }, { status: 201 })
 }

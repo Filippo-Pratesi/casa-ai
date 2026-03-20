@@ -167,6 +167,17 @@ export async function POST(req: NextRequest) {
 
   const propertyId = (data as { id: string }).id
 
+  // Auto-event: property inserted
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (admin as any).from('property_events').insert({
+    workspace_id: profile.workspace_id,
+    property_id: propertyId,
+    agent_id: user.id,
+    event_type: 'immobile_inserito',
+    title: `Immobile inserito in banca dati`,
+    description: `${address}, ${city}`,
+  })
+
   // If initial_note provided, create a property_event of type 'nota'
   const initialNote = typeof body.initial_note === 'string' ? body.initial_note.trim() : ''
   if (initialNote) {
