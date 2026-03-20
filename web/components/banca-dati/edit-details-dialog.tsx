@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -63,6 +63,23 @@ export const EditDetailsDialog = React.memo(function EditDetailsDialog({
     building_notes: property.building_notes ?? '',
     features: (property.features ?? []) as string[],
   })
+
+  useEffect(() => {
+    setEditForm({
+      property_type: property.property_type ?? '',
+      transaction_type: property.transaction_type ?? '',
+      sqm: property.sqm ? String(property.sqm) : '',
+      rooms: property.rooms ? String(property.rooms) : '',
+      bathrooms: property.bathrooms ? String(property.bathrooms) : '',
+      floor: property.floor != null ? String(property.floor) : '',
+      total_floors: property.total_floors ? String(property.total_floors) : '',
+      condition: property.condition ?? '',
+      estimated_value: property.estimated_value ? String(property.estimated_value) : '',
+      doorbell: property.doorbell ?? '',
+      building_notes: property.building_notes ?? '',
+      features: (property.features ?? []) as string[],
+    })
+  }, [property.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function toggleFeature(id: string) {
     setEditForm(f => ({

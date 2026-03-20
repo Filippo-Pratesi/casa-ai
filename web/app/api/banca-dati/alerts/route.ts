@@ -75,7 +75,8 @@ export async function POST(_req: NextRequest) {
     const [, mm, dd] = (c.date_of_birth as string).split('-').map(Number)
     let next = new Date(today.getFullYear(), mm - 1, dd)
     if (next < today) next = new Date(today.getFullYear() + 1, mm - 1, dd)
-    const diff = Math.ceil((next.getTime() - today.setHours(0, 0, 0, 0)) / 86400000)
+    const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+    const diff = Math.ceil((next.getTime() - todayMidnight.getTime()) / 86400000)
     return diff >= 0 && diff <= 7
   })
 
@@ -120,7 +121,8 @@ export async function POST(_req: NextRequest) {
     const [, mm, dd] = (contact.date_of_birth as string).split('-').map(Number)
     let next = new Date(today.getFullYear(), mm - 1, dd)
     if (next < today) next = new Date(today.getFullYear() + 1, mm - 1, dd)
-    const diff = Math.ceil((next.getTime() - new Date().setHours(0, 0, 0, 0)) / 86400000)
+    const todayMidnight2 = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+    const diff = Math.ceil((next.getTime() - todayMidnight2.getTime()) / 86400000)
     const when = diff === 0 ? 'oggi' : `tra ${diff} giorn${diff === 1 ? 'o' : 'i'}`
     const body = `Compleanno di ${contact.name} ${when}`
     if (existingBodies.has(body)) continue

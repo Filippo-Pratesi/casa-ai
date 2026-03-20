@@ -42,9 +42,9 @@ export function ValuationWidget({ currentPrice, currentSqm, comparables }: Valua
           <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Prezzo medio zona</p>
           <p className="text-sm font-bold text-foreground">€{avgPrice.toLocaleString('it-IT')}</p>
         </div>
-        <div className={`rounded-lg border px-3 py-2.5 text-center ${isAbove ? 'bg-red-50 border-red-100' : 'bg-green-50 border-green-100'}`}>
+        <div className={`rounded-lg border px-3 py-2.5 text-center ${isAbove ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-100 dark:border-blue-800' : 'bg-green-50 dark:bg-green-950/30 border-green-100 dark:border-green-800'}`}>
           <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Differenza</p>
-          <p className={`text-sm font-bold ${isAbove ? 'text-red-600' : 'text-green-600'}`}>
+          <p className={`text-sm font-bold ${isAbove ? 'text-blue-600 dark:text-blue-400' : 'text-green-600 dark:text-green-400'}`}>
             {isAbove ? '+' : ''}{diffPct}%
           </p>
         </div>

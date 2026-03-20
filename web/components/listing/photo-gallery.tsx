@@ -13,8 +13,6 @@ export function PhotoGallery({ urls, floorPlanUrl }: PhotoGalleryProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [showFloorPlan, setShowFloorPlan] = useState(false)
 
-  if (urls.length === 0 && !floorPlanUrl) return null
-
   function prev() {
     setLightboxIndex((i) => (i === null ? 0 : (i - 1 + urls.length) % urls.length))
   }
@@ -23,18 +21,18 @@ export function PhotoGallery({ urls, floorPlanUrl }: PhotoGalleryProps) {
     setLightboxIndex((i) => (i === null ? 0 : (i + 1) % urls.length))
   }
 
-  const allUrls = urls
-
   useEffect(() => {
     if (lightboxIndex === null) return
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') setLightboxIndex(i => i === null ? 0 : Math.max(0, i - 1))
-      if (e.key === 'ArrowRight') setLightboxIndex(i => i === null ? 0 : Math.min(allUrls.length - 1, i + 1))
+      if (e.key === 'ArrowLeft') setLightboxIndex(i => i === null ? 0 : (i - 1 + urls.length) % urls.length)
+      if (e.key === 'ArrowRight') setLightboxIndex(i => i === null ? 0 : (i + 1) % urls.length)
       if (e.key === 'Escape') setLightboxIndex(null)
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [lightboxIndex, allUrls.length])
+  }, [lightboxIndex, urls.length])
+
+  if (urls.length === 0 && !floorPlanUrl) return null
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'ArrowLeft') prev()

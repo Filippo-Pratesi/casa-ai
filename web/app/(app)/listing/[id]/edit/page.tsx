@@ -1,6 +1,7 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ListingEditForm } from '@/components/listing/listing-edit-form'
 import type { Listing } from '@/lib/supabase/types'
@@ -11,12 +12,25 @@ export default async function EditListingPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
   const admin = createAdminClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: profileData } = await (admin as any)
+    .from('users')
+    .select('workspace_id')
+    .eq('id', user.id)
+    .single()
+  if (!profileData) redirect('/login')
+  const profile = profileData as { workspace_id: string }
 
   const { data, error } = await admin
     .from('listings')
     .select('*')
     .eq('id', id)
+    .eq('workspace_id', profile.workspace_id)
     .single()
 
   if (error || !data) notFound()

@@ -74,10 +74,20 @@ export default async function ListingDetailPage({
   if (!user) redirect('/login')
 
   const admin = createAdminClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: userProfileData } = await (admin as any)
+    .from('users')
+    .select('workspace_id')
+    .eq('id', user.id)
+    .single()
+  if (!userProfileData) redirect('/login')
+  const userProfile = userProfileData as { workspace_id: string }
+
   const { data, error } = await admin
     .from('listings')
     .select('*')
     .eq('id', id)
+    .eq('workspace_id', userProfile.workspace_id)
     .single()
 
   if (error || !data) notFound()
