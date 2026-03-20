@@ -6,6 +6,7 @@ import { Archive, Home, UserRound, CheckCircle2, Trash2, ChevronRight, Euro, Bar
 import { getTranslations } from '@/lib/i18n/server'
 import { ArchiveDateFilter } from '@/components/archive/archive-date-filter'
 import { ArchiveExportButtons } from '@/components/archive/archive-export-buttons'
+import { RestoreListingButton } from '@/components/archive/restore-listing-button'
 import { Suspense } from 'react'
 
 interface ArchivedListing {
@@ -324,6 +325,7 @@ export default async function ArchivePage({
 
                           <div className="flex items-center gap-2 shrink-0">
                             <span className="text-xs text-muted-foreground whitespace-nowrap">{fmt(l.archived_at)}</span>
+                            <RestoreListingButton archivedId={l.id} address={`${l.address}, ${l.city}`} />
                             <ChevronRight className="h-4 w-4 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />
                           </div>
                         </Link>

@@ -1,12 +1,18 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Receipt, Download, Send, CheckCircle, Trash2, ChevronRight, Copy, FileDown, MoreVertical, Pencil, X, FileCode, Loader2 } from 'lucide-react'
+import { Receipt, Download, Send, CheckCircle, Trash2, ChevronRight, Copy, FileDown, MoreVertical, Pencil, X, FileCode, Loader2, ChevronDown } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { InvoiceStatusBadge, type InvoiceStatus } from './invoice-status-badge'
 import { formatCurrency } from './invoice-totals-calculator'
 
@@ -69,6 +75,7 @@ export function InvoiceListClient({ invoices: initialInvoices }: InvoiceListClie
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [isBatchExporting, startBatchExport] = useTransition()
 
   const filtered = invoices.filter(inv => {
     const matchesSearch = !search ||
@@ -200,6 +207,85 @@ export function InvoiceListClient({ invoices: initialInvoices }: InvoiceListClie
     }
   }
 
+  function handleBatchPdfExport() {
+    const year = new Date().getFullYear()
+    startBatchExport(async () => {
+      try {
+        const res = await fetch(`/api/invoices/export-batch?year=${year}`)
+        if (!res.ok) throw new Error('Errore recupero fatture')
+        const data = await res.json() as { invoices: Array<{ id: string; numero: string }>; total: number }
+        if (data.total === 0) {
+          toast.info(`Nessuna fattura trovata per il ${year}`)
+          return
+        }
+        toast.info(`Avvio download di ${data.total} PDF…`)
+        for (const inv of data.invoices) {
+          try {
+            const pdfRes = await fetch(`/api/invoices/${inv.id}/pdf`)
+            if (!pdfRes.ok) continue
+            const blob = await pdfRes.blob()
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `Fattura-${inv.numero}.pdf`
+            a.click()
+            URL.revokeObjectURL(url)
+            // Small delay between downloads to avoid browser blocking
+            await new Promise(r => setTimeout(r, 300))
+          } catch {
+            // Skip individual failures silently
+          }
+        }
+        toast.success(`${data.total} PDF scaricati`)
+      } catch {
+        toast.error('Errore durante il batch export PDF')
+      }
+    })
+  }
+
+  function handleBatchCsvExport() {
+    startBatchExport(async () => {
+      try {
+        const year = new Date().getFullYear()
+        const res = await fetch(`/api/invoices/export-batch?year=${year}`)
+        if (!res.ok) throw new Error('Errore recupero fatture')
+        const data = await res.json() as {
+          invoices: Array<{
+            id: string; numero: string; anno: number; cliente: string
+            importo: number | null; netto: number | null; status: string; data_emissione: string
+          }>
+          total: number
+        }
+        if (data.total === 0) {
+          toast.info(`Nessuna fattura trovata per il ${year}`)
+          return
+        }
+
+        const header = 'N. Fattura,Anno,Cliente,Importo totale (€),Netto a pagare (€),Stato,Data emissione'
+        const rows = data.invoices.map(inv => [
+          inv.numero,
+          inv.anno,
+          `"${inv.cliente.replace(/"/g, '""')}"`,
+          inv.importo != null ? (inv.importo / 100).toFixed(2) : '',
+          inv.netto != null ? (inv.netto / 100).toFixed(2) : '',
+          inv.status,
+          inv.data_emissione,
+        ].join(','))
+        const csv = [header, ...rows].join('\n')
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `fatture-${year}.csv`
+        a.click()
+        URL.revokeObjectURL(url)
+        toast.success(`CSV con ${data.total} fatture scaricato`)
+      } catch {
+        toast.error('Errore durante l\'export CSV')
+      }
+    })
+  }
+
   function handleRowAction(inv: Invoice, action: string) {
     switch (action) {
       case 'pdf': handleDownloadPdf(inv.id, inv.numero_fattura); break
@@ -261,10 +347,35 @@ export function InvoiceListClient({ invoices: initialInvoices }: InvoiceListClie
             )}
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={handleExportCsv} className="shrink-0 gap-1.5">
-          <FileDown className="h-4 w-4" />
-          Esporta CSV
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button variant="outline" size="sm" onClick={handleExportCsv} className="gap-1.5">
+            <FileDown className="h-4 w-4" />
+            Esporta CSV
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              disabled={isBatchExporting}
+              className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+            >
+              {isBatchExporting
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : <Download className="h-4 w-4" />
+              }
+              {isBatchExporting ? 'Esportazione in corso...' : 'Esporta tutto'}
+              {!isBatchExporting && <ChevronDown className="h-3.5 w-3.5 opacity-60" />}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleBatchPdfExport}>
+                <Download className="h-4 w-4 mr-2" />
+                Scarica PDF (anno corrente)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleBatchCsvExport}>
+                <FileDown className="h-4 w-4 mr-2" />
+                Esporta dati (CSV)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* Status filter pills */}

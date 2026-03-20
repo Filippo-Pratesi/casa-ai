@@ -76,7 +76,7 @@ export default async function ListingHistoryPage({
   const items = (listings ?? []) as ListingWithAgent[]
 
   // Fetch lat/lng for listings that have a property_id
-  const propertyIds = items.map((l: Listing & { property_id?: string }) => l.property_id).filter(Boolean) as string[]
+  const propertyIds = items.map((l) => l.property_id).filter(Boolean) as string[]
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: propsGeo } = propertyIds.length > 0
     ? await (admin as any).from('properties').select('id, lat, lng').in('id', propertyIds)
@@ -89,8 +89,8 @@ export default async function ListingHistoryPage({
   )
 
   const mapListings = items
-    .filter((l: Listing & { property_id?: string }) => l.property_id && geoMap.has(l.property_id))
-    .map((l: Listing & { property_id?: string; transaction_type?: string }) => ({
+    .filter((l) => l.property_id && geoMap.has(l.property_id))
+    .map((l) => ({
       id: l.id,
       address: l.address,
       city: l.city,
@@ -98,7 +98,7 @@ export default async function ListingHistoryPage({
       sqm: l.sqm,
       lat: geoMap.get(l.property_id!)!.lat,
       lng: geoMap.get(l.property_id!)!.lng,
-      transaction_type: l.transaction_type ?? null,
+      transaction_type: (l as ListingWithAgent & { transaction_type?: string }).transaction_type ?? null,
     }))
 
   return (
