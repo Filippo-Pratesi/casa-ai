@@ -305,7 +305,8 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6">
         {/* Calendar grid */}
         <div>
-          <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+          <div className={`rounded-2xl border border-border bg-card shadow-sm overflow-hidden relative${loading ? ' opacity-60 pointer-events-none' : ''}`}>
+            {loading && <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-[oklch(0.57_0.20_33)] to-transparent animate-pulse z-10" />}
             {/* Period nav */}
             <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
               <button onClick={prevPeriod} className="rounded-lg p-1.5 hover:bg-muted transition-colors">
@@ -417,14 +418,12 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
                     const isSel = isSameDay(day, selectedDay)
                     function handleDayClick() {
                       setSelectedDay(day)
-                      setModalInitialDate(day)
-                      setEditingAppt(undefined)
-                      setShowModal(true)
                     }
                     return (
                       <div
                         key={day.toDateString()}
                         onClick={handleDayClick}
+                        onDoubleClick={() => { setSelectedDay(day); setModalInitialDate(day); setEditingAppt(undefined); setShowModal(true) }}
                         className={`border-r border-border/40 p-1.5 space-y-1 cursor-pointer transition-colors min-h-[300px] relative group ${isSel ? 'bg-muted/30' : 'hover:bg-muted/20'}`}
                       >
                         {dayAppts.map(a => {

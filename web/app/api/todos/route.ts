@@ -9,10 +9,20 @@ export async function GET() {
 
   const admin = createAdminClient()
 
+  const { data: profileData } = await admin
+    .from('users')
+    .select('workspace_id')
+    .eq('id', user.id)
+    .single()
+
+  const profile = profileData as { workspace_id: string } | null
+  if (!profile) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 404 })
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (admin as any)
     .from('todos')
     .select('*')
+    .eq('workspace_id', profile.workspace_id)
     .or(`assigned_to.eq.${user.id},created_by.eq.${user.id}`)
     .order('created_at', { ascending: false })
 
@@ -52,7 +62,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Titolo obbligatorio' }, { status: 400 })
   }
 
-  const VALID_PRIORITIES = ['bassa', 'media', 'alta']
+  const VALID_PRIORITIES = ['low', 'medium', 'high']
   if (priority && !VALID_PRIORITIES.includes(priority)) {
     return NextResponse.json({ error: `Priorità non valida. Valori consentiti: ${VALID_PRIORITIES.join(', ')}` }, { status: 400 })
   }

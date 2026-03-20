@@ -5,9 +5,15 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   ArrowLeft, MapPin, Phone, ExternalLink,
-  Plus, Trash2, Loader2, Megaphone, FileDown, Pencil, AlertTriangle
+  Plus, Trash2, Loader2, Megaphone, FileDown, Pencil, AlertTriangle, MoreHorizontal
 } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Card } from '@/components/ui/card'
 import {
   Select,
@@ -416,27 +422,59 @@ export function ImmobileDetailClient({
               {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
             </Button>
           )}
-          {property.stage === 'incarico' && !property.listing_id && (
-            <Button variant="outline" size="sm" onClick={handlePromoteToListing}>
-              <Megaphone className="h-4 w-4 mr-1.5" />
-              Crea annuncio
-            </Button>
-          )}
-          {property.listing_id && (
-            <Link href={`/listing/${property.listing_id}`} className={buttonVariants({ variant: 'outline', size: 'sm' })}>
-              <ExternalLink className="h-4 w-4 mr-1.5" />
-              Vedi annuncio
-            </Link>
-          )}
-          {/* Crea Campagna — visible when property has an associated listing */}
-          {property.listing_id && (
-            <Link
-              href={`/campaigns/new?listing_id=${property.listing_id}&property_id=${property.id}`}
-              className={buttonVariants({ variant: 'outline', size: 'sm' })}
-            >
-              <Megaphone className="h-4 w-4 mr-1.5" />
-              Crea Campagna
-            </Link>
+          {/* Desktop secondary actions */}
+          <div className="hidden md:flex gap-2">
+            {property.stage === 'incarico' && !property.listing_id && (
+              <Button variant="outline" size="sm" onClick={handlePromoteToListing}>
+                <Megaphone className="h-4 w-4 mr-1.5" />
+                Crea annuncio
+              </Button>
+            )}
+            {property.listing_id && (
+              <Link href={`/listing/${property.listing_id}`} className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+                <ExternalLink className="h-4 w-4 mr-1.5" />
+                Vedi annuncio
+              </Link>
+            )}
+            {property.listing_id && (
+              <Link
+                href={`/campaigns/new?listing_id=${property.listing_id}&property_id=${property.id}`}
+                className={buttonVariants({ variant: 'outline', size: 'sm' })}
+              >
+                <Megaphone className="h-4 w-4 mr-1.5" />
+                Crea Campagna
+              </Link>
+            )}
+          </div>
+          {/* Mobile overflow menu */}
+          {(property.listing_id || (property.stage === 'incarico' && !property.listing_id)) && (
+            <div className="md:hidden">
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center rounded-lg border border-border hover:bg-muted transition-colors">
+                  <MoreHorizontal className="h-4 w-4" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {property.stage === 'incarico' && !property.listing_id && (
+                    <DropdownMenuItem onClick={handlePromoteToListing}>
+                      <Megaphone className="h-4 w-4 mr-2" />
+                      Crea annuncio
+                    </DropdownMenuItem>
+                  )}
+                  {property.listing_id && (
+                    <DropdownMenuItem onClick={() => router.push(`/listing/${property.listing_id}`)}>
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Vedi annuncio
+                    </DropdownMenuItem>
+                  )}
+                  {property.listing_id && (
+                    <DropdownMenuItem onClick={() => router.push(`/campaigns/new?listing_id=${property.listing_id}&property_id=${property.id}`)}>
+                      <Megaphone className="h-4 w-4 mr-2" />
+                      Crea Campagna
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           )}
         </div>
       </div>

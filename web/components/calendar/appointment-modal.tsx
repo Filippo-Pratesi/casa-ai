@@ -42,9 +42,18 @@ export const AppointmentModal = React.memo(function AppointmentModal({ listings,
   const [endTime, setEndTime] = useState(editing?.ends_at ? toTimeInput(new Date(editing.ends_at)) : '')
   const [notes, setNotes] = useState(editing?.notes ?? '')
   const [contactId, setContactId] = useState(editing?.contact_id ?? '')
+  const [contactSearch, setContactSearch] = useState(editing ? (contacts.find(c => c.id === editing.contact_id)?.name ?? '') : '')
   const [listingId, setListingId] = useState(editing?.listing_id ?? '')
+  const [listingSearch, setListingSearch] = useState(editing ? (listings.find(l => l.id === editing.listing_id) ? `${listings.find(l => l.id === editing.listing_id)?.address}` : '') : '')
   const [assignedAgentId, setAssignedAgentId] = useState(currentUserId)
   const [loading, setLoading] = useState(false)
+
+  const filteredContacts = contactSearch
+    ? contacts.filter(c => c.name.toLowerCase().includes(contactSearch.toLowerCase())).slice(0, 10)
+    : []
+  const filteredListings = listingSearch
+    ? listings.filter(l => `${l.address} ${l.city}`.toLowerCase().includes(listingSearch.toLowerCase())).slice(0, 10)
+    : []
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -136,21 +145,69 @@ export const AppointmentModal = React.memo(function AppointmentModal({ listings,
             </div>
           </div>
           {contacts.length > 0 && (
-            <div>
+            <div className="relative">
               <label className="block text-xs font-medium text-muted-foreground mb-1">{t('calendar.modal.client')}</label>
-              <select value={contactId} onChange={e => setContactId(e.target.value)} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm">
-                <option value="">{t('calendar.modal.none')}</option>
-                {contacts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              <input
+                type="text"
+                value={contactSearch}
+                onChange={e => { setContactSearch(e.target.value); if (!e.target.value) setContactId('') }}
+                placeholder="Cerca cliente…"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              />
+              {filteredContacts.length > 0 && (
+                <div className="absolute z-10 mt-1 w-full rounded-lg border border-border bg-background shadow-lg max-h-48 overflow-y-auto">
+                  <button
+                    type="button"
+                    className="w-full px-3 py-1.5 text-left text-sm text-muted-foreground hover:bg-muted"
+                    onClick={() => { setContactId(''); setContactSearch('') }}
+                  >
+                    — Nessuno —
+                  </button>
+                  {filteredContacts.map(c => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      className="w-full px-3 py-1.5 text-left text-sm hover:bg-muted"
+                      onClick={() => { setContactId(c.id); setContactSearch(c.name) }}
+                    >
+                      {c.name}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
           {listings.length > 0 && (
-            <div>
+            <div className="relative">
               <label className="block text-xs font-medium text-muted-foreground mb-1">{t('calendar.modal.listing')}</label>
-              <select value={listingId} onChange={e => setListingId(e.target.value)} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm">
-                <option value="">{t('calendar.modal.none')}</option>
-                {listings.map(l => <option key={l.id} value={l.id}>{l.address}, {l.city}</option>)}
-              </select>
+              <input
+                type="text"
+                value={listingSearch}
+                onChange={e => { setListingSearch(e.target.value); if (!e.target.value) setListingId('') }}
+                placeholder="Cerca immobile…"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              />
+              {filteredListings.length > 0 && (
+                <div className="absolute z-10 mt-1 w-full rounded-lg border border-border bg-background shadow-lg max-h-48 overflow-y-auto">
+                  <button
+                    type="button"
+                    className="w-full px-3 py-1.5 text-left text-sm text-muted-foreground hover:bg-muted"
+                    onClick={() => { setListingId(''); setListingSearch('') }}
+                  >
+                    — Nessuno —
+                  </button>
+                  {filteredListings.map(l => (
+                    <button
+                      key={l.id}
+                      type="button"
+                      className="w-full px-3 py-1.5 text-left text-sm hover:bg-muted"
+                      onClick={() => { setListingId(l.id); setListingSearch(`${l.address}, ${l.city}`) }}
+                    >
+                      {l.address}, {l.city}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
           {agents && agents.length > 1 && !editing && (

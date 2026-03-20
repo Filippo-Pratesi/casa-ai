@@ -67,7 +67,7 @@ export function ContactsClient({ contacts, isAdmin, total, page, perPage }: Cont
   const totalPages = Math.ceil(total / perPage)
 
   function goToPage(p: number) {
-    const params = new URLSearchParams()
+    const params = new URLSearchParams(window.location.search)
     params.set('page', String(p))
     router.push(`${pathname}?${params.toString()}`)
   }
@@ -260,8 +260,9 @@ export function ContactsClient({ contacts, isAdmin, total, page, perPage }: Cont
 function ContactCard({ contact: c }: { contact: Contact }) {
   const { t } = useI18n()
   const initials = c.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-  const borderClass = TYPE_BORDER_CLASS[c.type] ?? 'contact-card-other'
-  const avatarClass = TYPE_AVATAR_GRADIENT[c.type] ?? TYPE_AVATAR_GRADIENT.other
+  const primaryType = (c.types && c.types.length > 0) ? c.types[0] : c.type
+  const borderClass = TYPE_BORDER_CLASS[primaryType] ?? 'contact-card-other'
+  const avatarClass = TYPE_AVATAR_GRADIENT[primaryType] ?? TYPE_AVATAR_GRADIENT.other
 
   return (
     <div className={`card-lift group relative rounded-2xl border border-border bg-card overflow-hidden min-h-[200px] flex flex-col ${borderClass}`}>
@@ -327,7 +328,7 @@ function ContactCard({ contact: c }: { contact: Contact }) {
       </div>
 
       {/* Bottom section — budget and location, lighter visual weight */}
-      {!c.budget_max && (!c.preferred_cities || c.preferred_cities.length === 0) && (
+      {!c.budget_min && !c.budget_max && !c.min_rooms && (!c.preferred_cities || c.preferred_cities.length === 0) && (
         <div className="mt-auto px-4 pb-3 pt-1">
           <p className="text-xs text-muted-foreground/40 italic">Nessuna preferenza impostata</p>
         </div>
