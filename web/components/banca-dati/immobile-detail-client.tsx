@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import { PropertyStageBadge, type PropertyStage, STAGE_CONFIG } from './property-stage-icon'
+import { PropertyStageIcon, type PropertyStage, STAGE_CONFIG } from './property-stage-icon'
 import { ContactTypeBadges } from '@/components/contacts/contact-type-badges'
 import { DispositionIcon, DISPOSITION_CONFIG, type OwnerDisposition } from './disposition-icon'
 import { EventTimeline, type PropertyEvent } from './event-timeline'
@@ -57,8 +57,7 @@ const STAGE_ADVANCES: Record<PropertyStage, PropertyStage | null> = {
   conosciuto: 'incarico',
   incarico: null,  // computed dynamically from transaction_type (see nextStage below)
   venduto: null,
-  locato: 'disponibile',
-  disponibile: 'locato',
+  locato: 'conosciuto',  // lease ended → back to active management
 }
 
 const ADVANCE_LABELS: Record<string, string> = {
@@ -67,7 +66,7 @@ const ADVANCE_LABELS: Record<string, string> = {
   incarico: 'Avvia Incarico',
   venduto: 'Segna come Venduto',
   locato: 'Segna come Locato',
-  disponibile: 'Segna come Disponibile',
+  conosciuto_from_locato: 'Locazione scaduta',
 }
 
 interface PropertyContact {
@@ -171,6 +170,13 @@ export function ImmobileDetailClient({
     } finally {
       setChangingDisposition(false)
     }
+  }
+
+  async function handleStageChange(newStage: string) {
+    if (newStage === property.stage) return
+    if (newStage === 'incarico') { setIncaricoOpen(true); return }
+    if (newStage === 'locato') { setLocatoOpen(true); return }
+    doAdvanceStage(newStage)
   }
 
   // PDF generation
@@ -333,7 +339,29 @@ export function ImmobileDetailClient({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-xl font-bold truncate">{property.address}</h1>
-            <PropertyStageBadge stage={property.stage} />
+            {/* Stage — clickable to change */}
+            <Select
+              value={property.stage}
+              onValueChange={handleStageChange}
+              disabled={advancing}
+            >
+              <SelectTrigger className="h-7 w-auto gap-1.5 border-transparent bg-transparent px-2 hover:bg-muted/60 focus:ring-0 text-xs font-medium [&>svg]:opacity-50">
+                <PropertyStageIcon stage={property.stage as PropertyStage} showLabel size="sm" />
+              </SelectTrigger>
+              <SelectContent align="start">
+                {(Object.entries(STAGE_CONFIG) as [PropertyStage, (typeof STAGE_CONFIG)[PropertyStage]][]).map(([key, cfg]) => {
+                  const Icon = cfg.icon
+                  return (
+                    <SelectItem key={key} value={key}>
+                      <span className={cn('inline-flex items-center gap-1.5', cfg.color)}>
+                        <Icon className="h-3 w-3" />
+                        <span className="text-foreground">{cfg.label}</span>
+                      </span>
+                    </SelectItem>
+                  )
+                })}
+              </SelectContent>
+            </Select>
             {/* Disposition — clickable to change */}
             <Select
               value={property.owner_disposition}
@@ -354,6 +382,9 @@ export function ImmobileDetailClient({
                 ))}
               </SelectContent>
             </Select>
+            {property.estimated_value && (
+              <span className="text-sm font-bold">€{property.estimated_value.toLocaleString('it-IT')}</span>
+            )}
           </div>
           <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
             <MapPin className="h-3.5 w-3.5 shrink-0" />
@@ -426,10 +457,6 @@ export function ImmobileDetailClient({
 
       {/* Sticky summary bar */}
       <div className="sticky top-0 z-20 -mx-4 px-4 py-2.5 bg-background/95 backdrop-blur-sm border-b border-border/50 flex items-center gap-3 flex-wrap">
-        <PropertyStageBadge stage={property.stage} />
-        {property.estimated_value && (
-          <span className="text-sm font-semibold">€{property.estimated_value.toLocaleString('it-IT')}</span>
-        )}
         {property.owner_contact && (
           <span className="text-sm text-muted-foreground">{property.owner_contact.name}</span>
         )}
@@ -477,16 +504,12 @@ export function ImmobileDetailClient({
               )}
             </div>
             <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-              <div className="col-span-2 flex items-center gap-2">
-                <span className="text-muted-foreground">Stato:</span>
-                <PropertyStageBadge stage={property.stage} />
-              </div>
+              {property.condition && <div className="col-span-2"><span className="text-muted-foreground">Condizioni:</span> <span className="font-medium capitalize">{property.condition.replace(/_/g, ' ')}</span></div>}
               {property.property_type && <div><span className="text-muted-foreground">Tipo:</span> <span className="font-medium">{PROPERTY_TYPE_IT[property.property_type] ?? property.property_type}</span></div>}
               {property.sqm && <div><span className="text-muted-foreground">Superficie:</span> <span className="font-medium">{property.sqm} mq</span></div>}
               {property.rooms && <div><span className="text-muted-foreground">Locali:</span> <span className="font-medium">{property.rooms}</span></div>}
               {property.bathrooms && <div><span className="text-muted-foreground">Bagni:</span> <span className="font-medium">{property.bathrooms}</span></div>}
               {property.floor != null && <div><span className="text-muted-foreground">Piano:</span> <span className="font-medium">{property.floor}{property.total_floors ? `/${property.total_floors}` : ''}</span></div>}
-              {property.condition && <div><span className="text-muted-foreground">Condizioni:</span> <span className="font-medium capitalize">{property.condition.replace('_', ' ')}</span></div>}
               {property.estimated_value && <div><span className="text-muted-foreground">Valutazione:</span> <span className="font-medium">€{property.estimated_value.toLocaleString('it-IT')}</span></div>}
               {property.transaction_type && <div><span className="text-muted-foreground">Operazione:</span> <span className="font-medium capitalize">{property.transaction_type}</span></div>}
               {property.doorbell && <div><span className="text-muted-foreground">Campanello:</span> <span className="font-medium">{property.doorbell}</span></div>}
