@@ -238,10 +238,36 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     related_property_id: id,
   })
 
-  // Family link: figlio/parente/moglie added → link with proprietario + auto-add proprietario as genitore on figlio's properties
-  const CHILD_ROLES = ['figlio_figlia', 'parente_altro']
-  if (CHILD_ROLES.includes(role)) {
-    // Find the proprietario of this property
+  // ─── Family link propagation ───────────────────────────────────────────────
+  // For each family role added to this property (where P = proprietario, C = added contact):
+  //   1. Store the contact_relationship at contact level
+  //   2. Find all properties where C is proprietario → auto-add P with the reciprocal role
+  //
+  // Role semantics (C is the added contact, P is the proprietario of this property):
+  //   figlio_figlia : C is child of P  → add P as 'genitore' on C's properties
+  //   genitore      : C is parent of P → add P as 'figlio_figlia' on C's properties
+  //   moglie_marito : C is spouse of P → add P as 'moglie_marito' on C's properties
+  //   parente_altro : C is relative of P→ add P as 'parente_altro' on C's properties
+
+  type FamilyRule = {
+    /** relationship stored in contact_relationships (a→b direction) */
+    relType: string
+    relContactA: 'P' | 'C'
+    relContactB: 'P' | 'C'
+    /** role to add on the OTHER contact's properties */
+    reciprocalRole: string
+  }
+
+  const FAMILY_RULES: Record<string, FamilyRule> = {
+    figlio_figlia: { relType: 'figlio_figlia', relContactA: 'P', relContactB: 'C', reciprocalRole: 'genitore' },
+    genitore:      { relType: 'figlio_figlia', relContactA: 'C', relContactB: 'P', reciprocalRole: 'figlio_figlia' },
+    moglie_marito: { relType: 'moglie_marito', relContactA: 'P', relContactB: 'C', reciprocalRole: 'moglie_marito' },
+    parente_altro: { relType: 'parente_altro', relContactA: 'P', relContactB: 'C', reciprocalRole: 'parente_altro' },
+  }
+
+  const familyRule = FAMILY_RULES[role]
+  if (familyRule) {
+    // Find the proprietario of this property (P)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: ownerLink } = await (admin as any)
       .from('property_contacts')
@@ -252,33 +278,34 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       .limit(1)
       .maybeSingle()
 
-    const ownerContactId = (ownerLink as { contact_id: string } | null)?.contact_id
-    if (ownerContactId && ownerContactId !== contactId) {
-      // Store family relationship at contact level (contact_a = parent/proprietario, contact_b = child)
+    const P = (ownerLink as { contact_id: string } | null)?.contact_id
+    const C = contactId
+
+    if (P && P !== C) {
+      // 1. Store contact_relationship
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (admin as any)
         .from('contact_relationships')
         .upsert(
           {
             workspace_id: workspaceId,
-            contact_a_id: ownerContactId,
-            contact_b_id: contactId,
-            relationship_type: role,
+            contact_a_id: familyRule.relContactA === 'P' ? P : C,
+            contact_b_id: familyRule.relContactB === 'P' ? P : C,
+            relationship_type: familyRule.relType,
           },
           { onConflict: 'workspace_id,contact_a_id,contact_b_id,relationship_type', ignoreDuplicates: true }
         )
 
-      // Auto-propagation: find all properties where the child (contactId) is proprietario
-      // and add the proprietario of this property as 'genitore' there
+      // 2. Auto-propagation: find all properties where C is proprietario → add P with reciprocal role
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: childProperties } = await (admin as any)
+      const { data: cProperties } = await (admin as any)
         .from('property_contacts')
         .select('property_id')
-        .eq('contact_id', contactId)
+        .eq('contact_id', C)
         .eq('workspace_id', workspaceId)
         .eq('role', 'proprietario')
 
-      for (const cp of ((childProperties ?? []) as Array<{ property_id: string }>)) {
+      for (const cp of ((cProperties ?? []) as Array<{ property_id: string }>)) {
         if (cp.property_id === id) continue // skip current property
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (admin as any)
@@ -287,8 +314,8 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
             {
               workspace_id: workspaceId,
               property_id: cp.property_id,
-              contact_id: ownerContactId,
-              role: 'genitore',
+              contact_id: P,
+              role: familyRule.reciprocalRole,
               is_primary: false,
               notes: null,
             },
@@ -297,65 +324,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       }
     }
   }
-
-  // moglie_marito: store relationship without auto-propagation
-  if (role === 'moglie_marito') {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: ownerLink } = await (admin as any)
-      .from('property_contacts')
-      .select('contact_id')
-      .eq('property_id', id)
-      .eq('workspace_id', workspaceId)
-      .eq('role', 'proprietario')
-      .limit(1)
-      .maybeSingle()
-
-    const ownerContactId = (ownerLink as { contact_id: string } | null)?.contact_id
-    if (ownerContactId && ownerContactId !== contactId) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (admin as any)
-        .from('contact_relationships')
-        .upsert(
-          {
-            workspace_id: workspaceId,
-            contact_a_id: ownerContactId,
-            contact_b_id: contactId,
-            relationship_type: 'moglie_marito',
-          },
-          { onConflict: 'workspace_id,contact_a_id,contact_b_id,relationship_type', ignoreDuplicates: true }
-        )
-    }
-  }
-
-  // genitore added manually: store relationship (genitore=contact_a, proprietario of this property=contact_b as figlio)
-  if (role === 'genitore') {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: ownerLink } = await (admin as any)
-      .from('property_contacts')
-      .select('contact_id')
-      .eq('property_id', id)
-      .eq('workspace_id', workspaceId)
-      .eq('role', 'proprietario')
-      .limit(1)
-      .maybeSingle()
-
-    const proprietarioId = (ownerLink as { contact_id: string } | null)?.contact_id
-    if (proprietarioId && proprietarioId !== contactId) {
-      // contact_a = genitore, contact_b = figlio (the proprietario of this property)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (admin as any)
-        .from('contact_relationships')
-        .upsert(
-          {
-            workspace_id: workspaceId,
-            contact_a_id: contactId,
-            contact_b_id: proprietarioId,
-            relationship_type: 'figlio_figlia',
-          },
-          { onConflict: 'workspace_id,contact_a_id,contact_b_id,relationship_type', ignoreDuplicates: true }
-        )
-    }
-  }
+  // ───────────────────────────────────────────────────────────────────────────
 
   return NextResponse.json({ id: (link as { id: string }).id, contact_id: contactId }, { status: 201 })
 }
