@@ -43,6 +43,7 @@ export async function GET() {
     .from('invoices')
     .select('id, numero_fattura, cliente_nome, data_emissione, data_scadenza, data_pagamento, totale_documento, status')
     .eq('workspace_id', profile.workspace_id)
+    .limit(1000)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 

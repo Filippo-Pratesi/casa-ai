@@ -130,6 +130,7 @@ export function InvoiceListClient({ invoices: initialInvoices }: InvoiceListClie
   }
 
   async function handleSendEmail(id: string) {
+    if (!confirm('Inviare la fattura via email al cliente?')) return
     setActionLoading(id + '-send')
     try {
       const res = await fetch(`/api/invoices/${id}/send`, { method: 'POST' })
