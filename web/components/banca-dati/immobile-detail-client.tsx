@@ -486,73 +486,88 @@ export function ImmobileDetailClient({
         {/* Column 1 (1fr) — property data */}
         <div className="space-y-4 order-1">
 
-          {/* Details card */}
-          <Card className="p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-sm">Dettagli immobile</h2>
-              {(isAdmin || isOwner) && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-                  onClick={() => setEditDetailsOpen(true)}
-                  title="Modifica dettagli"
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </Button>
-              )}
-            </div>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-              {property.condition && <div className="col-span-2"><span className="text-muted-foreground">Condizioni:</span> <span className="font-medium capitalize">{property.condition.replace(/_/g, ' ')}</span></div>}
-              {property.property_type && <div><span className="text-muted-foreground">Tipo:</span> <span className="font-medium">{PROPERTY_TYPE_IT[property.property_type] ?? property.property_type}</span></div>}
-              {property.sqm && <div><span className="text-muted-foreground">Superficie:</span> <span className="font-medium">{property.sqm} mq</span></div>}
-              {property.rooms && <div><span className="text-muted-foreground">Locali:</span> <span className="font-medium">{property.rooms}</span></div>}
-              {property.bathrooms && <div><span className="text-muted-foreground">Bagni:</span> <span className="font-medium">{property.bathrooms}</span></div>}
-              {property.floor != null && <div><span className="text-muted-foreground">Piano:</span> <span className="font-medium">{property.floor}{property.total_floors ? `/${property.total_floors}` : ''}</span></div>}
-              {property.estimated_value && <div><span className="text-muted-foreground">Valutazione:</span> <span className="font-medium">€{property.estimated_value.toLocaleString('it-IT')}</span></div>}
-              {property.transaction_type && <div><span className="text-muted-foreground">Operazione:</span> <span className="font-medium capitalize">{property.transaction_type}</span></div>}
-              {property.doorbell && <div><span className="text-muted-foreground">Campanello:</span> <span className="font-medium">{property.doorbell}</span></div>}
-            </div>
-            {property.building_notes && (
-              <div className="text-sm">
-                <span className="text-muted-foreground">Note palazzo: </span>
-                <span>{property.building_notes}</span>
-              </div>
-            )}
-          </Card>
+          {/* Details card + Owner contact — side by side */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
 
-          {/* Owner contact */}
-          {property.owner_contact && (
-            <Card className="p-5 space-y-3">
-              <h2 className="font-semibold text-sm">Proprietario</h2>
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-bold">
-                    {property.owner_contact.name?.charAt(0)?.toUpperCase()}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <p className="text-sm font-medium">{property.owner_contact.name}</p>
-                      <ContactTypeBadges
-                        types={property.owner_contact.types}
-                        type={property.owner_contact.type}
-                        size="xs"
-                      />
-                    </div>
-                    {property.owner_contact.phone && (
-                      <a href={`tel:${property.owner_contact.phone}`} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
-                        <Phone className="h-3 w-3" />
-                        {property.owner_contact.phone}
-                      </a>
-                    )}
-                  </div>
-                </div>
-                <Link href={`/contacts/${property.owner_contact.id}`} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </Link>
+            {/* Details card */}
+            <Card className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-sm">Dettagli immobile</h2>
+                {(isAdmin || isOwner) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                    onClick={() => setEditDetailsOpen(true)}
+                    title="Modifica dettagli"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                )}
               </div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+                {property.condition && <div className="col-span-2"><span className="text-muted-foreground">Condizioni:</span> <span className="font-medium capitalize">{property.condition.replace(/_/g, ' ')}</span></div>}
+                {property.property_type && <div><span className="text-muted-foreground">Tipo:</span> <span className="font-medium">{PROPERTY_TYPE_IT[property.property_type] ?? property.property_type}</span></div>}
+                {property.sqm && <div><span className="text-muted-foreground">Superficie:</span> <span className="font-medium">{property.sqm} mq</span></div>}
+                {property.rooms && <div><span className="text-muted-foreground">Locali:</span> <span className="font-medium">{property.rooms}</span></div>}
+                {property.bathrooms && <div><span className="text-muted-foreground">Bagni:</span> <span className="font-medium">{property.bathrooms}</span></div>}
+                {property.floor != null && <div><span className="text-muted-foreground">Piano:</span> <span className="font-medium">{property.floor}{property.total_floors ? `/${property.total_floors}` : ''}</span></div>}
+                {property.estimated_value && <div className="col-span-2"><span className="text-muted-foreground">Valutazione:</span> <span className="font-medium">€{property.estimated_value.toLocaleString('it-IT')}</span></div>}
+                {property.transaction_type && <div><span className="text-muted-foreground">Operazione:</span> <span className="font-medium capitalize">{property.transaction_type}</span></div>}
+                {property.doorbell && <div><span className="text-muted-foreground">Campanello:</span> <span className="font-medium">{property.doorbell}</span></div>}
+                {property.agent?.name && <div className="col-span-2"><span className="text-muted-foreground">Agente:</span> <span className="font-medium">{property.agent.name}</span></div>}
+              </div>
+              {property.building_notes && (
+                <div className="text-xs">
+                  <span className="text-muted-foreground">Note palazzo: </span>
+                  <span>{property.building_notes}</span>
+                </div>
+              )}
             </Card>
-          )}
+
+            {/* Owner contact */}
+            {property.owner_contact ? (
+              <Card className="p-4 space-y-3">
+                <h2 className="font-semibold text-sm">Proprietario</h2>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-bold shrink-0">
+                      {property.owner_contact.name?.charAt(0)?.toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="text-sm font-medium">{property.owner_contact.name}</p>
+                        <ContactTypeBadges
+                          types={property.owner_contact.types}
+                          type={property.owner_contact.type}
+                          size="xs"
+                        />
+                      </div>
+                      {property.owner_contact.phone && (
+                        <a href={`tel:${property.owner_contact.phone}`} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
+                          <Phone className="h-3 w-3" />
+                          {property.owner_contact.phone}
+                        </a>
+                      )}
+                      {property.owner_contact.email && (
+                        <a href={`mailto:${property.owner_contact.email}`} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
+                          <span className="text-[10px]">✉</span>
+                          {property.owner_contact.email}
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                  <Link href={`/contacts/${property.owner_contact.id}`} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </Link>
+                </div>
+              </Card>
+            ) : (
+              <Card className="p-4 flex items-center justify-center text-xs text-muted-foreground min-h-[100px]">
+                Nessun proprietario associato
+              </Card>
+            )}
+          </div>
 
           {/* Property contacts */}
           <Card className="p-5 space-y-3">

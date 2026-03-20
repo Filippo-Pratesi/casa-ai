@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, ShieldAlert, RefreshCw, TrendingUp, Info, AlertTriangle, Home } from 'lucide-react'
+import { Loader2, ShieldAlert, TrendingUp, Info, AlertTriangle, Home } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // --- Types ---
@@ -192,19 +192,17 @@ export function CadastralPanel({
       {showRiskCard && (
         <Card className="p-4 space-y-2.5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <ShieldAlert className="h-4 w-4 text-primary" />
               <h3 className="font-semibold text-sm">Rischi Territoriali</h3>
+              <Info
+                className="h-3 w-3 text-muted-foreground cursor-help"
+                title="Dati zonali ISPRA tramite Zornade. Raccolti una sola volta alla prima apertura e salvati nel database. Non specifici dell'unità immobiliare."
+              />
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={fetchCadastral}
-              disabled={loadingCadastral}
-              className="h-6 text-xs px-1.5"
-            >
-              {loadingCadastral ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-            </Button>
+            {!cadastralData && loadingCadastral && (
+              <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+            )}
           </div>
 
           {loadingCadastral && !cadastralData && (
@@ -228,10 +226,6 @@ export function CadastralPanel({
                   <p className="text-xs font-medium">{Math.round(cadastralData.indice_potenziale_immobiliare!)}/100</p>
                 </div>
               )}
-              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                <Info className="h-2.5 w-2.5 shrink-0" />
-                Dati ISPRA zonali
-              </div>
             </div>
           )}
         </Card>
@@ -240,7 +234,7 @@ export function CadastralPanel({
       {/* Card Stime OMI */}
       {showOmiCard && (
         <Card className="p-4 space-y-2.5">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <TrendingUp className="h-4 w-4 text-primary shrink-0" />
             <h3 className="font-semibold text-sm leading-tight">
               {(valuation ?? rentalValuation)
@@ -253,6 +247,10 @@ export function CadastralPanel({
                   })()
                 : 'Stime OMI'}
             </h3>
+            <Info
+              className="h-3 w-3 text-muted-foreground cursor-help"
+              title="Quotazioni OMI dell'Agenzia delle Entrate, aggiornate semestralmente. Caricate tramite CSV nelle Impostazioni. Stima indicativa, non perizia certificata."
+            />
           </div>
 
           {loadingValuation && !valuation && !rentalValuation && (
