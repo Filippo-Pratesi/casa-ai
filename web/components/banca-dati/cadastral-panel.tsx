@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip'
 import { Loader2, ShieldAlert, TrendingUp, Info, AlertTriangle, Home } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -76,6 +76,25 @@ function riskBadge(risk: string | null, label: string) {
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value)
+}
+
+// --- Info tooltip ---
+
+function InfoTooltip({ content }: { content: string }) {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button type="button" className="inline-flex items-center cursor-help text-muted-foreground hover:text-foreground transition-colors">
+            <Info className="h-3 w-3" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-[260px] text-xs leading-snug">
+          {content}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  )
 }
 
 // --- Component ---
@@ -176,33 +195,22 @@ export function CadastralPanel({
 
   if (!hasCoordinates) return null
 
-  // Determine if we have any useful risk data to show
   const hasRisks = cadastralData?.rischio_idrogeologico || cadastralData?.rischio_sismico
   const hasPotenziale = cadastralData?.indice_potenziale_immobiliare != null
-
-  // Only render risk card if we actually have risk data
   const showRiskCard = hasRisks || hasPotenziale || loadingCadastral
-
   const showOmiCard = !!(valuation || rentalValuation || loadingValuation || valuationError)
   const bothCards = showRiskCard && showOmiCard
 
   return (
     <div className={bothCards ? 'grid grid-cols-2 gap-3 items-stretch' : 'space-y-4'}>
+
       {/* Card Rischi Territoriali */}
       {showRiskCard && (
         <Card className="p-4 space-y-2.5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <ShieldAlert className="h-4 w-4 text-primary" />
-              <h3 className="font-semibold text-sm">Rischi Territoriali</h3>
-              <Info
-                className="h-3 w-3 text-muted-foreground cursor-help"
-                title="Dati zonali ISPRA tramite Zornade. Raccolti una sola volta alla prima apertura e salvati nel database. Non specifici dell'unità immobiliare."
-              />
-            </div>
-            {!cadastralData && loadingCadastral && (
-              <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-            )}
+          <div className="flex items-center gap-1.5">
+            <ShieldAlert className="h-4 w-4 text-primary" />
+            <h3 className="font-semibold text-sm">Rischi Territoriali</h3>
+            <InfoTooltip content="Dati zonali ISPRA acquisiti tramite Zornade. Raccolti una sola volta alla prima apertura della scheda e salvati nel database. Non sono specifici della singola unità immobiliare ma si riferiscono alla zona geografica." />
           </div>
 
           {loadingCadastral && !cadastralData && (
@@ -247,10 +255,7 @@ export function CadastralPanel({
                   })()
                 : 'Stime OMI'}
             </h3>
-            <Info
-              className="h-3 w-3 text-muted-foreground cursor-help"
-              title="Quotazioni OMI dell'Agenzia delle Entrate, aggiornate semestralmente. Caricate tramite CSV nelle Impostazioni. Stima indicativa, non perizia certificata."
-            />
+            <InfoTooltip content="Quotazioni OMI (Osservatorio del Mercato Immobiliare) dell'Agenzia delle Entrate, aggiornate ogni semestre. I dati vengono caricati tramite il file CSV ufficiale nelle Impostazioni. La stima è indicativa e non sostituisce una perizia certificata." />
           </div>
 
           {loadingValuation && !valuation && !rentalValuation && (
@@ -268,43 +273,29 @@ export function CadastralPanel({
           )}
 
           {(valuation || rentalValuation) && (
-            <div className="space-y-1.5">
+            <div className="flex flex-col gap-1.5">
               {valuation && (
-                <div className="flex items-center justify-between rounded-md bg-primary/5 px-2.5 py-1.5">
-                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground shrink-0">
-                    <TrendingUp className="h-2.5 w-2.5" />
-                    Acquisto
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs font-semibold text-primary">
-                      {formatCurrency(valuation.valore_min)} – {formatCurrency(valuation.valore_max)}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">
-                      {formatCurrency(valuation.valore_min_mq)}–{formatCurrency(valuation.valore_max_mq)} /mq
-                    </p>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground shrink-0">Acquisto</span>
+                  <span className="text-xs font-semibold text-primary">
+                    {formatCurrency(valuation.valore_min)} – {formatCurrency(valuation.valore_max)}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                    {formatCurrency(valuation.valore_min_mq)}–{formatCurrency(valuation.valore_max_mq)}/mq
+                  </span>
                 </div>
               )}
               {rentalValuation && (
-                <div className="flex items-center justify-between rounded-md bg-emerald-500/5 px-2.5 py-1.5">
-                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground shrink-0">
-                    <Home className="h-2.5 w-2.5" />
-                    Affitto/mese
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                      {formatCurrency(rentalValuation.valore_min)} – {formatCurrency(rentalValuation.valore_max)}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">
-                      {formatCurrency(rentalValuation.valore_min_mq)}–{formatCurrency(rentalValuation.valore_max_mq)} /mq
-                    </p>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground shrink-0">Affitto/mese</span>
+                  <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                    {formatCurrency(rentalValuation.valore_min)} – {formatCurrency(rentalValuation.valore_max)}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                    {formatCurrency(rentalValuation.valore_min_mq)}–{formatCurrency(rentalValuation.valore_max_mq)}/mq
+                  </span>
                 </div>
               )}
-              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                <Info className="h-2.5 w-2.5 shrink-0" />
-                Dati OMI — Agenzia delle Entrate
-              </div>
             </div>
           )}
         </Card>
