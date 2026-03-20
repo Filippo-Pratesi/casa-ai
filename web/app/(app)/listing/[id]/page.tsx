@@ -270,7 +270,9 @@ export default async function ListingDetailPage({
   const linkedPropertySnap: LinkedProperty | null = linkedProperty
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-12">
+    <div className="max-w-6xl mx-auto pb-12">
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 items-start">
+    <div className="space-y-6">
       {/* Back nav + delete */}
       <div className="flex items-center justify-between animate-in-1">
         <div className="flex items-center gap-2">
@@ -703,44 +705,6 @@ export default async function ListingDetailPage({
         </div>
       )}
 
-      {/* Cronistoria annuncio */}
-      {cronistoriaEvents.length > 0 && (
-        <div className="rounded-xl border border-border bg-muted/30 px-4 py-4 space-y-3">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Cronistoria annuncio</p>
-          <ul role="list" className="border-l-2 border-border pl-4 space-y-3">
-            {cronistoriaEvents.map((ev) => (
-              <li key={`${ev.source}-${ev.id}`} className="relative">
-                <div className="absolute -left-[21px] top-1 h-3.5 w-3.5 rounded-full border-2 border-background bg-[oklch(0.57_0.20_33)]" />
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium leading-tight">{ev.title}</p>
-                    {ev.description && (
-                      <p className="text-xs text-muted-foreground mt-0.5">{ev.description}</p>
-                    )}
-                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                      <span className="text-[10px] font-medium rounded bg-muted px-1.5 py-0.5 text-muted-foreground">{ev.event_type}</span>
-                      {ev.source === 'contact' && ev.contact_name && (
-                        <Link href={`/contacts/${ev.contact_id}`} className="text-[10px] text-[oklch(0.57_0.20_33)] hover:underline">
-                          {ev.contact_name}
-                        </Link>
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <time className="text-[10px] text-muted-foreground/60">
-                      {new Date(ev.event_date).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    </time>
-                    {ev.agent_name && (
-                      <p className="text-[10px] text-muted-foreground/50">{ev.agent_name}</p>
-                    )}
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
       {/* Output */}
       {listing.generated_content ? (
         <OutputTabs
@@ -759,6 +723,42 @@ export default async function ListingDetailPage({
           <GenerateContentButton listingId={listing.id} />
         </div>
       )}
-    </div>
+    </div>{/* end main content column */}
+
+    {/* Right sidebar: cronistoria */}
+    {cronistoriaEvents.length > 0 && (
+      <div className="hidden lg:block lg:sticky lg:top-4 space-y-3">
+        <div className="rounded-xl border border-border bg-muted/30 px-4 py-4 space-y-3">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Cronistoria</p>
+          <ul role="list" className="border-l-2 border-border pl-3 space-y-3 max-h-[80vh] overflow-y-auto pr-1">
+            {cronistoriaEvents.map((ev) => (
+              <li key={`${ev.source}-${ev.id}`} className="relative">
+                <div className="absolute -left-[17px] top-1 h-3 w-3 rounded-full border-2 border-background bg-[oklch(0.57_0.20_33)]" />
+                <div className="space-y-0.5">
+                  <p className="text-xs font-medium leading-tight">{ev.title}</p>
+                  {ev.description && (
+                    <p className="text-[10px] text-muted-foreground line-clamp-2">{ev.description}</p>
+                  )}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[9px] font-medium rounded bg-muted px-1 py-0.5 text-muted-foreground">{ev.event_type}</span>
+                    {ev.source === 'contact' && ev.contact_name && (
+                      <Link href={`/contacts/${ev.contact_id}`} className="text-[9px] text-[oklch(0.57_0.20_33)] hover:underline">
+                        {ev.contact_name}
+                      </Link>
+                    )}
+                  </div>
+                  <time className="text-[9px] text-muted-foreground/50 block">
+                    {new Date(ev.event_date).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    {ev.agent_name ? ` · ${ev.agent_name}` : ''}
+                  </time>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    )}
+    </div>{/* end grid */}
+    </div>{/* end max-w-6xl */}
   )
 }
