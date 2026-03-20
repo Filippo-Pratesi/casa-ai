@@ -11,9 +11,17 @@ export interface ListingNoteEntry {
   content: string
   created_at: string
   agent_name: string | null
+  sentiment?: string | null
 }
 
 type FilterType = 'all' | 'events' | 'notes'
+type Sentiment = 'positive' | 'neutral' | 'negative' | ''
+
+const SENTIMENT_CONFIG: Record<string, { emoji: string; label: string; dot: string; badge: string }> = {
+  positive: { emoji: '😊', label: 'Positivo', dot: 'bg-green-400', badge: 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400' },
+  neutral:  { emoji: '😐', label: 'Neutro',   dot: 'bg-gray-400',  badge: 'bg-muted text-muted-foreground' },
+  negative: { emoji: '😞', label: 'Negativo', dot: 'bg-red-400',   badge: 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400' },
+}
 
 interface Props {
   propertyId: string
@@ -29,6 +37,7 @@ export function PropertyCronistoriaPanel({
   onEventAdded,
 }: Props) {
   const [noteText, setNoteText] = useState('')
+  const [sentiment, setSentiment] = useState<Sentiment>('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [filter, setFilter] = useState<FilterType>('all')
 
@@ -40,6 +49,7 @@ export function PropertyCronistoriaPanel({
     description: string | null
     event_date: string
     agent_name: string | null
+    sentiment?: string | null
   }
 
   const eventsAsEntries: TimelineEntry[] = events.map(e => ({
@@ -50,16 +60,18 @@ export function PropertyCronistoriaPanel({
     description: e.description,
     event_date: e.event_date ?? e.created_at,
     agent_name: e.agent_name ?? null,
+    sentiment: e.sentiment ?? null,
   }))
 
   const notesAsEntries: TimelineEntry[] = initialListingNotes.map(n => ({
     key: `ln-${n.id}`,
     source: 'listing_note' as const,
-    event_type: 'nota_annuncio',
+    event_type: 'nota_agente',
     title: n.content,
     description: null,
     event_date: n.created_at,
     agent_name: n.agent_name,
+    sentiment: n.sentiment ?? null,
   }))
 
   const allEntries: TimelineEntry[] = [...eventsAsEntries, ...notesAsEntries].sort(
@@ -68,7 +80,7 @@ export function PropertyCronistoriaPanel({
 
   const displayed =
     filter === 'events' ? allEntries.filter(e => e.source === 'event') :
-    filter === 'notes' ? allEntries.filter(e => e.source === 'listing_note') :
+    filter === 'notes'  ? allEntries.filter(e => e.source === 'listing_note') :
     allEntries
 
   const hasEvents = events.length > 0
@@ -83,13 +95,18 @@ export function PropertyCronistoriaPanel({
       const res = await fetch(`/api/properties/${propertyId}/events`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ event_type: 'nota', title: noteText.trim() }),
+        body: JSON.stringify({
+          event_type: 'nota',
+          title: noteText.trim(),
+          sentiment: sentiment || null,
+        }),
       })
       if (!res.ok) {
         const d = await res.json().catch(() => ({}))
         throw new Error((d as { error?: string }).error ?? 'Errore')
       }
       setNoteText('')
+      setSentiment('')
       toast.success('Nota aggiunta')
       onEventAdded?.()
     } catch (err) {
@@ -114,7 +131,7 @@ export function PropertyCronistoriaPanel({
                   : 'bg-muted text-muted-foreground hover:bg-muted/80'
               }`}
             >
-              {f === 'all' ? 'Tutto' : f === 'events' ? 'Eventi' : 'Note annuncio'}
+              {f === 'all' ? 'Tutto' : f === 'events' ? 'Eventi' : 'Note Agente'}
             </button>
           ))}
         </div>
@@ -126,46 +143,61 @@ export function PropertyCronistoriaPanel({
           role="list"
           className="border-l-2 border-border pl-3 space-y-3 max-h-[50vh] overflow-y-auto pr-1"
         >
-          {displayed.map((entry) => (
-            <li key={entry.key} className="relative">
-              <div
-                className={`absolute -left-[17px] top-1 h-3 w-3 rounded-full border-2 border-background ${
-                  entry.source === 'listing_note'
-                    ? 'bg-blue-500'
-                    : 'bg-[oklch(0.57_0.20_33)]'
-                }`}
-              />
-              <div className="space-y-0.5">
-                <p className="text-xs font-medium leading-tight">{entry.title}</p>
-                {entry.description && (
-                  <p className="text-[10px] text-muted-foreground line-clamp-3">
-                    {entry.description}
-                  </p>
-                )}
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span
-                    className={`text-[9px] font-medium rounded px-1 py-0.5 ${
-                      entry.source === 'listing_note'
-                        ? 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400'
-                        : 'bg-muted text-muted-foreground'
-                    }`}
-                  >
-                    {entry.source === 'listing_note'
-                      ? 'Nota annuncio'
-                      : (EVENT_LABELS[entry.event_type] ?? entry.event_type)}
-                  </span>
+          {displayed.map((entry) => {
+            const sentimentCfg = entry.sentiment ? SENTIMENT_CONFIG[entry.sentiment] : null
+            return (
+              <li key={entry.key} className="relative">
+                <div
+                  className={`absolute -left-[17px] top-1 h-3 w-3 rounded-full border-2 border-background ${
+                    entry.source === 'listing_note'
+                      ? 'bg-blue-500'
+                      : sentimentCfg
+                      ? sentimentCfg.dot
+                      : 'bg-[oklch(0.57_0.20_33)]'
+                  }`}
+                />
+                <div className="space-y-0.5">
+                  <p className="text-xs font-medium leading-tight">{entry.title}</p>
+                  {entry.description && (
+                    <p className="text-[10px] text-muted-foreground line-clamp-3">
+                      {entry.description}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span
+                      className={`text-[9px] font-medium rounded px-1 py-0.5 ${
+                        entry.source === 'listing_note'
+                          ? 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400'
+                          : 'bg-muted text-muted-foreground'
+                      }`}
+                    >
+                      {entry.source === 'listing_note'
+                        ? 'Nota Agente'
+                        : (EVENT_LABELS[entry.event_type] ?? entry.event_type)}
+                    </span>
+                    {sentimentCfg && entry.source !== 'listing_note' && (
+                      <span className={`text-[9px] font-medium rounded px-1 py-0.5 ${sentimentCfg.badge}`}>
+                        {sentimentCfg.emoji} {sentimentCfg.label}
+                      </span>
+                    )}
+                    {entry.source === 'listing_note' && sentimentCfg && (
+                      <span className={`text-[9px] font-medium rounded px-1 py-0.5 ${sentimentCfg.badge}`}>
+                        {sentimentCfg.emoji} {sentimentCfg.label}
+                      </span>
+                    )}
+                  </div>
+                  <time className="text-[9px] text-muted-foreground/50 block">
+                    {new Date(entry.event_date).toLocaleDateString('it-IT', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                    })}
+                    {entry.agent_name ? ` · ${entry.agent_name}` : ''}
+                  </time>
                 </div>
-                <time className="text-[9px] text-muted-foreground/50 block">
-                  {new Date(entry.event_date).toLocaleDateString('it-IT', {
-                    day: '2-digit',
-                    month: 'short',
-                    year: 'numeric',
-                  })}
-                  {entry.agent_name ? ` · ${entry.agent_name}` : ''}
-                </time>
-              </div>
-            </li>
-          ))}
+              </li>
+            )
+          })}
         </ul>
       )}
 
@@ -196,6 +228,26 @@ export function PropertyCronistoriaPanel({
             maxLength={2000}
             className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
           />
+          {/* Sentiment selector */}
+          <div className="flex items-center gap-1.5">
+            {(['positive', 'neutral', 'negative'] as const).map((s) => {
+              const cfg = SENTIMENT_CONFIG[s]
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setSentiment(prev => prev === s ? '' : s)}
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-medium border transition-all ${
+                    sentiment === s
+                      ? 'border-current opacity-100'
+                      : 'border-border opacity-50 hover:opacity-80'
+                  } ${sentiment === s ? sentimentBorderColor(s) : ''}`}
+                >
+                  {cfg.emoji} {cfg.label}
+                </button>
+              )
+            })}
+          </div>
           <button
             type="submit"
             disabled={!noteText.trim() || isSubmitting}
@@ -212,4 +264,10 @@ export function PropertyCronistoriaPanel({
       </div>
     </div>
   )
+}
+
+function sentimentBorderColor(s: string) {
+  if (s === 'positive') return 'text-green-600 border-green-400'
+  if (s === 'negative') return 'text-red-600 border-red-400'
+  return 'text-gray-500 border-gray-400'
 }

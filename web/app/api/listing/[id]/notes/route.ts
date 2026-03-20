@@ -7,6 +7,7 @@ type Params = { params: Promise<{ id: string }> }
 type NoteRow = {
   id: string
   content: string
+  sentiment: string | null
   created_at: string
   agent: { name: string } | null
 }
@@ -15,6 +16,7 @@ function toNoteResponse(n: NoteRow) {
   return {
     id: n.id,
     content: n.content,
+    sentiment: n.sentiment ?? null,
     created_at: n.created_at,
     agent_name: n.agent?.name ?? null,
   }
@@ -44,7 +46,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (admin as any)
     .from('listing_notes')
-    .select('id, content, created_at, agent:users!listing_notes_agent_id_fkey(name)')
+    .select('id, content, sentiment, created_at, agent:users!listing_notes_agent_id_fkey(name)')
     .eq('listing_id', id)
     .eq('workspace_id', profile.workspace_id)
     .order('created_at', { ascending: false })
@@ -76,7 +78,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     .single()
   if (!listing) return NextResponse.json({ error: 'Annuncio non trovato' }, { status: 404 })
 
-  let body: { content?: string }
+  let body: { content?: string; sentiment?: string }
   try {
     body = await req.json()
   } catch {
@@ -87,11 +89,16 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (!content) return NextResponse.json({ error: 'Contenuto obbligatorio' }, { status: 400 })
   if (content.length > 2000) return NextResponse.json({ error: 'Nota troppo lunga (max 2000 caratteri)' }, { status: 400 })
 
+  const validSentiments = ['positive', 'neutral', 'negative']
+  const sentiment = typeof body.sentiment === 'string' && validSentiments.includes(body.sentiment)
+    ? body.sentiment
+    : null
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (admin as any)
     .from('listing_notes')
-    .insert({ listing_id: id, workspace_id: profile.workspace_id, agent_id: user.id, content })
-    .select('id, content, created_at, agent:users!listing_notes_agent_id_fkey(name)')
+    .insert({ listing_id: id, workspace_id: profile.workspace_id, agent_id: user.id, content, sentiment })
+    .select('id, content, sentiment, created_at, agent:users!listing_notes_agent_id_fkey(name)')
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

@@ -236,17 +236,18 @@ export default async function ListingDetailPage({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: listingNotesData } = await (admin as any)
     .from('listing_notes')
-    .select('id, content, created_at, agent:users!listing_notes_agent_id_fkey(name)')
+    .select('id, content, sentiment, created_at, agent:users!listing_notes_agent_id_fkey(name)')
     .eq('listing_id', id)
     .eq('workspace_id', userProfile.workspace_id)
     .order('created_at', { ascending: false })
     .limit(50)
 
   const initialNotes: ListingNote[] = ((listingNotesData ?? []) as Array<{
-    id: string; content: string; created_at: string; agent: { name: string } | null
+    id: string; content: string; sentiment: string | null; created_at: string; agent: { name: string } | null
   }>).map((n) => ({
     id: n.id,
     content: n.content,
+    sentiment: n.sentiment ?? null,
     created_at: n.created_at,
     agent_name: n.agent?.name ?? null,
   }))
