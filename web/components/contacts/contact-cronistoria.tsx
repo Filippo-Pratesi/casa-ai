@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo } from 'react'
 import Link from 'next/link'
-import { FileText, Phone, Mail, Calendar, Megaphone, Home, Plus, Loader2, ChevronDown, RefreshCw, Star, CheckCircle, ThumbsDown, ThumbsUp, Send, Undo2, ArrowLeftRight, KeyRound, AlertCircle, Clock, UserPlus } from 'lucide-react'
+import { FileText, Phone, Mail, Calendar, Megaphone, Home, Plus, Loader2, ChevronDown, RefreshCw, Star, CheckCircle, ThumbsDown, ThumbsUp, Send, Undo2, ArrowLeftRight, KeyRound, AlertCircle, Clock, UserPlus, PenLine } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -53,6 +53,7 @@ const ICON_COMPONENTS: Record<string, React.ElementType> = {
   AlertCircle,
   Clock,
   UserPlus,
+  PenLine,
 }
 
 export function ContactCronistoria({ contactId, initialEvents }: ContactCronistoriaProps) {
@@ -191,7 +192,7 @@ export function ContactCronistoria({ contactId, initialEvents }: ContactCronisto
           <ul role="list" className="border-l-2 border-border pl-4 space-y-3 max-h-[70vh] overflow-y-auto overscroll-contain pr-1">
             {displayedEvents.map((ev) => {
               const iconName = EVENT_ICON_NAMES[ev.event_type as keyof typeof EVENT_ICON_NAMES] ?? 'FileText'
-              const Icon = ICON_COMPONENTS[iconName]
+              const Icon = ICON_COMPONENTS[iconName] ?? FileText
               const colorClass = EVENT_COLORS[ev.event_type as keyof typeof EVENT_COLORS] ?? EVENT_COLORS.nota
               return (
                 <li key={ev.id} className="relative">
