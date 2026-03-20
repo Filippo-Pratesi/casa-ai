@@ -554,48 +554,73 @@ export function ImmobileDetailClient({
               )}
             </Card>
 
-            {/* Owner contact */}
-            {property.owner_contact ? (
-              <Card className="p-4 space-y-3">
-                <h2 className="font-semibold text-sm">Proprietario</h2>
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-bold shrink-0">
-                      {property.owner_contact.name?.charAt(0)?.toUpperCase()}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <p className="text-sm font-medium">{property.owner_contact.name}</p>
-                        <ContactTypeBadges
-                          types={property.owner_contact.types}
-                          type={property.owner_contact.type}
-                          size="xs"
-                        />
+            {/* Owner contact(s) */}
+            {(() => {
+              const proprietari = contacts.filter(pc => pc.role === 'proprietario' && pc.contact?.id)
+              if (proprietari.length === 0 && !property.owner_contact) {
+                return (
+                  <Card className="p-4 flex items-center justify-center text-xs text-muted-foreground min-h-[100px]">
+                    Nessun proprietario associato
+                  </Card>
+                )
+              }
+              // Deduplicate by contact id
+              const seen = new Set<string>()
+              const uniqueProprietari = proprietari.filter(pc => {
+                const cid = pc.contact!.id
+                if (seen.has(cid)) return false
+                seen.add(cid)
+                return true
+              })
+              // Fallback: if no proprietari in contacts state but owner_contact exists (initial load)
+              const displayList = uniqueProprietari.length > 0
+                ? uniqueProprietari.map(pc => pc.contact!)
+                : property.owner_contact ? [property.owner_contact] : []
+
+              return (
+                <Card className="p-4 space-y-3">
+                  <h2 className="font-semibold text-sm">
+                    {displayList.length > 1 ? 'Proprietari' : 'Proprietario'}
+                  </h2>
+                  <div className="space-y-3">
+                    {displayList.map(owner => (
+                      <div key={owner.id} className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-bold shrink-0">
+                            {owner.name?.charAt(0)?.toUpperCase()}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <p className="text-sm font-medium">{owner.name}</p>
+                              <ContactTypeBadges
+                                types={owner.types}
+                                type={owner.type}
+                                size="xs"
+                              />
+                            </div>
+                            {owner.phone && (
+                              <a href={`tel:${owner.phone}`} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
+                                <Phone className="h-3 w-3" />
+                                {owner.phone}
+                              </a>
+                            )}
+                            {owner.email && (
+                              <a href={`mailto:${owner.email}`} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
+                                <span className="text-[10px]">✉</span>
+                                {owner.email}
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                        <Link href={`/contacts/${owner.id}`} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </Link>
                       </div>
-                      {property.owner_contact.phone && (
-                        <a href={`tel:${property.owner_contact.phone}`} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
-                          <Phone className="h-3 w-3" />
-                          {property.owner_contact.phone}
-                        </a>
-                      )}
-                      {property.owner_contact.email && (
-                        <a href={`mailto:${property.owner_contact.email}`} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
-                          <span className="text-[10px]">✉</span>
-                          {property.owner_contact.email}
-                        </a>
-                      )}
-                    </div>
+                    ))}
                   </div>
-                  <Link href={`/contacts/${property.owner_contact.id}`} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </Link>
-                </div>
-              </Card>
-            ) : (
-              <Card className="p-4 flex items-center justify-center text-xs text-muted-foreground min-h-[100px]">
-                Nessun proprietario associato
-              </Card>
-            )}
+                </Card>
+              )
+            })()}
           </div>
 
           {/* Property contacts */}

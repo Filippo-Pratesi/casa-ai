@@ -18,6 +18,14 @@ import { PROPERTY_ROLE_LABELS } from '@/lib/property-role-labels'
 
 const ROLE_LABELS = PROPERTY_ROLE_LABELS
 
+const CONTACT_TYPE_LABELS: Record<string, string> = {
+  buyer: 'Acquirente',
+  seller: 'Venditore',
+  renter: 'Affittuario',
+  landlord: 'Locatore',
+  other: 'Altro',
+}
+
 interface ContactResult {
   id: string
   name: string
@@ -47,13 +55,18 @@ export const AddContactDialog = React.memo(function AddContactDialog({
   const [showResults, setShowResults] = useState(false)
   const searchRef = useRef<HTMLDivElement>(null)
 
-  // Create mode state
+  // Create mode state — basic
   const [newFirstName, setNewFirstName] = useState('')
   const [newLastName, setNewLastName] = useState('')
   const [newPhone, setNewPhone] = useState('')
   const [newEmail, setNewEmail] = useState('')
   const [newCity, setNewCity] = useState('')
   const [newAddress, setNewAddress] = useState('')
+  // Create mode state — extra fields
+  const [newProfessione, setNewProfessione] = useState('')
+  const [newDataNascita, setNewDataNascita] = useState('')
+  const [newPIva, setNewPIva] = useState('')
+  const [newTypes, setNewTypes] = useState<string[]>([])
 
   // Shared
   const [contactRoles, setContactRoles] = useState<string[]>(['proprietario'])
@@ -83,6 +96,10 @@ export const AddContactDialog = React.memo(function AddContactDialog({
     setNewEmail('')
     setNewCity('')
     setNewAddress('')
+    setNewProfessione('')
+    setNewDataNascita('')
+    setNewPIva('')
+    setNewTypes([])
     setContactRoles(['proprietario'])
     setContactNotes('')
   }
@@ -113,8 +130,14 @@ export const AddContactDialog = React.memo(function AddContactDialog({
   function toggleRole(role: string) {
     setContactRoles(prev =>
       prev.includes(role)
-        ? prev.length > 1 ? prev.filter(r => r !== role) : prev  // keep at least one
+        ? prev.length > 1 ? prev.filter(r => r !== role) : prev
         : [...prev, role]
+    )
+  }
+
+  function toggleType(t: string) {
+    setNewTypes(prev =>
+      prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]
     )
   }
 
@@ -131,7 +154,6 @@ export const AddContactDialog = React.memo(function AddContactDialog({
 
       let finalContactId = ''
 
-      // For multi-role: first call creates the contact (if new), subsequent calls link same contact_id
       for (let i = 0; i < contactRoles.length; i++) {
         const role = contactRoles[i]
         let body: Record<string, unknown>
@@ -139,7 +161,6 @@ export const AddContactDialog = React.memo(function AddContactDialog({
         if (mode === 'search') {
           body = { contact_id: selectedContact!.id, role, notes: contactNotes.trim() || null }
         } else if (i === 0) {
-          // First role: create new contact
           body = {
             new_contact: {
               name: contactName,
@@ -147,12 +168,15 @@ export const AddContactDialog = React.memo(function AddContactDialog({
               email: newEmail.trim() || null,
               city_of_residence: newCity.trim() || null,
               address_of_residence: newAddress.trim() || null,
+              professione: newProfessione.trim() || null,
+              data_nascita: newDataNascita || null,
+              p_iva: newPIva.trim() || null,
+              types: newTypes.length > 0 ? newTypes : undefined,
             },
             role,
             notes: contactNotes.trim() || null,
           }
         } else {
-          // Subsequent roles: link same contact_id (already created)
           body = { contact_id: finalContactId, role, notes: contactNotes.trim() || null }
         }
 
@@ -174,7 +198,6 @@ export const AddContactDialog = React.memo(function AddContactDialog({
       toast.success('Contatto aggiunto')
       onOpenChange(false)
       resetAll()
-      // Report primary role (proprietario if selected, else first)
       const primaryRole = contactRoles.includes('proprietario') ? 'proprietario' : contactRoles[0]
       onAdded({ role: primaryRole, contactId: finalContactId, contactName })
     } catch (err) {
@@ -186,7 +209,7 @@ export const AddContactDialog = React.memo(function AddContactDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) resetAll(); onOpenChange(v) }}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Aggiungi contatto</DialogTitle>
         </DialogHeader>
@@ -278,6 +301,7 @@ export const AddContactDialog = React.memo(function AddContactDialog({
             </div>
           ) : (
             <div className="space-y-3">
+              {/* Name */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label>Nome *</Label>
@@ -288,16 +312,18 @@ export const AddContactDialog = React.memo(function AddContactDialog({
                   <Input placeholder="Es. Rossi" value={newLastName} onChange={(e) => setNewLastName(e.target.value)} />
                 </div>
               </div>
+              {/* Contact */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label>Telefono</Label>
-                  <Input type="tel" placeholder="Es. 333 1234567" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />
+                  <Input type="tel" placeholder="333 1234567" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Email</Label>
                   <Input type="email" placeholder="mario@esempio.it" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
                 </div>
               </div>
+              {/* Address */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label>Città di residenza</Label>
@@ -308,9 +334,49 @@ export const AddContactDialog = React.memo(function AddContactDialog({
                   <Input placeholder="Es. Via Roma 10" value={newAddress} onChange={(e) => setNewAddress(e.target.value)} />
                 </div>
               </div>
+              {/* Extra fields */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Data di nascita</Label>
+                  <Input type="date" value={newDataNascita} onChange={(e) => setNewDataNascita(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Professione</Label>
+                  <Input placeholder="Es. Architetto" value={newProfessione} onChange={(e) => setNewProfessione(e.target.value)} />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>P.IVA</Label>
+                <Input placeholder="Es. 01234567890" value={newPIva} onChange={(e) => setNewPIva(e.target.value)} />
+              </div>
+              {/* Contact types */}
+              <div className="space-y-1.5">
+                <Label>Stato generale <span className="text-muted-foreground font-normal">(opzionale)</span></Label>
+                <div className="flex flex-wrap gap-1.5">
+                  {Object.entries(CONTACT_TYPE_LABELS).map(([key, label]) => {
+                    const active = newTypes.includes(key)
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => toggleType(key)}
+                        className={cn(
+                          'rounded-full px-2.5 py-0.5 text-xs font-medium border transition-all',
+                          active
+                            ? 'bg-[oklch(0.57_0.20_33)] text-white border-[oklch(0.57_0.20_33)]'
+                            : 'bg-transparent text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground'
+                        )}
+                      >
+                        {label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
             </div>
           )}
 
+          {/* Role selector */}
           <div className="space-y-1.5">
             <Label>Ruolo nell&apos;immobile <span className="text-muted-foreground font-normal">(seleziona uno o più)</span></Label>
             <div className="flex flex-wrap gap-1.5">
@@ -335,6 +401,7 @@ export const AddContactDialog = React.memo(function AddContactDialog({
             </div>
           </div>
 
+          {/* Notes */}
           <div className="space-y-1.5">
             <Label>Note <span className="text-muted-foreground font-normal">(opzionale)</span></Label>
             <Input

@@ -6,7 +6,7 @@ type RouteContext = { params: Promise<{ id: string }> }
 
 const VALID_ROLES = [
   'proprietario', 'venditore', 'acquirente',
-  'moglie_marito', 'figlio_figlia', 'vicino', 'portiere',
+  'moglie_marito', 'figlio_figlia', 'parente_altro', 'vicino', 'portiere',
   'amministratore', 'avvocato', 'commercialista', 'precedente_proprietario',
   'inquilino', 'altro',
 ]
@@ -106,10 +106,13 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     if (!name) return NextResponse.json({ error: 'Il nome del contatto è obbligatorio' }, { status: 400 })
 
     // Derive type from role if not explicitly provided
-    const validTypes = ['buyer', 'seller', 'renter', 'landlord', 'other']
-    const contactType = typeof nc.type === 'string' && validTypes.includes(nc.type)
-      ? nc.type
-      : contactTypeFromRole(role)
+    const validContactTypes = ['buyer', 'seller', 'renter', 'landlord', 'other']
+    // If body provides explicit types array, use it; otherwise derive from role
+    const typesFromBody = Array.isArray(nc.types)
+      ? (nc.types as string[]).filter(t => validContactTypes.includes(t))
+      : null
+    const resolvedType = typesFromBody?.length ? typesFromBody[0] : contactTypeFromRole(role)
+    const resolvedTypes = typesFromBody?.length ? typesFromBody : [contactTypeFromRole(role)]
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: newContact, error: createError } = await (admin as any)
@@ -118,12 +121,15 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
         workspace_id: workspaceId,
         agent_id: user.id,
         name,
-        type: contactType,
-        types: [contactType],
+        type: resolvedType,
+        types: resolvedTypes,
         phone: typeof nc.phone === 'string' ? nc.phone.trim() || null : null,
         email: typeof nc.email === 'string' ? nc.email.trim() || null : null,
         city_of_residence: typeof nc.city_of_residence === 'string' ? nc.city_of_residence.trim() || null : null,
         address_of_residence: typeof nc.address_of_residence === 'string' ? nc.address_of_residence.trim() || null : null,
+        professione: typeof nc.professione === 'string' ? nc.professione.trim() || null : null,
+        data_nascita: typeof nc.data_nascita === 'string' ? nc.data_nascita || null : null,
+        p_iva: typeof nc.p_iva === 'string' ? nc.p_iva.trim() || null : null,
       })
       .select('id')
       .single()
@@ -230,6 +236,38 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     title: `Immobile collegato: ${(propertyData as { address?: string; city?: string } | null)?.address ?? 'Indirizzo sconosciuto'}, ${(propertyData as { address?: string; city?: string } | null)?.city ?? ''}`,
     related_property_id: id,
   })
+
+  // Family link: if role is a family role, create contact_relationship with proprietario
+  const FAMILY_ROLES = ['moglie_marito', 'figlio_figlia', 'parente_altro']
+  if (FAMILY_ROLES.includes(role)) {
+    // Find the current proprietario of this property
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: ownerLink } = await (admin as any)
+      .from('property_contacts')
+      .select('contact_id')
+      .eq('property_id', id)
+      .eq('workspace_id', workspaceId)
+      .eq('role', 'proprietario')
+      .limit(1)
+      .maybeSingle()
+
+    const ownerContactId = (ownerLink as { contact_id: string } | null)?.contact_id
+    if (ownerContactId && ownerContactId !== contactId) {
+      // Create bidirectional relationship (ignore conflict if already exists)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (admin as any)
+        .from('contact_relationships')
+        .upsert(
+          {
+            workspace_id: workspaceId,
+            contact_a_id: ownerContactId,
+            contact_b_id: contactId,
+            relationship_type: role,
+          },
+          { onConflict: 'workspace_id,contact_a_id,contact_b_id,relationship_type', ignoreDuplicates: true }
+        )
+    }
+  }
 
   return NextResponse.json({ id: (link as { id: string }).id, contact_id: contactId }, { status: 201 })
 }
