@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 type RouteContext = { params: Promise<{ id: string }> }
 
-async function getWorkspaceId(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
-  const { data } = await supabase
+async function getWorkspaceId(userId: string) {
+  const admin = createAdminClient()
+  const { data } = await admin
     .from('users')
     .select('workspace_id')
     .eq('id', userId)
@@ -19,7 +21,7 @@ export async function POST(_req: NextRequest, { params }: RouteContext) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
-  const workspaceId = await getWorkspaceId(supabase, user.id)
+  const workspaceId = await getWorkspaceId(user.id)
   if (!workspaceId) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 404 })
 
   // Fetch property
