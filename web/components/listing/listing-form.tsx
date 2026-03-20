@@ -15,43 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { PhotoUploader } from '@/components/listing/photo-uploader'
-
-const PROPERTY_TYPES = [
-  { value: 'apartment', label: 'Appartamento' },
-  { value: 'house', label: 'Casa' },
-  { value: 'villa', label: 'Villa' },
-  { value: 'commercial', label: 'Commerciale' },
-  { value: 'land', label: 'Terreno' },
-  { value: 'garage', label: 'Garage' },
-  { value: 'other', label: 'Altro' },
-]
-
-const FEATURES = [
-  { id: 'terrace', label: 'Terrazzo' },
-  { id: 'garage', label: 'Garage' },
-  { id: 'elevator', label: 'Ascensore' },
-  { id: 'parking', label: 'Posto auto' },
-  { id: 'renovated_kitchen', label: 'Cucina ristrutturata' },
-  { id: 'sea_view', label: 'Vista mare' },
-  { id: 'garden', label: 'Giardino' },
-  { id: 'storage', label: 'Ripostiglio' },
-  { id: 'cellar', label: 'Cantina' },
-  { id: 'panoramic_view', label: 'Vista panoramica' },
-]
-
-const TONES = [
-  { id: 'standard', label: 'Standard', desc: 'Professionale, per tutti' },
-  { id: 'luxury', label: 'Luxury', desc: 'Esclusivo, aspirazionale' },
-  { id: 'approachable', label: 'Accessibile', desc: 'Caldo, amichevole' },
-  { id: 'investment', label: 'Investimento', desc: 'Orientato al rendimento' },
-]
-
-const CONDITIONS = [
-  { value: 'ottimo', label: 'Ottimo' },
-  { value: 'buono', label: 'Buono' },
-  { value: 'sufficiente', label: 'Sufficiente' },
-  { value: 'da_ristrutturare', label: 'Da ristrutturare' },
-]
+import { PROPERTY_TYPES, FEATURES, TONES, CONDITIONS } from '@/components/listing/listing-constants'
 
 // Catastral coefficients by categoria
 const CATASTRAL_COEFFICIENTS: Record<string, number> = {
@@ -121,14 +85,18 @@ const INITIAL_FORM: FormState = {
   rendita_catastale: '',
 }
 
+type FormErrors = Partial<Record<'address' | 'city' | 'price' | 'sqm' | 'rooms', string>>
+
 export function ListingForm() {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [photos, setPhotos] = useState<File[]>([])
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
+  const [errors, setErrors] = useState<FormErrors>({})
 
   function update(field: keyof FormState, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }))
+    if (field in errors) setErrors((prev) => ({ ...prev, [field]: undefined }))
   }
 
   function toggleFeature(id: string) {
@@ -140,8 +108,24 @@ export function ListingForm() {
     }))
   }
 
+  function validate(): FormErrors {
+    const e: FormErrors = {}
+    if (!form.address.trim()) e.address = 'Indirizzo obbligatorio'
+    if (!form.city.trim()) e.city = 'Città obbligatoria'
+    if (!form.price || Number(form.price) <= 0) e.price = 'Prezzo obbligatorio'
+    if (!form.sqm || Number(form.sqm) <= 0) e.sqm = 'Superficie obbligatoria'
+    if (!form.rooms || Number(form.rooms) <= 0) e.rooms = 'Numero locali obbligatorio'
+    return e
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+
+    const validationErrors = validate()
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors)
+      return
+    }
 
     const fd = new FormData()
     fd.append('property_type', form.property_type)
@@ -266,8 +250,9 @@ export function ListingForm() {
             placeholder="Via Roma 12"
             value={form.address}
             onChange={(e) => update('address', e.target.value)}
-            required
+            className={errors.address ? 'border-destructive' : ''}
           />
+          {errors.address && <p className="text-xs text-destructive">{errors.address}</p>}
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
@@ -277,8 +262,9 @@ export function ListingForm() {
               placeholder="Milano"
               value={form.city}
               onChange={(e) => update('city', e.target.value)}
-              required
+              className={errors.city ? 'border-destructive' : ''}
             />
+            {errors.city && <p className="text-xs text-destructive">{errors.city}</p>}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="neighborhood">Quartiere / Zona</Label>
@@ -305,8 +291,9 @@ export function ListingForm() {
               placeholder="250000"
               value={form.price}
               onChange={(e) => update('price', e.target.value)}
-              required
+              className={errors.price ? 'border-destructive' : ''}
             />
+            {errors.price && <p className="text-xs text-destructive">{errors.price}</p>}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="sqm">Superficie (m²) *</Label>
@@ -317,8 +304,9 @@ export function ListingForm() {
               placeholder="85"
               value={form.sqm}
               onChange={(e) => update('sqm', e.target.value)}
-              required
+              className={errors.sqm ? 'border-destructive' : ''}
             />
+            {errors.sqm && <p className="text-xs text-destructive">{errors.sqm}</p>}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="rooms">Locali *</Label>
@@ -329,8 +317,9 @@ export function ListingForm() {
               placeholder="3"
               value={form.rooms}
               onChange={(e) => update('rooms', e.target.value)}
-              required
+              className={errors.rooms ? 'border-destructive' : ''}
             />
+            {errors.rooms && <p className="text-xs text-destructive">{errors.rooms}</p>}
           </div>
           {form.property_type !== 'land' && (
             <div className="space-y-1.5">

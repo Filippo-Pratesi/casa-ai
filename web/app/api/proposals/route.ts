@@ -19,6 +19,7 @@ export async function GET(_req: NextRequest) {
     .select('id, numero_proposta, proponente_nome, immobile_indirizzo, immobile_citta, prezzo_offerto, prezzo_richiesto, data_proposta, validita_proposta, status')
     .eq('workspace_id', profile.workspace_id)
     .order('data_proposta', { ascending: false })
+    .limit(500)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ proposals: data ?? [] })

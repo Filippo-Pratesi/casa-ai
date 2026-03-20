@@ -55,14 +55,30 @@ export async function POST(req: NextRequest) {
       console.warn('Gemini generation failed, saving draft without content:', geminiError)
     }
 
-    // Save listing to DB
+    // Save listing to DB — explicitly pick allowed fields to prevent mass-assignment
+    const allowedListing = {
+      property_type: listing.property_type,
+      address: listing.address,
+      city: listing.city,
+      neighborhood: listing.neighborhood ?? null,
+      price: listing.price,
+      sqm: listing.sqm,
+      rooms: listing.rooms,
+      bathrooms: listing.bathrooms,
+      floor: listing.floor ?? null,
+      total_floors: listing.total_floors ?? null,
+      features: Array.isArray(listing.features) ? listing.features : [],
+      notes: listing.notes ?? null,
+      tone: listing.tone ?? 'standard',
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: savedListing, error } = await (supabase as any)
       .from('listings')
       .insert({
         workspace_id: profile.workspace_id,
         agent_id: user.id,
-        ...listing,
+        ...allowedListing,
         photos_urls: uploadedUrls,
         vision_labels: [],
         generated_content: generatedContent,

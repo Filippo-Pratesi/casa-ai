@@ -43,6 +43,21 @@ export async function POST(req: NextRequest, { params }: Params) {
   const isAdmin = profile.role === 'admin' || profile.role === 'group_admin'
   if (!isOwner && !isAdmin) return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 })
 
+  // State machine: validate allowed transitions
+  const allowedTransitions: Record<string, string[]> = {
+    bozza: ['inviata', 'ritirata'],
+    inviata: ['accettata', 'rifiutata', 'controproposta', 'scaduta', 'ritirata'],
+    controproposta: ['accettata', 'rifiutata', 'ritirata'],
+  }
+  const currentStatus = (existing as { status: string }).status
+  const validTargets = allowedTransitions[currentStatus] ?? []
+  if (validTargets.length > 0 && !validTargets.includes(body.action!)) {
+    return NextResponse.json(
+      { error: `Transizione non valida: da '${currentStatus}' non si può passare a '${body.action}'` },
+      { status: 422 }
+    )
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (admin as any)
     .from('proposals')

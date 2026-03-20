@@ -14,6 +14,20 @@ export async function GET(
   if (!storagePath) return NextResponse.json({ error: 'Path mancante' }, { status: 400 })
 
   const admin = createAdminClient()
+
+  // Verify path belongs to user's workspace
+  const { data: profileData } = await admin
+    .from('users')
+    .select('workspace_id')
+    .eq('id', user.id)
+    .single()
+  const profile = profileData as { workspace_id: string } | null
+  if (!profile) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 404 })
+
+  if (!storagePath.startsWith(`${profile.workspace_id}/`)) {
+    return NextResponse.json({ error: 'Accesso negato' }, { status: 403 })
+  }
+
   const { data, error } = await admin.storage.from('listing-docs').download(storagePath)
   if (error || !data) return NextResponse.json({ error: 'File non trovato' }, { status: 404 })
 
