@@ -91,7 +91,7 @@ export const ListingCard = React.memo(function ListingCard({ listing: l, typeLab
           <div className="flex items-center justify-between border-t border-border pt-2.5">
             <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <User className="h-3 w-3" />
-              {l.agent?.name ?? '—'}
+              {l.agent?.name ?? 'Non assegnato'}
             </span>
             {l.generated_content ? (
               <span className="ai-badge">

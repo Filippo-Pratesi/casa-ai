@@ -66,7 +66,7 @@ export function computeDeterministicScore(
   const prefCities = contact.preferred_cities ?? []
   if (prefCities.length === 0) {
     score += 12
-  } else if (prefCities.map(c => c.toLowerCase()).includes(property.city.toLowerCase())) {
+  } else if (prefCities.map(c => c.toLowerCase()).includes((property.city?.toLowerCase() ?? ''))) {
     score += 25
   }
 

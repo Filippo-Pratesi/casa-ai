@@ -170,6 +170,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       .from('properties')
       .select('owner_contact_id')
       .eq('id', id)
+      .eq('workspace_id', workspaceId)
       .single()
     if (!(currentProp as { owner_contact_id: string | null } | null)?.owner_contact_id) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -177,6 +178,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
         .from('properties')
         .update({ owner_contact_id: contactId })
         .eq('id', id)
+        .eq('workspace_id', workspaceId)
     }
   }
 

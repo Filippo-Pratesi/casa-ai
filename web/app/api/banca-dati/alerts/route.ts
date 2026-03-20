@@ -34,18 +34,26 @@ export async function POST(_req: NextRequest) {
     .eq('workspace_id', profile.workspace_id)
     .in('stage', ['conosciuto', 'incarico'])
 
+  const allPropertyIds: string[] = ((staleProps ?? []) as { id: string }[]).map((p) => p.id)
   const stalePropertyIds: string[] = []
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  for (const prop of (staleProps ?? []) as any[]) {
+
+  if (allPropertyIds.length > 0) {
+    // Batch query: get all property IDs that have at least one recent event
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: recentEvents } = await (admin as any)
+    const { data: recentEventRows } = await (admin as any)
       .from('property_events')
-      .select('id')
-      .eq('property_id', prop.id)
+      .select('property_id')
+      .in('property_id', allPropertyIds)
       .gte('event_date', cutoffDate)
-      .limit(1)
-    if (!recentEvents || recentEvents.length === 0) {
-      stalePropertyIds.push(prop.id)
+
+    const activePropertyIds = new Set<string>(
+      ((recentEventRows ?? []) as { property_id: string }[]).map((e) => e.property_id)
+    )
+
+    for (const id of allPropertyIds) {
+      if (!activePropertyIds.has(id)) {
+        stalePropertyIds.push(id)
+      }
     }
   }
 
@@ -67,7 +75,8 @@ export async function POST(_req: NextRequest) {
     const [, mm, dd] = (c.date_of_birth as string).split('-').map(Number)
     let next = new Date(today.getFullYear(), mm - 1, dd)
     if (next < today) next = new Date(today.getFullYear() + 1, mm - 1, dd)
-    const diff = Math.ceil((next.getTime() - today.setHours(0, 0, 0, 0)) / 86400000)
+    const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+    const diff = Math.ceil((next.getTime() - todayMidnight.getTime()) / 86400000)
     return diff >= 0 && diff <= 7
   })
 
@@ -112,7 +121,8 @@ export async function POST(_req: NextRequest) {
     const [, mm, dd] = (contact.date_of_birth as string).split('-').map(Number)
     let next = new Date(today.getFullYear(), mm - 1, dd)
     if (next < today) next = new Date(today.getFullYear() + 1, mm - 1, dd)
-    const diff = Math.ceil((next.getTime() - new Date().setHours(0, 0, 0, 0)) / 86400000)
+    const todayMidnight2 = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+    const diff = Math.ceil((next.getTime() - todayMidnight2.getTime()) / 86400000)
     const when = diff === 0 ? 'oggi' : `tra ${diff} giorn${diff === 1 ? 'o' : 'i'}`
     const body = `Compleanno di ${contact.name} ${when}`
     if (existingBodies.has(body)) continue

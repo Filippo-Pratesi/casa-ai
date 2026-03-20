@@ -75,6 +75,12 @@ export async function POST(req: NextRequest) {
   const type = typeof body.type === 'string' && validTypes.includes(body.type) ? body.type : 'meeting'
 
   if (!body.starts_at) return NextResponse.json({ error: 'Data obbligatoria' }, { status: 400 })
+  if (isNaN(new Date(String(body.starts_at)).getTime())) {
+    return NextResponse.json({ error: 'Formato data inizio non valido' }, { status: 400 })
+  }
+  if (body.ends_at && isNaN(new Date(String(body.ends_at)).getTime())) {
+    return NextResponse.json({ error: 'Formato data fine non valido' }, { status: 400 })
+  }
 
   // Admins may create appointments on behalf of other agents
   let targetAgentId = user.id

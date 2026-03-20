@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
   const perPage = Math.min(200, Math.max(1, parseInt(req.nextUrl.searchParams.get('perPage') ?? '50', 10)))
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let query = (supabase as any)
+  let query = (admin as any)
     .from('contacts')
     .select('*', { count: 'exact' })
     .eq('workspace_id', profile.workspace_id)
@@ -31,13 +31,14 @@ export async function GET(req: NextRequest) {
     .range((page - 1) * perPage, page * perPage - 1)
 
   if (search) {
-    const digits = search.replace(/\D/g, '')
+    const safe = search.replace(/['"();\\]/g, '').trim().slice(0, 100)
+    const digits = safe.replace(/\D/g, '')
     if (digits.length >= 4) {
       // Digit-heavy query: search by name OR normalized phone
-      query = query.or(`name.ilike.%${search}%,phone_normalized.ilike.%${digits}%`)
+      query = query.or(`name.ilike.%${safe}%,phone_normalized.ilike.%${digits}%`)
     } else {
       // Generic query: search by name, phone, or email
-      query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%,email.ilike.%${search}%`)
+      query = query.or(`name.ilike.%${safe}%,phone.ilike.%${safe}%,email.ilike.%${safe}%`)
     }
   }
 

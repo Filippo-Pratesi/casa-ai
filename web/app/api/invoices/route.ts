@@ -19,6 +19,7 @@ export async function GET(_req: NextRequest) {
     .select('id, numero_fattura, cliente_nome, data_emissione, data_scadenza, totale_documento, netto_a_pagare, status, descrizione, listing_id')
     .eq('workspace_id', profile.workspace_id)
     .order('data_emissione', { ascending: false })
+    .limit(500)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ invoices: data ?? [] })

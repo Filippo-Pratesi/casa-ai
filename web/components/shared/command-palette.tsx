@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { useRouter } from 'next/navigation'
 import { Search, LayoutDashboard, Users, Calendar, Mail, TrendingUp, CheckSquare, Home, Bell, Settings, Loader2, MapPin, UserRound, Building2 } from 'lucide-react'
@@ -31,6 +31,7 @@ export function CommandPalette() {
   const [results, setResults] = useState<SearchResult[]>([])
   const [searching, setSearching] = useState(false)
   const [searchError, setSearchError] = useState(false)
+  const [selectedIndex, setSelectedIndex] = useState(0)
   const router = useRouter()
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -91,6 +92,7 @@ export function CommandPalette() {
     setQuery('')
     setResults([])
     setSearchError(false)
+    setSelectedIndex(0)
   }
 
   function navigate(href: string) {
@@ -99,16 +101,42 @@ export function CommandPalette() {
   }
 
   // Filter nav commands by query (client-side, instant)
-  const filteredNav = query.length > 0
+  const filteredNav = useMemo(() => query.length > 0
     ? NAV_COMMANDS.filter(c =>
         c.label.toLowerCase().includes(query.toLowerCase()) ||
         c.sub.toLowerCase().includes(query.toLowerCase())
       )
-    : NAV_COMMANDS
+    : NAV_COMMANDS, [query])
+
+  // Flat list of all navigable items (results first, then nav)
+  const allItems = useMemo(() => [
+    ...results.map(r => r.href),
+    ...filteredNav.map(c => c.href),
+  ], [results, filteredNav])
 
   const hasResults = results.length > 0
   const hasNav = filteredNav.length > 0
   const isEmpty = !searching && !hasResults && !hasNav && !searchError
+
+  // Reset selected index when items change
+  useEffect(() => {
+    setSelectedIndex(0)
+  }, [results, filteredNav])
+
+  // Keyboard navigation handler on the input
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setSelectedIndex(i => (i + 1) % Math.max(allItems.length, 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setSelectedIndex(i => (i - 1 + Math.max(allItems.length, 1)) % Math.max(allItems.length, 1))
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      const href = allItems[selectedIndex]
+      if (href) navigate(href)
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) handleClose(); else setOpen(true) }}>
@@ -120,6 +148,7 @@ export function CommandPalette() {
             autoFocus
             value={query}
             onChange={e => setQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
             placeholder="Cerca annunci, clienti, immobili, pagine..."
             className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           />
@@ -152,11 +181,13 @@ export function CommandPalette() {
               <p className="px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
                 Risultati
               </p>
-              {results.map(r => (
+              {results.map((r, idx) => (
                 <button
                   key={`${r.type}-${r.id}`}
                   onClick={() => navigate(r.href)}
-                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm hover:bg-muted transition-colors text-left"
+                  className={`flex items-center gap-3 w-full px-4 py-2.5 text-sm transition-colors text-left ${
+                    selectedIndex === idx ? 'bg-muted' : 'hover:bg-muted'
+                  }`}
                 >
                   {r.type === 'listing'
                     ? <MapPin className="h-4 w-4 text-[oklch(0.57_0.20_33)] shrink-0" />
@@ -180,19 +211,24 @@ export function CommandPalette() {
               <p className="px-4 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
                 Navigazione
               </p>
-              {filteredNav.map(cmd => (
-                <button
-                  key={cmd.href}
-                  onClick={() => navigate(cmd.href)}
-                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm hover:bg-muted transition-colors text-left"
-                >
-                  <cmd.icon className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span className="flex-1 min-w-0">
-                    <span className="font-medium block">{cmd.label}</span>
-                    <span className="text-xs text-muted-foreground">{cmd.sub}</span>
-                  </span>
-                </button>
-              ))}
+              {filteredNav.map((cmd, idx) => {
+                const itemIndex = results.length + idx
+                return (
+                  <button
+                    key={cmd.href}
+                    onClick={() => navigate(cmd.href)}
+                    className={`flex items-center gap-3 w-full px-4 py-2.5 text-sm transition-colors text-left ${
+                      selectedIndex === itemIndex ? 'bg-muted' : 'hover:bg-muted'
+                    }`}
+                  >
+                    <cmd.icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="flex-1 min-w-0">
+                      <span className="font-medium block">{cmd.label}</span>
+                      <span className="text-xs text-muted-foreground">{cmd.sub}</span>
+                    </span>
+                  </button>
+                )
+              })}
             </div>
           )}
         </div>

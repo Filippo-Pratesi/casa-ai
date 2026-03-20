@@ -89,9 +89,9 @@ export function PriceHistory({ listingId, currentPrice, history }: PriceHistoryP
             const Icon = isDown ? TrendingDown : TrendingUp
             const pctChange = Math.abs(Math.round(((e.new_price - e.old_price) / e.old_price) * 100))
             return (
-              <div key={e.id} className={`flex items-center gap-2 text-xs rounded-lg px-3 py-2 ${isDown ? 'bg-red-50' : 'bg-green-50'}`}>
-                <Icon className={`h-3.5 w-3.5 shrink-0 ${isDown ? 'text-red-500' : 'text-green-500'}`} />
-                <span className={`font-medium ${isDown ? 'text-red-700' : 'text-green-700'}`}>
+              <div key={e.id} className={`flex items-center gap-2 text-xs rounded-lg px-3 py-2 ${isDown ? 'bg-red-50 dark:bg-red-950/30' : 'bg-green-50 dark:bg-green-950/30'}`}>
+                <Icon className={`h-3.5 w-3.5 shrink-0 ${isDown ? 'text-red-500 dark:text-red-400' : 'text-green-500 dark:text-green-400'}`} />
+                <span className={`font-medium ${isDown ? 'text-red-700 dark:text-red-300' : 'text-green-700 dark:text-green-300'}`}>
                   €{e.old_price.toLocaleString('it-IT')} → €{e.new_price.toLocaleString('it-IT')}
                   <span className="ml-1 font-normal opacity-70">({isDown ? '-' : '+'}{pctChange}%)</span>
                 </span>

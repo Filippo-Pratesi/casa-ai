@@ -16,7 +16,7 @@ export function ListingStats({ listingId, viewCount, shareCount, portalClickCoun
   const [copied, setCopied] = useState(false)
 
   async function handleCopyLink() {
-    const url = `${window.location.origin}/listing/${listingId}`
+    const url = `${window.location.origin}/p/${listingId}`
     await navigator.clipboard.writeText(url)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)

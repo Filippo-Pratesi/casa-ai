@@ -3,10 +3,16 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { FileText, Download, CheckCircle, XCircle, Trash2, ChevronRight, ArrowLeftRight, X } from 'lucide-react'
+import { FileText, Download, CheckCircle, XCircle, Trash2, ChevronRight, ArrowLeftRight, X, MoreHorizontal } from 'lucide-react'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { ProposalStatusBadge, type ProposalStatus } from './proposal-status-badge'
 
 interface Proposal {
@@ -185,35 +191,38 @@ export function ProposalList({ proposals: initialProposals }: ProposalListProps)
               key={p.id}
               className={`card-lift animate-in-${Math.min(idx + 1, 8)} group flex items-center gap-4 rounded-2xl border border-border bg-card px-5 py-4`}
             >
-              {/* Icon */}
-              <div className="shrink-0 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[oklch(0.57_0.20_33/0.12)] to-[oklch(0.66_0.15_188/0.08)]">
-                <FileText className="h-5 w-5 text-[oklch(0.57_0.20_33)] dark:text-[oklch(0.73_0.18_36)]" />
-              </div>
-
-              {/* Details */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-mono text-sm font-semibold text-foreground">{p.numero_proposta}</span>
-                  <ProposalStatusBadge status={p.status} />
+              {/* Clickable area: icon + details + price */}
+              <Link href={`/proposte/${p.id}`} className="flex flex-1 items-center gap-4 min-w-0">
+                {/* Icon */}
+                <div className="shrink-0 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[oklch(0.57_0.20_33/0.12)] to-[oklch(0.66_0.15_188/0.08)]">
+                  <FileText className="h-5 w-5 text-[oklch(0.57_0.20_33)] dark:text-[oklch(0.73_0.18_36)]" />
                 </div>
-                <p className="text-sm font-medium text-foreground truncate mt-0.5">{p.proponente_nome}</p>
-                <p className="text-xs text-muted-foreground truncate mt-0.5">{p.immobile_indirizzo}, {p.immobile_citta}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {new Date(p.data_proposta).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}
-                  <span className="ml-2">· valida fino al {new Date(p.validita_proposta).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}</span>
-                </p>
-              </div>
 
-              {/* Price */}
-              <div className="text-right shrink-0">
-                <p className="font-semibold text-foreground">{formatEuro(p.prezzo_offerto)}</p>
-                {p.prezzo_richiesto > 0 && p.prezzo_offerto !== p.prezzo_richiesto && (
-                  <p className="text-xs text-muted-foreground">rich. {formatEuro(p.prezzo_richiesto)}</p>
-                )}
-              </div>
+                {/* Details */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-mono text-sm font-semibold text-foreground">{p.numero_proposta}</span>
+                    <ProposalStatusBadge status={p.status} />
+                  </div>
+                  <p className="text-sm font-medium text-foreground truncate mt-0.5">{p.proponente_nome}</p>
+                  <p className="text-xs text-muted-foreground truncate mt-0.5">{p.immobile_indirizzo}, {p.immobile_citta}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {new Date(p.data_proposta).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    <span className="ml-2">· valida fino al {new Date(p.validita_proposta).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}</span>
+                  </p>
+                </div>
 
-              {/* Actions */}
-              <div className="shrink-0 flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                {/* Price */}
+                <div className="text-right shrink-0">
+                  <p className="font-semibold text-foreground">{formatEuro(p.prezzo_offerto)}</p>
+                  {p.prezzo_richiesto > 0 && p.prezzo_offerto !== p.prezzo_richiesto && (
+                    <p className="text-xs text-muted-foreground">rich. {formatEuro(p.prezzo_richiesto)}</p>
+                  )}
+                </div>
+              </Link>
+
+              {/* Desktop actions (hidden on mobile) */}
+              <div className="shrink-0 hidden sm:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
                   title="Scarica PDF"
                   onClick={() => handleDownloadPdf(p.id, p.numero_proposta)}
@@ -259,12 +268,50 @@ export function ProposalList({ proposals: initialProposals }: ProposalListProps)
                     <Trash2 className="h-4 w-4" />
                   </button>
                 )}
-                <Link
-                  href={`/proposte/${p.id}`}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                >
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground">
                   <ChevronRight className="h-4 w-4" />
-                </Link>
+                </div>
+              </div>
+
+              {/* Mobile actions dropdown */}
+              <div className="shrink-0 sm:hidden">
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted transition-colors">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleDownloadPdf(p.id, p.numero_proposta)}>
+                      <Download className="h-4 w-4 mr-2" />
+                      Scarica PDF
+                    </DropdownMenuItem>
+                    {p.status === 'inviata' && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleRespond(p.id, 'accettata')}>
+                          <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
+                          Accetta proposta
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => router.push(`/proposte/${p.id}/counter-offer`)}>
+                          <ArrowLeftRight className="h-4 w-4 mr-2 text-purple-600" />
+                          Controproposta
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleRespond(p.id, 'rifiutata')} className="text-destructive focus:text-destructive">
+                          <XCircle className="h-4 w-4 mr-2" />
+                          Rifiuta proposta
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    {p.status === 'bozza' && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleDelete(p.id)} className="text-destructive focus:text-destructive">
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Elimina bozza
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           ))}

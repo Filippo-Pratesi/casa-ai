@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useMemo, useEffect } from 'react'
 import { ImagePlus, X } from 'lucide-react'
 
 const MAX_PHOTOS = 12
@@ -33,7 +33,13 @@ export function PhotoUploader({ photos, onChange }: PhotoUploaderProps) {
     e.preventDefault()
   }
 
-  const previews = photos.map((f) => URL.createObjectURL(f))
+  const previews = useMemo(() => photos.map((f) => URL.createObjectURL(f)), [photos])
+
+  useEffect(() => {
+    return () => {
+      previews.forEach((url) => URL.revokeObjectURL(url))
+    }
+  }, [previews])
 
   return (
     <div className="space-y-3">

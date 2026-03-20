@@ -215,7 +215,7 @@ export async function DELETE(
     if (listingData) {
       const listing = listingData as Record<string, unknown>
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any).from('archived_listings').insert({
+      const { error: archiveListingError } = await (supabase as any).from('archived_listings').insert({
         original_id: listing.id,
         workspace_id: listing.workspace_id,
         agent_id: listing.agent_id,
@@ -239,11 +239,15 @@ export async function DELETE(
         sold_to_name: contact.name,
         archived_by_user_id: user.id,
       })
-      await supabase
-        .from('listings')
-        .delete()
-        .eq('id', listingId)
-        .eq('workspace_id', workspaceId)
+      if (!archiveListingError) {
+        await supabase
+          .from('listings')
+          .delete()
+          .eq('id', listingId)
+          .eq('workspace_id', workspaceId)
+      } else {
+        console.error('Listing archive failed, skipping delete:', archiveListingError)
+      }
     }
   }
 

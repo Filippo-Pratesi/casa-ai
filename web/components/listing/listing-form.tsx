@@ -15,43 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { PhotoUploader } from '@/components/listing/photo-uploader'
-
-const PROPERTY_TYPES = [
-  { value: 'apartment', label: 'Appartamento' },
-  { value: 'house', label: 'Casa' },
-  { value: 'villa', label: 'Villa' },
-  { value: 'commercial', label: 'Commerciale' },
-  { value: 'land', label: 'Terreno' },
-  { value: 'garage', label: 'Garage' },
-  { value: 'other', label: 'Altro' },
-]
-
-const FEATURES = [
-  { id: 'terrace', label: 'Terrazzo' },
-  { id: 'garage', label: 'Garage' },
-  { id: 'elevator', label: 'Ascensore' },
-  { id: 'parking', label: 'Posto auto' },
-  { id: 'renovated_kitchen', label: 'Cucina ristrutturata' },
-  { id: 'sea_view', label: 'Vista mare' },
-  { id: 'garden', label: 'Giardino' },
-  { id: 'storage', label: 'Ripostiglio' },
-  { id: 'cellar', label: 'Cantina' },
-  { id: 'panoramic_view', label: 'Vista panoramica' },
-]
-
-const TONES = [
-  { id: 'standard', label: 'Standard', desc: 'Professionale, per tutti' },
-  { id: 'luxury', label: 'Luxury', desc: 'Esclusivo, aspirazionale' },
-  { id: 'approachable', label: 'Accessibile', desc: 'Caldo, amichevole' },
-  { id: 'investment', label: 'Investimento', desc: 'Orientato al rendimento' },
-]
-
-const CONDITIONS = [
-  { value: 'ottimo', label: 'Ottimo' },
-  { value: 'buono', label: 'Buono' },
-  { value: 'sufficiente', label: 'Sufficiente' },
-  { value: 'da_ristrutturare', label: 'Da ristrutturare' },
-]
+import { PROPERTY_TYPES, FEATURES, TONES, CONDITIONS } from '@/components/listing/listing-constants'
 
 // Map from banca dati property features to listing features
 const PROPERTY_TO_LISTING_FEATURES: Record<string, string> = {
@@ -163,11 +127,14 @@ const INITIAL_FORM: FormState = {
   rendita_catastale: '',
 }
 
+type FormErrors = Partial<Record<'address' | 'city' | 'price' | 'sqm' | 'rooms', string>>
+
 export function ListingForm() {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [photos, setPhotos] = useState<File[]>([])
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
+  const [errors, setErrors] = useState<FormErrors>({})
 
   // Property selector state
   const [selectedProperty, setSelectedProperty] = useState<PropertyResult | null>(null)
@@ -246,6 +213,7 @@ export function ListingForm() {
 
   function update(field: keyof FormState, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }))
+    if (field in errors) setErrors((prev) => ({ ...prev, [field]: undefined }))
   }
 
   function toggleFeature(id: string) {
@@ -257,11 +225,27 @@ export function ListingForm() {
     }))
   }
 
+  function validate(): FormErrors {
+    const e: FormErrors = {}
+    if (!form.address.trim()) e.address = 'Indirizzo obbligatorio'
+    if (!form.city.trim()) e.city = 'Città obbligatoria'
+    if (!form.price || Number(form.price) <= 0) e.price = 'Prezzo obbligatorio'
+    if (!form.sqm || Number(form.sqm) <= 0) e.sqm = 'Superficie obbligatoria'
+    if (!form.rooms || Number(form.rooms) <= 0) e.rooms = 'Numero locali obbligatorio'
+    return e
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
     if (!selectedProperty) {
       toast.error('Seleziona prima un immobile dalla banca dati')
+      return
+    }
+
+    const validationErrors = validate()
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors)
       return
     }
 
@@ -475,9 +459,10 @@ export function ListingForm() {
             value={form.address}
             onChange={(e) => !hasProperty && update('address', e.target.value)}
             readOnly={hasProperty}
-            className={hasProperty ? 'bg-muted cursor-not-allowed text-muted-foreground' : ''}
+            className={hasProperty ? 'bg-muted cursor-not-allowed text-muted-foreground' : errors.address ? 'border-destructive' : ''}
             required
           />
+          {errors.address && <p className="text-xs text-destructive">{errors.address}</p>}
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
@@ -488,9 +473,10 @@ export function ListingForm() {
               value={form.city}
               onChange={(e) => !hasProperty && update('city', e.target.value)}
               readOnly={hasProperty}
-              className={hasProperty ? 'bg-muted cursor-not-allowed text-muted-foreground' : ''}
+              className={hasProperty ? 'bg-muted cursor-not-allowed text-muted-foreground' : errors.city ? 'border-destructive' : ''}
               required
             />
+            {errors.city && <p className="text-xs text-destructive">{errors.city}</p>}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="neighborhood">Quartiere / Zona</Label>
@@ -505,15 +491,45 @@ export function ListingForm() {
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label htmlFor="price">Prezzo (€) *</Label>
-            <Input id="price" type="number" min="0" placeholder="250000" value={form.price} onChange={(e) => update('price', e.target.value)} required />
+            <Input
+              id="price"
+              type="number"
+              min="0"
+              placeholder="250000"
+              value={form.price}
+              onChange={(e) => update('price', e.target.value)}
+              className={errors.price ? 'border-destructive' : ''}
+              required
+            />
+            {errors.price && <p className="text-xs text-destructive">{errors.price}</p>}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="sqm">Superficie (m²) *</Label>
-            <Input id="sqm" type="number" min="1" placeholder="85" value={form.sqm} onChange={(e) => update('sqm', e.target.value)} required />
+            <Input
+              id="sqm"
+              type="number"
+              min="1"
+              placeholder="85"
+              value={form.sqm}
+              onChange={(e) => update('sqm', e.target.value)}
+              className={errors.sqm ? 'border-destructive' : ''}
+              required
+            />
+            {errors.sqm && <p className="text-xs text-destructive">{errors.sqm}</p>}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="rooms">Locali *</Label>
-            <Input id="rooms" type="number" min="1" placeholder="3" value={form.rooms} onChange={(e) => update('rooms', e.target.value)} required />
+            <Input
+              id="rooms"
+              type="number"
+              min="1"
+              placeholder="3"
+              value={form.rooms}
+              onChange={(e) => update('rooms', e.target.value)}
+              className={errors.rooms ? 'border-destructive' : ''}
+              required
+            />
+            {errors.rooms && <p className="text-xs text-destructive">{errors.rooms}</p>}
           </div>
           {form.property_type !== 'land' && (
             <div className="space-y-1.5">

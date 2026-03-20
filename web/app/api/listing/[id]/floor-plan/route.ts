@@ -86,11 +86,30 @@ export async function DELETE(
 
   const admin = createAdminClient()
 
+  // Verify listing belongs to user's workspace before modifying
+  const { data: profileData } = await admin
+    .from('users')
+    .select('workspace_id')
+    .eq('id', user.id)
+    .single()
+  const profile = profileData as { workspace_id: string } | null
+  if (!profile) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 404 })
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: listingData } = await (admin as any)
+    .from('listings')
+    .select('id')
+    .eq('id', id)
+    .eq('workspace_id', profile.workspace_id)
+    .single()
+  if (!listingData) return NextResponse.json({ error: 'Annuncio non trovato' }, { status: 404 })
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (admin as any)
     .from('listings')
     .update({ floor_plan_url: null })
     .eq('id', id)
+    .eq('workspace_id', profile.workspace_id)
 
   return NextResponse.json({ ok: true })
 }

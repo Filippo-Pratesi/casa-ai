@@ -13,7 +13,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
 }
 
 interface Plan {
-  id: 'starter' | 'agenzia' | 'network'
+  id: 'starter' | 'growth' | 'network'
   name: string
   iconKey: string
   color: string

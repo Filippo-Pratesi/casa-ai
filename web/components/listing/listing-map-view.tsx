@@ -64,6 +64,7 @@ export function ListingMapView({ listings }: ListingMapViewProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapRef = useRef<any>(null)
   const [selected, setSelected] = useState<{ listing: ListingMapPoint; x: number; y: number } | null>(null)
+  const selectedRef = useRef<{ listing: ListingMapPoint; x: number; y: number } | null>(null)
   const [mapLoaded, setMapLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -113,8 +114,20 @@ export function ListingMapView({ listings }: ListingMapViewProps) {
 
           el.addEventListener('click', () => {
             const pos = map.project([listing.lng, listing.lat])
-            setSelected({ listing, x: pos.x, y: pos.y })
+            const next = { listing, x: pos.x, y: pos.y }
+            selectedRef.current = next
+            setSelected(next)
           })
+        })
+
+        // Re-project popup position on map move/zoom
+        map.on('move', () => {
+          if (!selectedRef.current) return
+          const { listing: sel } = selectedRef.current
+          const pos = map.project([sel.lng, sel.lat])
+          const next = { listing: sel, x: pos.x, y: pos.y }
+          selectedRef.current = next
+          setSelected(next)
         })
 
         // Fit bounds if multiple listings
@@ -161,7 +174,7 @@ export function ListingMapView({ listings }: ListingMapViewProps) {
           style={{ left: selected.x, top: selected.y, pointerEvents: 'none' }}
         >
           <div style={{ pointerEvents: 'auto' }}>
-            <Popup listing={selected.listing} onClose={() => setSelected(null)} />
+            <Popup listing={selected.listing} onClose={() => { selectedRef.current = null; setSelected(null) }} />
           </div>
         </div>
       )}

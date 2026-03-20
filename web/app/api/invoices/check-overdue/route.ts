@@ -1,8 +1,18 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 // POST /api/invoices/check-overdue — mark overdue invoices as scaduta
-export async function POST() {
+// Protected by CRON_SECRET header to prevent unauthorized calls
+export async function POST(req: NextRequest) {
+  const cronSecret = process.env.CRON_SECRET
+  if (!cronSecret) {
+    return NextResponse.json({ error: 'CRON_SECRET non configurato' }, { status: 500 })
+  }
+  const authHeader = req.headers.get('x-cron-secret')
+  if (authHeader !== cronSecret) {
+    return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
+  }
+
   const admin = createAdminClient()
   const today = new Date().toISOString().split('T')[0]
 

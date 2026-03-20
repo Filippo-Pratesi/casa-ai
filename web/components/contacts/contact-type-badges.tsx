@@ -7,7 +7,7 @@ const TYPE_CONFIG: Record<string, { label: string; color: string }> = {
   },
   seller: {
     label: 'Venditore',
-    color: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800',
+    color: 'bg-green-50 text-green-700 border-green-100 dark:bg-green-950 dark:text-green-300 dark:border-green-800',
   },
   renter: {
     label: 'Affittuario',
@@ -15,7 +15,7 @@ const TYPE_CONFIG: Record<string, { label: string; color: string }> = {
   },
   landlord: {
     label: 'Proprietario',
-    color: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800',
+    color: 'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800',
   },
   other: {
     label: 'Altro',

@@ -7,6 +7,6 @@ interface AiWidgetGateProps {
 }
 
 export function AiWidgetGate({ plan }: AiWidgetGateProps) {
-  if (plan !== 'agenzia' && plan !== 'network') return null
+  if (plan !== 'growth' && plan !== 'network') return null
   return <AiWidget />
 }

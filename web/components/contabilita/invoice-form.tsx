@@ -2,12 +2,20 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Trash2, ChevronDown } from 'lucide-react'
+import { Plus, Trash2, ChevronDown, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import {
   computeTotals,
@@ -90,6 +98,9 @@ export function InvoiceForm({ contacts, listings, nextNumber, workspaceName, mod
   const [metodoPagamento, setMetodoPagamento] = useState((initialData?.metodo_pagamento as string) ?? 'bonifico')
   const [iban, setIban] = useState((initialData?.iban as string) ?? '')
   const [note, setNote] = useState((initialData?.note as string) ?? '')
+
+  // UI state
+  const [showSendConfirm, setShowSendConfirm] = useState(false)
 
   // Auto-fill from contact
   const handleContactChange = useCallback((contactId: string) => {
@@ -228,6 +239,7 @@ export function InvoiceForm({ contacts, listings, nextNumber, workspaceName, mod
   }
 
   return (
+    <>
     <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6">
       {/* Left: form */}
       <div className="space-y-5">
@@ -333,7 +345,7 @@ export function InvoiceForm({ contacts, listings, nextNumber, workspaceName, mod
           <h2 className="text-sm font-semibold text-foreground">Voci fattura</h2>
           <div className="space-y-3">
             {voci.map((voce, idx) => (
-              <div key={idx} className="grid grid-cols-[1fr_70px_110px_36px] gap-2 items-end">
+              <div key={idx} className="grid grid-cols-[1fr_70px_110px_80px_36px] gap-2 items-end">
                 <div className="space-y-1.5">
                   {idx === 0 && <Label>Descrizione</Label>}
                   <Input
@@ -363,6 +375,12 @@ export function InvoiceForm({ contacts, listings, nextNumber, workspaceName, mod
                     onChange={e => updateVoce(idx, 'prezzo_unitario', e.target.value)}
                     placeholder="0.00"
                   />
+                </div>
+                <div className="space-y-1.5">
+                  {idx === 0 && <Label className="text-muted-foreground">Totale</Label>}
+                  <div className="h-9 flex items-center px-3 text-sm font-medium text-foreground bg-muted/50 rounded-lg border border-border">
+                    {formatCurrency(voce.importo)}
+                  </div>
                 </div>
                 <div className={cn('flex items-end pb-0.5', idx === 0 && 'mt-6')}>
                   <button
@@ -538,12 +556,13 @@ export function InvoiceForm({ contacts, listings, nextNumber, workspaceName, mod
               onClick={() => handleSave(false)}
               disabled={saving}
             >
+              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
               {saving ? 'Salvataggio…' : 'Salva bozza'}
             </Button>
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => handleSave(true)}
+              onClick={() => setShowSendConfirm(true)}
               disabled={saving}
             >
               Salva e segna come inviata
@@ -574,5 +593,23 @@ export function InvoiceForm({ contacts, listings, nextNumber, workspaceName, mod
         </div>
       </div>
     </div>
+
+    <Dialog open={showSendConfirm} onOpenChange={setShowSendConfirm}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Segna fattura come inviata?</DialogTitle>
+          <DialogDescription>
+            La fattura verrà salvata con stato &quot;Inviata&quot;. Assicurati che i dati siano corretti prima di procedere.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setShowSendConfirm(false)}>Annulla</Button>
+          <Button onClick={() => { setShowSendConfirm(false); handleSave(true) }}>
+            Conferma e salva
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   )
 }

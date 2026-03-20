@@ -13,6 +13,7 @@ interface FloorPlanUploaderProps {
 export function FloorPlanUploader({ listingId, initialUrl }: FloorPlanUploaderProps) {
   const [url, setUrl] = useState<string | null>(initialUrl)
   const [loading, setLoading] = useState(false)
+  const [dragOver, setDragOver] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   async function handleFile(file: File) {
@@ -59,6 +60,7 @@ export function FloorPlanUploader({ listingId, initialUrl }: FloorPlanUploaderPr
 
   function handleDrop(e: React.DragEvent) {
     e.preventDefault()
+    setDragOver(false)
     const file = e.dataTransfer.files[0]
     if (file) handleFile(file)
   }
@@ -105,9 +107,11 @@ export function FloorPlanUploader({ listingId, initialUrl }: FloorPlanUploaderPr
   return (
     <div
       onDrop={handleDrop}
-      onDragOver={(e) => e.preventDefault()}
+      onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+      onDragEnter={() => setDragOver(true)}
+      onDragLeave={() => setDragOver(false)}
       onClick={() => !loading && inputRef.current?.click()}
-      className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border p-8 text-center cursor-pointer hover:border-border hover:bg-muted/50 transition-colors"
+      className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-8 text-center cursor-pointer transition-colors ${dragOver ? 'border-primary bg-primary/5' : 'border-border hover:border-border hover:bg-muted/50'}`}
     >
       {loading ? (
         <Loader2 className="h-6 w-6 text-muted-foreground animate-spin" />

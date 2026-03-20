@@ -7,6 +7,7 @@ interface ImportRow {
   email?: string | null
   phone?: string | null
   type?: string
+  types?: string[]
   city_of_residence?: string | null
   notes?: string | null
   budget_min?: number | null
@@ -96,6 +97,7 @@ export async function POST(req: NextRequest) {
       email,
       phone: toNullable(row['Telefono'] ?? row['phone'] ?? row['PHONE']),
       type,
+      types: [type],
       city_of_residence: toNullable(row['Città'] ?? row['city_of_residence'] ?? row['city'] ?? row['CITY']),
       notes: toNullable(row['Note'] ?? row['notes'] ?? row['NOTES']),
       budget_min: toNumber(row['Budget Min'] ?? row['budget_min']),

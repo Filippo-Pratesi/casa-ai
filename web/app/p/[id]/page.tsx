@@ -40,6 +40,7 @@ export default async function PublicListingPage({
     .from('listings')
     .select('*')
     .eq('id', id)
+    .eq('status', 'published')
     .single()
 
   if (error || !data) notFound()
@@ -90,7 +91,7 @@ export default async function PublicListingPage({
 
         {/* Price */}
         <div className="rounded-2xl bg-[oklch(0.57_0.20_33)] px-6 py-4 text-white">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Prezzo</p>
+          <p className="text-xs text-white/70 uppercase tracking-wider mb-1">Prezzo</p>
           <p className="text-3xl font-bold">€{listing.price.toLocaleString('it-IT')}</p>
         </div>
 

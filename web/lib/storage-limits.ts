@@ -30,21 +30,19 @@ export async function getWorkspaceStorageUsed(workspaceId: string): Promise<numb
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (admin as any)
       .from('contact_attachments')
-      .select('size_bytes')
-      .eq('workspace_id', workspaceId),
+      .select('size_bytes.sum()')
+      .eq('workspace_id', workspaceId)
+      .single(),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (admin as any)
       .from('listing_attachments')
-      .select('size_bytes')
-      .eq('workspace_id', workspaceId),
+      .select('size_bytes.sum()')
+      .eq('workspace_id', workspaceId)
+      .single(),
   ])
 
-  const contactBytes: number = (contactResult.data ?? []).reduce(
-    (sum: number, row: { size_bytes: number }) => sum + (row.size_bytes ?? 0), 0
-  )
-  const listingBytes: number = (listingResult.data ?? []).reduce(
-    (sum: number, row: { size_bytes: number }) => sum + (row.size_bytes ?? 0), 0
-  )
+  const contactBytes: number = (contactResult.data?.sum ?? 0) as number
+  const listingBytes: number = (listingResult.data?.sum ?? 0) as number
 
   return contactBytes + listingBytes
 }

@@ -82,6 +82,10 @@ export async function POST(
 
   const contact = contactData as Contact
 
+  if (!contact.date_of_birth) {
+    return NextResponse.json({ error: 'Il contatto non ha una data di nascita impostata' }, { status: 400 })
+  }
+
   try {
     const message = await generateBirthdayMessage(contact.name)
 

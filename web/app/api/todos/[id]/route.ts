@@ -21,12 +21,21 @@ export async function PATCH(
 
   const admin = createAdminClient()
 
-  // Ownership check
+  const { data: profileData } = await admin
+    .from('users')
+    .select('workspace_id')
+    .eq('id', user.id)
+    .single()
+  const profile = profileData as { workspace_id: string } | null
+  if (!profile) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 404 })
+
+  // Ownership check scoped to workspace
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: existing } = await (admin as any)
     .from('todos')
-    .select('id, assigned_to, created_by')
+    .select('id, assigned_to, created_by, workspace_id')
     .eq('id', id)
+    .eq('workspace_id', profile.workspace_id)
     .single()
 
   if (!existing) return NextResponse.json({ error: 'Non trovato' }, { status: 404 })
@@ -72,11 +81,20 @@ export async function DELETE(
 
   const admin = createAdminClient()
 
+  const { data: profileData2 } = await admin
+    .from('users')
+    .select('workspace_id')
+    .eq('id', user.id)
+    .single()
+  const profile2 = profileData2 as { workspace_id: string } | null
+  if (!profile2) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 404 })
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: existing } = await (admin as any)
     .from('todos')
-    .select('id, assigned_to, created_by')
+    .select('id, assigned_to, created_by, workspace_id')
     .eq('id', id)
+    .eq('workspace_id', profile2.workspace_id)
     .single()
 
   if (!existing) return NextResponse.json({ error: 'Non trovato' }, { status: 404 })
@@ -85,7 +103,7 @@ export async function DELETE(
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (admin as any).from('todos').delete().eq('id', id)
+  await (admin as any).from('todos').delete().eq('id', id).eq('workspace_id', profile2.workspace_id)
 
   return NextResponse.json({ success: true })
 }

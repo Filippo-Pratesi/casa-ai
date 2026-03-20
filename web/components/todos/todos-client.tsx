@@ -144,6 +144,7 @@ export function TodosClient({ initialTodos, currentUserId, members, memberMap }:
   }
 
   async function handleDelete(id: string) {
+    if (!confirm('Eliminare questo to do?')) return
     setTodos(prev => prev.filter(t => t.id !== id))
     try {
       await fetch(`/api/todos/${id}`, { method: 'DELETE' })
@@ -279,9 +280,10 @@ export function TodosClient({ initialTodos, currentUserId, members, memberMap }:
           <div className="flex justify-end gap-2 border-t border-border px-4 py-2.5">
             <button
               onClick={closeAdd}
-              className="rounded-lg px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted transition-colors"
+              className="rounded-lg px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted transition-colors inline-flex items-center gap-1.5"
             >
               Annulla
+              <span className="rounded bg-muted px-1 py-0.5 text-[10px] font-mono leading-none">Esc</span>
             </button>
             <button
               onClick={handleAdd}

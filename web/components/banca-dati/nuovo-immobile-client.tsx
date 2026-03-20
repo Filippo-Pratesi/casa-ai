@@ -660,13 +660,16 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
           <Link href="/banca-dati" className={buttonVariants({ variant: 'outline' })}>
             Annulla
           </Link>
-          <Button type="submit" disabled={submitting} className="flex-1">
+          <Button type="submit" disabled={submitting || latitude === null || longitude === null} className="flex-1" title={latitude === null ? 'Seleziona un indirizzo con coordinate valide' : undefined}>
             {submitting ? (
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Salvataggio...</>
             ) : (
               'Aggiungi alla banca dati'
             )}
           </Button>
+          {latitude === null && street && (
+            <p className="text-xs text-destructive mt-1">Seleziona un indirizzo dall&apos;autocompletamento per ottenere le coordinate.</p>
+          )}
         </div>
       </form>
 

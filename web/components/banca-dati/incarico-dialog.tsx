@@ -95,7 +95,7 @@ export const IncaricoDialog = React.memo(function IncaricoDialog({
               type="number"
               step="0.5"
               min="0"
-              max="10"
+              max="20"
               value={incaricoCommission}
               onChange={(e) => setIncaricoCommission(e.target.value)}
               placeholder="Es. 3"

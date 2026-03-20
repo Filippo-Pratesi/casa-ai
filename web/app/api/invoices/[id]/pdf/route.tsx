@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
 })
 
 function fmt(amount: number) {
-  return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(amount)
+  return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(amount / 100)
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

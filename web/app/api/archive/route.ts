@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // GET /api/archive — list archived listings and contacts for the workspace
 export async function GET(_req: NextRequest) {
@@ -7,7 +8,8 @@ export async function GET(_req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
-  const { data: profileData } = await supabase
+  const admin = createAdminClient()
+  const { data: profileData } = await admin
     .from('users')
     .select('workspace_id')
     .eq('id', user.id)
@@ -18,13 +20,13 @@ export async function GET(_req: NextRequest) {
 
   const [listingsRes, contactsRes] = await Promise.all([
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    (admin as any)
       .from('archived_listings')
       .select('*')
       .eq('workspace_id', profile.workspace_id)
       .order('archived_at', { ascending: false }),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    (admin as any)
       .from('archived_contacts')
       .select('*')
       .eq('workspace_id', profile.workspace_id)

@@ -2,12 +2,19 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronDown } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { ConditionType, Vincolo, ProposalFormProps, today, defaultValidity } from './proposal-types'
 import { VincoliSection } from './vincoli-section'
 import { ProposalSummary } from './proposal-summary'
@@ -53,8 +60,8 @@ export function ProposalForm({
   const [vincoli, setVincoli] = useState<Vincolo[]>((initialData?.vincoli as Vincolo[]) ?? [])
 
   // Auto-fill from listing
-  const handleListingChange = useCallback((listingId: string) => {
-    setSelectedListingId(listingId)
+  const handleListingChange = useCallback((listingId: string | null) => {
+    setSelectedListingId(listingId ?? '')
     const l = listings.find(x => x.id === listingId)
     if (l) {
       setImmobileIndirizzo(l.address)
@@ -64,8 +71,8 @@ export function ProposalForm({
   }, [listings])
 
   // Auto-fill from buyer contact
-  const handleContactChange = useCallback((contactId: string) => {
-    setSelectedContactId(contactId)
+  const handleContactChange = useCallback((contactId: string | null) => {
+    setSelectedContactId(contactId ?? '')
     const c = contacts.find(x => x.id === contactId)
     if (c) {
       setProponenteNome(c.name)
@@ -75,8 +82,8 @@ export function ProposalForm({
   }, [contacts])
 
   // Auto-fill seller from contact
-  const handleSellerContactChange = useCallback((contactId: string) => {
-    setSelectedSellerContactId(contactId)
+  const handleSellerContactChange = useCallback((contactId: string | null) => {
+    setSelectedSellerContactId(contactId ?? '')
     const c = contacts.find(x => x.id === contactId)
     if (c) {
       setProprietarioNome(c.name)
@@ -136,7 +143,7 @@ export function ProposalForm({
       }
 
       const url = mode === 'edit' ? `/api/proposals/${proposalId}` : '/api/proposals'
-      const method = mode === 'edit' ? 'PUT' : 'POST'
+      const method = mode === 'edit' ? 'PATCH' : 'POST'
       const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
 
       if (!res.ok) {
@@ -163,19 +170,18 @@ export function ProposalForm({
           <h2 className="text-sm font-semibold text-foreground">Immobile</h2>
           <div className="space-y-1.5">
             <Label>Seleziona immobile *</Label>
-            <div className="relative">
-              <select
-                value={selectedListingId}
-                onChange={e => handleListingChange(e.target.value)}
-                className="w-full appearance-none rounded-lg border border-input bg-background px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-ring/50"
-              >
-                <option value="">— Seleziona immobile —</option>
+            <Select value={selectedListingId} onValueChange={handleListingChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="— Seleziona immobile —" />
+              </SelectTrigger>
+              <SelectContent>
                 {listings.map(l => (
-                  <option key={l.id} value={l.id}>{l.address}, {l.city}{l.price ? ` — ${formatEuro(l.price)}` : ''}</option>
+                  <SelectItem key={l.id} value={l.id}>
+                    {l.address}, {l.city}{l.price ? ` — ${formatEuro(l.price)}` : ''}
+                  </SelectItem>
                 ))}
-              </select>
-              <ChevronDown className="absolute right-2 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
-            </div>
+              </SelectContent>
+            </Select>
           </div>
           {selectedListingId && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -196,19 +202,16 @@ export function ProposalForm({
           <h2 className="text-sm font-semibold text-foreground">Proponente (Acquirente)</h2>
           <div className="space-y-1.5">
             <Label>Seleziona cliente *</Label>
-            <div className="relative">
-              <select
-                value={selectedContactId}
-                onChange={e => handleContactChange(e.target.value)}
-                className="w-full appearance-none rounded-lg border border-input bg-background px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-ring/50"
-              >
-                <option value="">— Seleziona acquirente —</option>
+            <Select value={selectedContactId} onValueChange={handleContactChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="— Seleziona acquirente —" />
+              </SelectTrigger>
+              <SelectContent>
                 {contacts.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                 ))}
-              </select>
-              <ChevronDown className="absolute right-2 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
-            </div>
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
@@ -235,19 +238,16 @@ export function ProposalForm({
           <h2 className="text-sm font-semibold text-foreground">Venditore <span className="text-muted-foreground font-normal">(opzionale)</span></h2>
           <div className="space-y-1.5">
             <Label>Seleziona venditore dal database</Label>
-            <div className="relative">
-              <select
-                value={selectedSellerContactId}
-                onChange={e => handleSellerContactChange(e.target.value)}
-                className="w-full appearance-none rounded-lg border border-input bg-background px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-ring/50"
-              >
-                <option value="">— Seleziona venditore (opzionale) —</option>
+            <Select value={selectedSellerContactId} onValueChange={handleSellerContactChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="— Seleziona venditore (opzionale) —" />
+              </SelectTrigger>
+              <SelectContent>
                 {contacts.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                 ))}
-              </select>
-              <ChevronDown className="absolute right-2 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
-            </div>
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
@@ -351,9 +351,11 @@ export function ProposalForm({
           {/* Actions */}
           <div className="space-y-2">
             <Button className="w-full btn-ai" onClick={() => handleSave(false)} disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
               {saving ? 'Salvataggio…' : 'Salva bozza'}
             </Button>
             <Button variant="outline" className="w-full" onClick={() => handleSave(true)} disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
               Salva e invia al venditore
             </Button>
             <Button variant="ghost" className="w-full text-muted-foreground" onClick={() => router.back()} disabled={saving}>

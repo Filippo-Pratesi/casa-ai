@@ -5,9 +5,15 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   ArrowLeft, MapPin, Phone, ExternalLink,
-  Plus, Trash2, Loader2, Megaphone, FileDown, Pencil, AlertTriangle
+  Plus, Trash2, Loader2, Megaphone, FileDown, Pencil, AlertTriangle, MoreHorizontal
 } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Card } from '@/components/ui/card'
 import {
   Select,
@@ -29,22 +35,9 @@ import { EditDetailsDialog } from './edit-details-dialog'
 import { AddContactDialog } from './add-contact-dialog'
 import { IncaricoDialog } from './incarico-dialog'
 import { LocatoDialog } from './locato-dialog'
+import { PROPERTY_ROLE_LABELS } from '@/lib/property-role-labels'
 
-const ROLE_LABELS: Record<string, string> = {
-  proprietario: 'Proprietario',
-  venditore: 'Venditore',
-  acquirente: 'Acquirente',
-  inquilino: 'Inquilino',
-  moglie_marito: 'Moglie/Marito',
-  figlio_figlia: 'Figlio/Figlia',
-  vicino: 'Vicino',
-  portiere: 'Portiere',
-  amministratore: 'Amministratore',
-  avvocato: 'Avvocato',
-  commercialista: 'Commercialista',
-  precedente_proprietario: 'Ex proprietario',
-  altro: 'Altro',
-}
+const ROLE_LABELS = PROPERTY_ROLE_LABELS
 
 const PROPERTY_TYPE_IT: Record<string, string> = {
   apartment: 'Appartamento', house: 'Casa', villa: 'Villa',
@@ -429,27 +422,59 @@ export function ImmobileDetailClient({
               {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
             </Button>
           )}
-          {property.stage === 'incarico' && !property.listing_id && (
-            <Button variant="outline" size="sm" onClick={handlePromoteToListing}>
-              <Megaphone className="h-4 w-4 mr-1.5" />
-              Crea annuncio
-            </Button>
-          )}
-          {property.listing_id && (
-            <Link href={`/listing/${property.listing_id}`} className={buttonVariants({ variant: 'outline', size: 'sm' })}>
-              <ExternalLink className="h-4 w-4 mr-1.5" />
-              Vedi annuncio
-            </Link>
-          )}
-          {/* Crea Campagna — visible when property has an associated listing */}
-          {property.listing_id && (
-            <Link
-              href={`/campaigns/new?listing_id=${property.listing_id}&property_id=${property.id}`}
-              className={buttonVariants({ variant: 'outline', size: 'sm' })}
-            >
-              <Megaphone className="h-4 w-4 mr-1.5" />
-              Crea Campagna
-            </Link>
+          {/* Desktop secondary actions */}
+          <div className="hidden md:flex gap-2">
+            {property.stage === 'incarico' && !property.listing_id && (
+              <Button variant="outline" size="sm" onClick={handlePromoteToListing}>
+                <Megaphone className="h-4 w-4 mr-1.5" />
+                Crea annuncio
+              </Button>
+            )}
+            {property.listing_id && (
+              <Link href={`/listing/${property.listing_id}`} className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+                <ExternalLink className="h-4 w-4 mr-1.5" />
+                Vedi annuncio
+              </Link>
+            )}
+            {property.listing_id && (
+              <Link
+                href={`/campaigns/new?listing_id=${property.listing_id}&property_id=${property.id}`}
+                className={buttonVariants({ variant: 'outline', size: 'sm' })}
+              >
+                <Megaphone className="h-4 w-4 mr-1.5" />
+                Crea Campagna
+              </Link>
+            )}
+          </div>
+          {/* Mobile overflow menu */}
+          {(property.listing_id || (property.stage === 'incarico' && !property.listing_id)) && (
+            <div className="md:hidden">
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center rounded-lg border border-border hover:bg-muted transition-colors">
+                  <MoreHorizontal className="h-4 w-4" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {property.stage === 'incarico' && !property.listing_id && (
+                    <DropdownMenuItem onClick={handlePromoteToListing}>
+                      <Megaphone className="h-4 w-4 mr-2" />
+                      Crea annuncio
+                    </DropdownMenuItem>
+                  )}
+                  {property.listing_id && (
+                    <DropdownMenuItem onClick={() => router.push(`/listing/${property.listing_id}`)}>
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Vedi annuncio
+                    </DropdownMenuItem>
+                  )}
+                  {property.listing_id && (
+                    <DropdownMenuItem onClick={() => router.push(`/campaigns/new?listing_id=${property.listing_id}&property_id=${property.id}`)}>
+                      <Megaphone className="h-4 w-4 mr-2" />
+                      Crea Campagna
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           )}
         </div>
       </div>
@@ -472,7 +497,7 @@ export function ImmobileDetailClient({
         {/* Column 2 (260px) — cronistoria, sticky */}
         <div className="order-2">
           <Card className="p-3 h-fit lg:sticky lg:top-4">
-            <h2 className="font-semibold text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Cronistoria</h2>
+            <h2 className="font-semibold text-xs uppercase tracking-wide text-muted-foreground mb-2">Cronistoria</h2>
             <div className="max-h-[calc(100vh-180px)] overflow-y-auto pr-0.5">
               <EventTimeline
                 propertyId={property.id}

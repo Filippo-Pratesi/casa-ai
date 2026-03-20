@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useRef } from 'react'
+import { useState, useTransition, useRef, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Loader2, X, ImagePlus } from 'lucide-react'
@@ -14,43 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-
-const PROPERTY_TYPES = [
-  { value: 'apartment', label: 'Appartamento' },
-  { value: 'house', label: 'Casa' },
-  { value: 'villa', label: 'Villa' },
-  { value: 'commercial', label: 'Commerciale' },
-  { value: 'land', label: 'Terreno' },
-  { value: 'garage', label: 'Garage' },
-  { value: 'other', label: 'Altro' },
-]
-
-const FEATURES = [
-  { id: 'terrace', label: 'Terrazzo' },
-  { id: 'garage', label: 'Garage' },
-  { id: 'elevator', label: 'Ascensore' },
-  { id: 'parking', label: 'Posto auto' },
-  { id: 'renovated_kitchen', label: 'Cucina ristrutturata' },
-  { id: 'sea_view', label: 'Vista mare' },
-  { id: 'garden', label: 'Giardino' },
-  { id: 'storage', label: 'Ripostiglio' },
-  { id: 'cellar', label: 'Cantina' },
-  { id: 'panoramic_view', label: 'Vista panoramica' },
-]
-
-const TONES = [
-  { id: 'standard', label: 'Standard', desc: 'Professionale, per tutti' },
-  { id: 'luxury', label: 'Luxury', desc: 'Esclusivo, aspirazionale' },
-  { id: 'approachable', label: 'Accessibile', desc: 'Caldo, amichevole' },
-  { id: 'investment', label: 'Investimento', desc: 'Orientato al rendimento' },
-]
-
-const CONDITIONS = [
-  { value: 'ottimo', label: 'Ottimo' },
-  { value: 'buono', label: 'Buono' },
-  { value: 'sufficiente', label: 'Sufficiente' },
-  { value: 'da_ristrutturare', label: 'Da ristrutturare' },
-]
+import { PROPERTY_TYPES, FEATURES, TONES, CONDITIONS } from '@/components/listing/listing-constants'
 
 export interface ListingEditInitial {
   property_type: string
@@ -110,6 +74,14 @@ export function ListingEditForm({ listingId, initial }: Props) {
   // Photo state
   const [existingPhotos, setExistingPhotos] = useState<string[]>(initial.photos_urls)
   const [newPhotos, setNewPhotos] = useState<File[]>([])
+
+  const newPhotoPreviews = useMemo(() => newPhotos.map((f) => URL.createObjectURL(f)), [newPhotos])
+
+  useEffect(() => {
+    return () => {
+      newPhotoPreviews.forEach((url) => URL.revokeObjectURL(url))
+    }
+  }, [newPhotoPreviews])
 
   function update(field: string, value: string) {
     setForm(prev => ({ ...prev, [field]: value }))
@@ -398,10 +370,10 @@ export function ListingEditForm({ listingId, initial }: Props) {
               onChange={e => handleNewPhotoFiles(e.target.files)} />
             {newPhotos.length > 0 && (
               <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4">
-                {newPhotos.map((f, i) => (
+                {newPhotos.map((_f, i) => (
                   <div key={i} className="group relative aspect-square overflow-hidden rounded-lg bg-muted">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={URL.createObjectURL(f)} alt={`Nuova foto ${i + 1}`} className="h-full w-full object-cover" />
+                    <img src={newPhotoPreviews[i]} alt={`Nuova foto ${i + 1}`} className="h-full w-full object-cover" />
                     <button type="button" onClick={() => removeNewPhoto(i)}
                       className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100">
                       <X className="h-3 w-3" />
