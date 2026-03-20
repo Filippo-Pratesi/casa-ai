@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { PlusSquare, FileText, Euro, Maximize2, Home, User, Users, CalendarDays, TrendingUp, LayoutGrid, List, Search, X, Download, ChevronUp, ChevronDown, ChevronsUpDown, Sparkles, ArrowUpRight, BedDouble, Building2 } from 'lucide-react'
+import { PlusSquare, FileText, Euro, Maximize2, Home, User, Users, CalendarDays, TrendingUp, LayoutGrid, List, Search, X, Download, ChevronUp, ChevronDown, ChevronsUpDown, Sparkles, ArrowUpRight, Building2 } from 'lucide-react'
 import { useI18n } from '@/lib/i18n/context'
 import { TYPE_COLORS, TYPE_ACTIVE, formatDate } from './dashboard-types'
 import type { Listing, DashboardClientProps } from './dashboard-types'
@@ -15,11 +15,8 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
   const [activeTypes, setActiveTypes] = useState<Set<string>>(new Set())
   const [citySearch, setCitySearch] = useState('')
   const [priceMax, setPriceMax] = useState('')
-  const [contentFilter, setContentFilter] = useState<'all' | 'generated' | 'draft'>('all')
   const [sortKey, setSortKey] = useState<'address' | 'price' | 'sqm' | 'date' | null>(null)
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
-  const [toneFilter, setToneFilter] = useState<string | null>(null)
-  const [minRooms, setMinRooms] = useState<number | null>(null)
 
   const TYPE_LABELS: Record<string, string> = useMemo(() => ({
     apartment: t('property.apartment'),
@@ -63,15 +60,12 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
     })
   }
 
-  const hasFilters = activeTypes.size > 0 || citySearch.trim() || priceMax || contentFilter !== 'all' || toneFilter !== null || minRooms !== null
+  const hasFilters = activeTypes.size > 0 || citySearch.trim() || priceMax
 
   function clearFilters() {
     setActiveTypes(new Set())
     setCitySearch('')
     setPriceMax('')
-    setContentFilter('all')
-    setToneFilter(null)
-    setMinRooms(null)
   }
 
   const filtered = useMemo(() => {
@@ -85,10 +79,6 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
         const max = Number(priceMax)
         if (!isNaN(max) && l.price > max) return false
       }
-      if (contentFilter === 'generated' && !l.generated_content) return false
-      if (contentFilter === 'draft' && l.generated_content) return false
-      if (toneFilter && l.tone !== toneFilter) return false
-      if (minRooms !== null && l.rooms < minRooms) return false
       return true
     })
     if (!sortKey) return base
@@ -100,7 +90,7 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
       else if (sortKey === 'date') cmp = a.created_at.localeCompare(b.created_at)
       return sortDir === 'asc' ? cmp : -cmp
     })
-  }, [listings, activeTypes, citySearch, priceMax, contentFilter, sortKey, sortDir])
+  }, [listings, activeTypes, citySearch, priceMax, sortKey, sortDir])
 
   function handleSort(key: typeof sortKey) {
     if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -290,21 +280,9 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
                 </button>
               )
             })}
-            {/* Content status filter */}
-            <div className="ml-auto flex rounded-lg border border-border bg-card overflow-hidden text-xs">
-              {([['all', t('listings.filter.all')], ['generated', t('listings.filter.withAI')], ['draft', t('listings.filter.drafts')]] as [typeof contentFilter, string][]).map(([val, label]) => (
-                <button
-                  key={val}
-                  onClick={() => setContentFilter(val)}
-                  className={`px-2.5 py-1 font-medium transition-colors ${contentFilter === val ? 'bg-[oklch(0.57_0.20_33)] text-white' : 'text-muted-foreground hover:bg-muted'}`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
           </div>
 
-          {/* Search + price + tone + rooms */}
+          {/* Search + price */}
           <div className="flex flex-wrap gap-2">
             <div className="relative flex-1 min-w-[180px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
@@ -324,41 +302,6 @@ export function DashboardClient({ listings, stats, isAdmin }: DashboardClientPro
                 placeholder={t('listings.filter.priceMax')}
                 className="w-full rounded-lg border border-border bg-background pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.5)] focus:ring-offset-1 text-foreground placeholder:text-muted-foreground"
               />
-            </div>
-            {/* Tone filter */}
-            <div className="flex rounded-lg border border-border bg-card overflow-hidden text-xs">
-              {([['', 'Tono'], ['standard', 'Standard'], ['luxury', 'Luxury'], ['approachable', 'Access.'], ['investment', 'Invest.']] as [string, string][]).map(([val, label]) => (
-                <button
-                  key={val}
-                  onClick={() => setToneFilter(val === '' ? null : (toneFilter === val ? null : val))}
-                  className={`px-2.5 py-1.5 font-medium transition-colors whitespace-nowrap ${
-                    (val === '' && toneFilter === null) || (val !== '' && toneFilter === val)
-                      ? 'bg-[oklch(0.57_0.20_33)] text-white'
-                      : 'text-muted-foreground hover:bg-muted'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            {/* Min rooms filter */}
-            <div className="flex rounded-lg border border-border bg-card overflow-hidden text-xs">
-              <span className="flex items-center px-2 text-muted-foreground border-r border-border">
-                <BedDouble className="h-3.5 w-3.5" />
-              </span>
-              {([null, 1, 2, 3, 4] as (number | null)[]).map((r) => (
-                <button
-                  key={r ?? 'all'}
-                  onClick={() => setMinRooms(minRooms === r ? null : r)}
-                  className={`px-2.5 py-1.5 font-medium transition-colors ${
-                    minRooms === r
-                      ? 'bg-[oklch(0.57_0.20_33)] text-white'
-                      : 'text-muted-foreground hover:bg-muted'
-                  }`}
-                >
-                  {r === null ? 'Tutti' : `${r}+`}
-                </button>
-              ))}
             </div>
             {hasFilters && (
               <button

@@ -180,29 +180,108 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Errore nel salvataggio' }, { status: 500 })
   }
 
-  // Auto-create banca dati property entry — non-blocking, best-effort
-  void autoCreateProperty({
-    supabase,
-    workspaceId: profile.workspace_id,
-    agentId: user.id,
-    listingId: listing.id,
-    address,
-    city,
-    zone: neighborhood ?? 'Da definire',
-    propertyType: property_type,
-    transactionType: transaction_type,
-    sqm,
-    rooms,
-    bathrooms,
-    floor,
-    totalFloors: total_floors,
-    estimatedValue: price,
-    foglio: foglio ?? undefined,
-    particella: particella ?? undefined,
-    subalterno: subalterno ?? undefined,
-  })
+  // If an existing property is linked, connect them and sync fields
+  const propertyId = (formData.get('property_id') as string) || null
+
+  if (propertyId) {
+    // Link listing to existing property (non-blocking, best-effort)
+    void linkExistingProperty({
+      admin,
+      workspaceId: profile.workspace_id,
+      agentId: user.id,
+      listingId: listing.id,
+      propertyId,
+      sqm,
+      rooms,
+      bathrooms,
+      floor,
+      totalFloors: total_floors,
+      estimatedValue: price,
+      condition,
+      foglio: foglio ?? undefined,
+      particella: particella ?? undefined,
+      subalterno: subalterno ?? undefined,
+    })
+  } else {
+    // Auto-create banca dati property entry — non-blocking, best-effort
+    void autoCreateProperty({
+      supabase,
+      workspaceId: profile.workspace_id,
+      agentId: user.id,
+      listingId: listing.id,
+      address,
+      city,
+      zone: neighborhood ?? 'Da definire',
+      propertyType: property_type,
+      transactionType: transaction_type,
+      sqm,
+      rooms,
+      bathrooms,
+      floor,
+      totalFloors: total_floors,
+      estimatedValue: price,
+      foglio: foglio ?? undefined,
+      particella: particella ?? undefined,
+      subalterno: subalterno ?? undefined,
+    })
+  }
 
   return NextResponse.json({ listing_id: listing.id, generated_content }, { status: 201 })
+}
+
+async function linkExistingProperty(opts: {
+  admin: ReturnType<typeof createAdminClient>
+  workspaceId: string
+  agentId: string
+  listingId: string
+  propertyId: string
+  sqm: number
+  rooms: number
+  bathrooms: number
+  floor: number | null
+  totalFloors: number | null
+  estimatedValue: number
+  condition: string | null
+  foglio?: string
+  particella?: string
+  subalterno?: string
+}) {
+  try {
+    const { admin, workspaceId, agentId, listingId, propertyId } = opts
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const adminAny = admin as any
+
+    // Sync fields from listing to property
+    await adminAny.from('properties').update({
+      listing_id: listingId,
+      sqm: opts.sqm,
+      rooms: opts.rooms,
+      bathrooms: opts.bathrooms,
+      floor: opts.floor,
+      total_floors: opts.totalFloors,
+      estimated_value: opts.estimatedValue,
+      condition: opts.condition,
+      foglio: opts.foglio ?? null,
+      particella: opts.particella ?? null,
+      subalterno: opts.subalterno ?? null,
+    }).eq('id', propertyId).eq('workspace_id', workspaceId)
+
+    // Back-link: listing → property
+    await adminAny.from('listings').update({ property_id: propertyId }).eq('id', listingId)
+
+    // Create event
+    await adminAny.from('property_events').insert({
+      workspace_id: workspaceId,
+      property_id: propertyId,
+      agent_id: agentId,
+      event_type: 'annuncio_creato',
+      title: 'Annuncio creato',
+      description: 'Annuncio creato e collegato all\'immobile',
+    })
+  } catch (err) {
+    console.error('linkExistingProperty failed (non-critical):', err)
+  }
 }
 
 async function autoCreateProperty(opts: {

@@ -109,5 +109,32 @@ export async function PATCH(
 
   if (error) return NextResponse.json({ error: 'Errore nel salvataggio' }, { status: 500 })
 
+  // Sync editable fields back to linked property (if any)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: listingRow } = await (admin as any)
+    .from('listings')
+    .select('property_id')
+    .eq('id', id)
+    .eq('workspace_id', profile.workspace_id)
+    .single()
+
+  const linkedPropertyId = (listingRow as { property_id?: string | null } | null)?.property_id
+  if (linkedPropertyId) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (admin as any).from('properties').update({
+      sqm,
+      rooms,
+      bathrooms,
+      floor,
+      total_floors,
+      condition,
+      foglio,
+      particella,
+      subalterno,
+      categoria_catastale,
+      rendita_catastale,
+    }).eq('id', linkedPropertyId).eq('workspace_id', profile.workspace_id)
+  }
+
   return NextResponse.json({ success: true })
 }
