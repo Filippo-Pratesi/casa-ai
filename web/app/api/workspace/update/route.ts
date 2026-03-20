@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function PATCH(req: NextRequest) {
   const supabase = await createClient()
@@ -7,7 +8,9 @@ export async function PATCH(req: NextRequest) {
 
   if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
-  const { data: profileData } = await supabase
+  // Use admin client to bypass RLS when reading the user's profile
+  const admin = createAdminClient()
+  const { data: profileData } = await admin
     .from('users')
     .select('role, workspace_id')
     .eq('id', user.id)
@@ -15,7 +18,10 @@ export async function PATCH(req: NextRequest) {
 
   const profile = profileData as { role: string; workspace_id: string } | null
 
-  if (profile?.role !== 'admin') {
+  if (!profile) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 404 })
+
+  // Accept both 'admin' and 'group_admin' roles
+  if (!['admin', 'group_admin'].includes(profile.role)) {
     return NextResponse.json({ error: 'Solo gli admin possono modificare il workspace' }, { status: 403 })
   }
 
@@ -27,7 +33,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
+  const { error } = await (admin as any)
     .from('workspaces')
     .update({
       ...(name ? { name } : {}),

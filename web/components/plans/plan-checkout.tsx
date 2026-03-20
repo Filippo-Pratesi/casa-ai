@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Check, Loader2, Zap, Building2, Globe } from 'lucide-react'
+import { Check, Loader2, Zap, Building2, Globe, Mail } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { PLAN_PRICES } from '@/lib/plan-limits'
 import { useI18n } from '@/lib/i18n/context'
@@ -116,14 +116,23 @@ export function PlanCheckout({ plans, currentPlan, workspaceId, prices }: PlanCh
               </div>
 
               <div className="mb-6">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-extrabold tracking-tight">€{monthlyPrice}</span>
-                  <span className="text-sm text-muted-foreground">{t('plans.perMonth')}</span>
-                </div>
-                {billing === 'annual' && (
-                  <p className="text-xs text-green-600 mt-1 font-medium">
-                    {t('plans.billedAnnual').replace('{amount}', String(monthlyPrice * 12))}
-                  </p>
+                {plan.id === 'network' ? (
+                  <div>
+                    <span className="text-3xl font-extrabold tracking-tight">Su richiesta</span>
+                    <p className="text-xs text-muted-foreground mt-1">Prezzo personalizzato in base alle esigenze</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-4xl font-extrabold tracking-tight">€{monthlyPrice}</span>
+                      <span className="text-sm text-muted-foreground">{t('plans.perMonth')}</span>
+                    </div>
+                    {billing === 'annual' && (
+                      <p className="text-xs text-green-600 mt-1 font-medium">
+                        {t('plans.billedAnnual').replace('{amount}', String(monthlyPrice * 12))}
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -140,6 +149,14 @@ export function PlanCheckout({ plans, currentPlan, workspaceId, prices }: PlanCh
                 <div className="flex items-center justify-center rounded-xl bg-muted px-4 py-2.5 text-sm font-semibold text-muted-foreground">
                   {t('plans.currentPlan')}
                 </div>
+              ) : plan.id === 'network' ? (
+                <a
+                  href="mailto:info@casaai.it?subject=Richiesta%20Piano%20Network"
+                  className="flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition-all hover:shadow-md"
+                >
+                  <Mail className="h-4 w-4" />
+                  Contattaci
+                </a>
               ) : (
                 <button
                   onClick={() => handleUpgrade(plan.id)}

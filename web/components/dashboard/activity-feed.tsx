@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import {
   Building2, User, Calendar, FileText, Receipt,
-  RefreshCw, AlertCircle, Loader2,
+  RefreshCw, AlertCircle, Loader2, Settings, X, Check,
 } from 'lucide-react'
 import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns'
 import { it } from 'date-fns/locale'
@@ -46,6 +46,39 @@ const SOURCE_COLORS: Record<FeedSource, string> = {
   appointment: 'bg-[oklch(0.94_0.055_290)] text-[oklch(0.55_0.17_290)] ring-[oklch(0.55_0.17_290/0.2)]',
   proposal: 'bg-[oklch(0.95_0.055_33)] text-[oklch(0.57_0.20_33)] ring-[oklch(0.57_0.20_33/0.2)]',
   invoice: 'bg-[oklch(0.96_0.055_75)] text-[oklch(0.60_0.14_68)] ring-[oklch(0.60_0.14_68/0.2)]',
+}
+
+// Feed visibility settings — which sources to show
+type FeedSettings = Record<FeedSource, boolean>
+
+const DEFAULT_SETTINGS: FeedSettings = {
+  property_event: true,
+  contact_event: true,
+  appointment: true,
+  proposal: true,
+  invoice: true,
+}
+
+const SETTINGS_KEY = 'casa-ai:feed-settings'
+
+function loadSettings(): FeedSettings {
+  if (typeof window === 'undefined') return DEFAULT_SETTINGS
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY)
+    if (!raw) return DEFAULT_SETTINGS
+    const parsed = JSON.parse(raw) as Partial<FeedSettings>
+    return { ...DEFAULT_SETTINGS, ...parsed }
+  } catch {
+    return DEFAULT_SETTINGS
+  }
+}
+
+function saveSettings(s: FeedSettings) {
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(s))
+  } catch {
+    // ignore
+  }
 }
 
 function IconForSource({ source }: { source: FeedSource }) {
@@ -136,11 +169,99 @@ function FeedSkeleton() {
   )
 }
 
+// Settings panel labels (more descriptive than SOURCE_LABELS)
+const SETTINGS_LABELS: Record<FeedSource, string> = {
+  property_event: 'Cronistoria immobili',
+  contact_event: 'Cronistoria contatti',
+  appointment: 'Appuntamenti',
+  proposal: 'Proposte d\'acquisto',
+  invoice: 'Fatture',
+}
+
+function SettingsPanel({
+  settings,
+  onChange,
+  onClose,
+}: {
+  settings: FeedSettings
+  onChange: (s: FeedSettings) => void
+  onClose: () => void
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        onClose()
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [onClose])
+
+  function toggle(source: FeedSource) {
+    const updated = { ...settings, [source]: !settings[source] }
+    onChange(updated)
+    saveSettings(updated)
+  }
+
+  return (
+    <div
+      ref={ref}
+      className="absolute right-0 top-8 z-50 w-64 rounded-xl border border-border bg-card shadow-xl py-2"
+    >
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border">
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Mostra nel feed
+        </span>
+        <button
+          onClick={onClose}
+          className="rounded p-0.5 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+      <div className="py-1">
+        {(Object.entries(SETTINGS_LABELS) as Array<[FeedSource, string]>).map(([source, label]) => (
+          <button
+            key={source}
+            onClick={() => toggle(source)}
+            className="flex w-full items-center gap-3 px-4 py-2.5 hover:bg-muted/60 transition-colors"
+          >
+            <div className={cn(
+              'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ring-1',
+              SOURCE_COLORS[source]
+            )}>
+              <IconForSource source={source} />
+            </div>
+            <span className="flex-1 text-left text-sm text-foreground">{label}</span>
+            <div className={cn(
+              'flex h-4.5 w-4.5 items-center justify-center rounded border transition-colors',
+              settings[source]
+                ? 'border-[oklch(0.57_0.20_33)] bg-[oklch(0.57_0.20_33)]'
+                : 'border-border bg-background'
+            )}>
+              {settings[source] && <Check className="h-3 w-3 text-white" />}
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function ActivityFeed() {
   const [feed, setFeed] = useState<FeedItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeFilter, setActiveFilter] = useState<FeedSource | 'all'>('all')
+  const [settings, setSettings] = useState<FeedSettings>(DEFAULT_SETTINGS)
+  const [showSettings, setShowSettings] = useState(false)
+
+  // Load settings from localStorage on mount
+  useEffect(() => {
+    setSettings(loadSettings())
+  }, [])
 
   const fetchFeed = useCallback(async () => {
     setLoading(true)
@@ -161,15 +282,18 @@ export function ActivityFeed() {
     fetchFeed()
   }, [fetchFeed])
 
-  const filtered = activeFilter === 'all'
-    ? feed
-    : feed.filter(item => item.source === activeFilter)
+  // Apply both active filter and visibility settings
+  const filtered = feed.filter(item => {
+    if (!settings[item.source]) return false
+    if (activeFilter === 'all') return true
+    return item.source === activeFilter
+  })
 
   const groups = groupByDay(filtered)
 
   return (
     <div className="space-y-4">
-      {/* Filter pills + refresh */}
+      {/* Filter pills + controls */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex flex-wrap gap-1.5">
           {SOURCE_FILTERS.map(f => (
@@ -186,22 +310,49 @@ export function ActivityFeed() {
               {f.label}
               {f.key !== 'all' && (
                 <span className="ml-1.5 opacity-50 tabular-nums">
-                  {feed.filter(i => i.source === f.key).length}
+                  {feed.filter(i => i.source === f.key && settings[i.source]).length}
                 </span>
               )}
             </button>
           ))}
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={fetchFeed}
-          disabled={loading}
-          className="h-8 gap-1.5 text-xs text-muted-foreground"
-        >
-          <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} />
-          Aggiorna
-        </Button>
+
+        {/* Right controls: refresh + settings */}
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={fetchFeed}
+            disabled={loading}
+            className="h-8 gap-1.5 text-xs text-muted-foreground"
+          >
+            <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} />
+            Aggiorna
+          </Button>
+
+          {/* Settings gear */}
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowSettings(v => !v)}
+              className={cn(
+                'h-8 w-8 p-0 text-muted-foreground',
+                showSettings && 'bg-muted text-foreground'
+              )}
+              title="Impostazioni feed"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+            {showSettings && (
+              <SettingsPanel
+                settings={settings}
+                onChange={setSettings}
+                onClose={() => setShowSettings(false)}
+              />
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Content */}

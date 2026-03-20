@@ -167,7 +167,7 @@ export function ZoneManagement({ initialZones }: ZoneManagementProps) {
       {/* Zone list grouped by city */}
       {cities.map((city) => {
         const cityZones = zones.filter((z) => z.city === city)
-        const expanded = expandedCities[city] !== false // default open
+        const expanded = !!expandedCities[city] // default collapsed — click to expand
         return (
           <div key={city} className="rounded-lg border border-border overflow-hidden">
             {/* City header */}

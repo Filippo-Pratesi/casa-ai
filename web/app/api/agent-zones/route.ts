@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
-async function getWorkspaceAndRole(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
-  const { data } = await supabase
+async function getWorkspaceAndRole(userId: string) {
+  const admin = createAdminClient()
+  const { data } = await admin
     .from('users')
     .select('workspace_id, role')
     .eq('id', userId)
@@ -20,18 +22,19 @@ export async function GET(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
-  const userProfile = await getWorkspaceAndRole(supabase, user.id)
+  const userProfile = await getWorkspaceAndRole(user.id)
   if (!userProfile) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 404 })
 
+  const admin = createAdminClient()
   const agentId = req.nextUrl.searchParams.get('agent_id')
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let query = (supabase as any)
+  let query = (admin as any)
     .from('agent_zones')
     .select(`
       id, agent_id, zone_id, created_at,
       zones(id, name, city),
-      agent:agent_id(id, full_name, email)
+      agent:agent_id(id, name, email)
     `)
     .eq('workspace_id', userProfile.workspace_id)
     .order('created_at', { ascending: true })
@@ -50,7 +53,7 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
-  const userProfile = await getWorkspaceAndRole(supabase, user.id)
+  const userProfile = await getWorkspaceAndRole(user.id)
   if (!userProfile) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 404 })
 
   if (!isAdmin(userProfile.role)) {
@@ -71,8 +74,10 @@ export async function POST(req: NextRequest) {
   if (!agentId) return NextResponse.json({ error: 'agent_id obbligatorio' }, { status: 400 })
   if (!zoneId) return NextResponse.json({ error: 'zone_id obbligatorio' }, { status: 400 })
 
+  const admin = createAdminClient()
+
   // Verify agent belongs to workspace
-  const { data: agentData } = await supabase
+  const { data: agentData } = await admin
     .from('users')
     .select('id')
     .eq('id', agentId)
@@ -83,7 +88,7 @@ export async function POST(req: NextRequest) {
 
   // Verify zone belongs to workspace
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: zoneData } = await (supabase as any)
+  const { data: zoneData } = await (admin as any)
     .from('zones')
     .select('id')
     .eq('id', zoneId)
@@ -95,7 +100,7 @@ export async function POST(req: NextRequest) {
   // If sub_zone_id provided, verify it belongs to the given zone in this workspace
   if (subZoneId) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: subZoneData } = await (supabase as any)
+    const { data: subZoneData } = await (admin as any)
       .from('sub_zones')
       .select('id')
       .eq('id', subZoneId)
@@ -106,7 +111,7 @@ export async function POST(req: NextRequest) {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await (admin as any)
     .from('agent_zones')
     .insert({ workspace_id: userProfile.workspace_id, agent_id: agentId, zone_id: zoneId, sub_zone_id: subZoneId })
     .select('id')
@@ -128,18 +133,19 @@ export async function DELETE(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 })
 
-  const userProfile = await getWorkspaceAndRole(supabase, user.id)
+  const userProfile = await getWorkspaceAndRole(user.id)
   if (!userProfile) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 404 })
 
   if (!isAdmin(userProfile.role)) {
     return NextResponse.json({ error: 'Permessi insufficienti' }, { status: 403 })
   }
 
+  const admin = createAdminClient()
   const assignmentId = req.nextUrl.searchParams.get('id')
   if (!assignmentId) return NextResponse.json({ error: 'ID assegnazione obbligatorio' }, { status: 400 })
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
+  const { error } = await (admin as any)
     .from('agent_zones')
     .delete()
     .eq('id', assignmentId)
