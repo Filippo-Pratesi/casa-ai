@@ -101,6 +101,8 @@ export async function PATCH(
       categoria_catastale,
       rendita_catastale,
       photos_urls,
+      // Mark match results as stale whenever match-relevant fields change
+      match_stale: true,
     })
     .eq('id', id)
     .eq('workspace_id', profile.workspace_id)

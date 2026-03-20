@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Sparkles, Loader2, ExternalLink, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -36,15 +36,16 @@ function ScoreBar({ score }: { score: number }) {
   )
 }
 
-interface AiMatchPanelProps {
+interface ListingMatchPanelProps {
   propertyId: string
 }
 
-export function AiMatchPanel({ propertyId }: AiMatchPanelProps) {
-  const [loading, setLoading] = useState(false)
-  const [matches, setMatches] = useState<MatchResult[] | null>(null)
-  const [status, setStatus] = useState<'ready' | 'pending' | null>(null)
+export function ListingMatchPanel({ propertyId }: ListingMatchPanelProps) {
+  const [loading, setLoading] = useState(true)
+  const [matches, setMatches] = useState<MatchResult[]>([])
+  const [status, setStatus] = useState<'ready' | 'pending'>('pending')
   const [error, setError] = useState<string | null>(null)
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null)
 
   async function loadMatches() {
     setLoading(true)
@@ -55,6 +56,7 @@ export function AiMatchPanel({ propertyId }: AiMatchPanelProps) {
       if (!res.ok) throw new Error(data.error ?? 'Errore')
       setMatches(data.matches ?? [])
       setStatus(data.status ?? 'ready')
+      setLastRefresh(new Date())
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Errore caricamento')
     } finally {
@@ -62,37 +64,19 @@ export function AiMatchPanel({ propertyId }: AiMatchPanelProps) {
     }
   }
 
-  if (matches === null) {
-    return (
-      <Card className="p-5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-[oklch(0.57_0.20_33)]" />
-            <span className="text-sm font-semibold">AI Match Engine</span>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 text-xs gap-1.5"
-            onClick={loadMatches}
-            disabled={loading}
-          >
-            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-            Mostra Match AI
-          </Button>
-        </div>
-      </Card>
-    )
-  }
+  useEffect(() => {
+    loadMatches()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propertyId])
 
   return (
     <Card className="p-5 space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-[oklch(0.57_0.20_33)]" />
-          <span className="text-sm font-semibold">AI Match Engine</span>
-          {status === 'pending' && (
-            <span className="text-[10px] text-muted-foreground">(calcolo in corso)</span>
+          <span className="text-sm font-semibold">Clienti Compatibili</span>
+          {status === 'pending' && !loading && (
+            <span className="text-[10px] text-amber-500">(in attesa calcolo)</span>
           )}
         </div>
         <Button
@@ -107,19 +91,28 @@ export function AiMatchPanel({ propertyId }: AiMatchPanelProps) {
         </Button>
       </div>
 
-      {error && <div className="text-sm text-destructive">{error}</div>}
+      {loading && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Caricamento match…
+        </div>
+      )}
 
-      {status === 'pending' && matches.length === 0 && (
+      {!loading && error && (
+        <div className="text-sm text-destructive">{error}</div>
+      )}
+
+      {!loading && status === 'pending' && matches.length === 0 && (
         <p className="text-sm text-muted-foreground">
-          Nessun match calcolato. I match vengono aggiornati ogni notte alle 3:00 o al momento della pubblicazione dell&apos;annuncio.
+          I match vengono calcolati automaticamente ogni notte. Saranno disponibili al prossimo aggiornamento.
         </p>
       )}
 
-      {matches.length === 0 && status === 'ready' && (
+      {!loading && matches.length === 0 && status === 'ready' && (
         <p className="text-sm text-muted-foreground">Nessun cliente compatibile trovato.</p>
       )}
 
-      {matches.length > 0 && (
+      {!loading && matches.length > 0 && (
         <div className="space-y-2">
           {matches.map(m => (
             <div key={m.contact_id} className="rounded-lg border border-border/60 p-3 space-y-1.5">
@@ -145,6 +138,11 @@ export function AiMatchPanel({ propertyId }: AiMatchPanelProps) {
               {m.reason && <p className="text-xs text-muted-foreground italic">{m.reason}</p>}
             </div>
           ))}
+          {lastRefresh && (
+            <p className="text-[10px] text-muted-foreground text-right">
+              Aggiornato: {lastRefresh.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+            </p>
+          )}
         </div>
       )}
     </Card>
