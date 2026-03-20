@@ -29,6 +29,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
   const workspaceId = await getWorkspaceId(user.id)
   if (!workspaceId) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 404 })
 
+  const admin = createAdminClient()
   const searchParams = req.nextUrl.searchParams
   const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10))
   const per_page = Math.min(100, Math.max(1, parseInt(searchParams.get('per_page') ?? '20', 10)))
@@ -36,7 +37,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
   const offset = (page - 1) * per_page
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let query = (supabase as any)
+  let query = (admin as any)
     .from('property_events')
     .select(
       `*, agent:agent_id(id, name)`,
@@ -65,6 +66,8 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
   const workspaceId = await getWorkspaceId(user.id)
   if (!workspaceId) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 404 })
 
+  const admin = createAdminClient()
+
   let body: Record<string, unknown>
   try {
     body = await req.json()
@@ -82,7 +85,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
 
   // Verify property belongs to workspace
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: prop } = await (supabase as any)
+  const { data: prop } = await (admin as any)
     .from('properties')
     .select('id')
     .eq('id', id)
@@ -108,7 +111,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await (admin as any)
     .from('property_events')
     .insert(payload)
     .select('*')

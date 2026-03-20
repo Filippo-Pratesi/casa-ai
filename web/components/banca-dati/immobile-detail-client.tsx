@@ -27,7 +27,8 @@ import { cn } from '@/lib/utils'
 import { PropertyStageIcon, type PropertyStage, STAGE_CONFIG } from './property-stage-icon'
 import { ContactTypeBadges } from '@/components/contacts/contact-type-badges'
 import { DispositionIcon, DISPOSITION_CONFIG, type OwnerDisposition } from './disposition-icon'
-import { EventTimeline, type PropertyEvent } from './event-timeline'
+import { type PropertyEvent } from './event-timeline'
+import { PropertyCronistoriaPanel, type ListingNoteEntry } from './property-cronistoria-panel'
 import { PropertyCard } from './property-card'
 import { AiMatchPanel } from './ai-match-panel'
 import { CadastralPanel } from './cadastral-panel'
@@ -83,6 +84,7 @@ interface ImmobileDetailClientProps {
   isAdmin: boolean
   isOwner: boolean
   omiZoneCode?: string | null
+  initialListingNotes?: ListingNoteEntry[]
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -103,6 +105,7 @@ export function ImmobileDetailClient({
   isAdmin,
   isOwner,
   omiZoneCode,
+  initialListingNotes = [],
 }: ImmobileDetailClientProps) {
   const router = useRouter()
   const [property, setProperty] = useState(initialProperty)
@@ -499,10 +502,10 @@ export function ImmobileDetailClient({
           <Card className="p-3 h-fit lg:sticky lg:top-4">
             <h2 className="font-semibold text-xs uppercase tracking-wide text-muted-foreground mb-2">Cronistoria</h2>
             <div className="max-h-[calc(100vh-180px)] overflow-y-auto pr-0.5">
-              <EventTimeline
+              <PropertyCronistoriaPanel
                 propertyId={property.id}
-                workspaceId={property.workspace_id ?? ''}
                 events={events}
+                initialListingNotes={initialListingNotes}
                 onEventAdded={reloadEvents}
               />
             </div>

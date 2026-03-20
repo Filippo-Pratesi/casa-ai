@@ -77,6 +77,22 @@ export default async function ImmobileDetailPage({ params }: { params: Promise<{
     [key: string]: unknown;
   }
 
+  // Fetch listing notes for linked listing (to show in property cronistoria)
+  const linkedListingId = (propertyData as { listing_id?: string | null }).listing_id
+  let listingNotes: Array<{ id: string; content: string; created_at: string; agent_name: string | null }> = []
+  if (linkedListingId) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: notesData } = await (admin as any)
+      .from('listing_notes')
+      .select('id, content, created_at, agent:users!listing_notes_agent_id_fkey(name)')
+      .eq('listing_id', linkedListingId)
+      .eq('workspace_id', profile.workspace_id)
+      .order('created_at', { ascending: false })
+      .limit(50)
+    listingNotes = ((notesData ?? []) as Array<{ id: string; content: string; created_at: string; agent: { name: string } | null }>)
+      .map(n => ({ id: n.id, content: n.content, created_at: n.created_at, agent_name: n.agent?.name ?? null }))
+  }
+
   let nearby = { same_building: [], nearby: [] }
   if (property.latitude && property.longitude) {
     try {
@@ -104,6 +120,7 @@ export default async function ImmobileDetailPage({ params }: { params: Promise<{
       isAdmin={isAdmin}
       isOwner={isOwner}
       omiZoneCode={omiZoneCode}
+      initialListingNotes={listingNotes}
     />
   )
 }
