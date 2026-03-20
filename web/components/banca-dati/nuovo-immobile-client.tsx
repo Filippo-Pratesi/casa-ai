@@ -77,7 +77,7 @@ interface NuovoImmobileClientProps {
 export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = false, currentUserId }: NuovoImmobileClientProps) {
   const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
-  const [selectedAgentId, setSelectedAgentId] = useState<string>(currentUserId ?? '')
+  const [selectedAgentId, setSelectedAgentId] = useState<string>('')
 
   const [street, setStreet] = useState('')
   const [civico, setCivico] = useState('')
@@ -212,6 +212,7 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
     if (!street.trim()) { toast.error('L\'indirizzo è obbligatorio'); return }
     if (!city.trim()) { toast.error('La città è obbligatoria'); return }
     if (!zone.trim()) { toast.error('La zona è obbligatoria'); return }
+    if (isAdmin && agents.length > 0 && !selectedAgentId) { toast.error('Seleziona l\'agente assegnato'); return }
 
     const address = civico.trim() ? `${street.trim()} ${civico.trim()}` : street.trim()
 
@@ -429,10 +430,16 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
           {/* Agent selector — admin only */}
           {isAdmin && agents.length > 0 && (
             <div className="space-y-1.5">
-              <Label>Agente assegnato</Label>
-              <Select value={selectedAgentId || 'none'} onValueChange={(v) => setSelectedAgentId(!v || v === 'none' ? '' : v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleziona agente" />
+              <Label>
+                Agente assegnato <span className="text-destructive">*</span>
+              </Label>
+              <Select value={selectedAgentId} onValueChange={(v) => setSelectedAgentId(v ?? '')}>
+                <SelectTrigger className={!selectedAgentId ? 'text-muted-foreground' : ''}>
+                  <SelectValue placeholder="Seleziona agente…">
+                    {selectedAgentId
+                      ? agents.find(a => a.id === selectedAgentId)?.name ?? 'Seleziona agente…'
+                      : 'Seleziona agente…'}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {agents.map((a) => (

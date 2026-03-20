@@ -34,9 +34,11 @@ interface InlinePropertyCreatorProps {
   /** Called when the property is created successfully */
   onCreated: (property: { id: string; address: string; city: string; stage: string }) => void
   onCancel: () => void
+  isAdmin?: boolean
+  agents?: { id: string; name: string }[]
 }
 
-export function InlinePropertyCreator({ onCreated, onCancel }: InlinePropertyCreatorProps) {
+export function InlinePropertyCreator({ onCreated, onCancel, isAdmin = false, agents = [] }: InlinePropertyCreatorProps) {
   const [street, setStreet] = useState('')
   const [civico, setCivico] = useState('')
   const [city, setCity] = useState('')
@@ -61,6 +63,7 @@ export function InlinePropertyCreator({ onCreated, onCancel }: InlinePropertyCre
   const [doorbell, setDoorbell] = useState('')
   const [buildingNotes, setBuildingNotes] = useState('')
 
+  const [selectedAgentId, setSelectedAgentId] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [geocoding, setGeocoding] = useState(false)
   const geoRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -97,6 +100,7 @@ export function InlinePropertyCreator({ onCreated, onCancel }: InlinePropertyCre
     if (!street.trim()) { toast.error("L'indirizzo è obbligatorio"); return }
     if (!city.trim()) { toast.error('La città è obbligatoria'); return }
     if (!zone.trim()) { toast.error('La zona è obbligatoria'); return }
+    if (isAdmin && agents.length > 0 && !selectedAgentId) { toast.error("Seleziona l'agente assegnato"); return }
 
     const address = civico.trim() ? `${street.trim()} ${civico.trim()}` : street.trim()
     setSubmitting(true)
@@ -123,6 +127,7 @@ export function InlinePropertyCreator({ onCreated, onCancel }: InlinePropertyCre
           estimated_value: estimatedValue ? Number(estimatedValue) : null,
           doorbell: doorbell.trim() || null,
           building_notes: buildingNotes.trim() || null,
+          agent_id: selectedAgentId || null,
         }),
       })
       if (!res.ok) {
@@ -237,6 +242,27 @@ export function InlinePropertyCreator({ onCreated, onCancel }: InlinePropertyCre
           </Select>
         </div>
       </div>
+
+      {/* Agent selector — admin only */}
+      {isAdmin && agents.length > 0 && (
+        <div className="space-y-1.5">
+          <Label>Agente assegnato <span className="text-destructive">*</span></Label>
+          <Select value={selectedAgentId} onValueChange={(v) => setSelectedAgentId(v ?? '')}>
+            <SelectTrigger className={!selectedAgentId ? 'text-muted-foreground' : ''}>
+              <SelectValue placeholder="Seleziona agente…">
+                {selectedAgentId
+                  ? agents.find(a => a.id === selectedAgentId)?.name ?? 'Seleziona agente…'
+                  : 'Seleziona agente…'}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {agents.map((a) => (
+                <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       {/* Collapsible detail fields */}
       <button

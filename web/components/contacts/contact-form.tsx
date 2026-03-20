@@ -58,6 +58,9 @@ export interface ContactFormProps {
    * Also hides the "Collega immobile" section (not needed when embedded).
    */
   onSuccess?: (contact: { id: string; name: string }) => void
+  /** Passed to InlinePropertyCreator for the agent selector */
+  isAdmin?: boolean
+  agents?: { id: string; name: string }[]
 }
 
 interface FormState {
@@ -136,7 +139,7 @@ function resolveInitial(defaults?: ContactFormDefaultValues): FormState {
 
 const isBuyerLike = (types: string[]) => types.includes('buyer') || types.includes('renter')
 
-export function ContactForm({ mode, contactId, defaultValues, onSuccess }: ContactFormProps) {
+export function ContactForm({ mode, contactId, defaultValues, onSuccess, isAdmin = false, agents = [] }: ContactFormProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [form, setForm] = useState<FormState>(() => resolveInitial(defaultValues))
@@ -659,6 +662,8 @@ export function ContactForm({ mode, contactId, defaultValues, onSuccess }: Conta
 
               {showInlineCreator && (
                 <InlinePropertyCreator
+                  isAdmin={isAdmin}
+                  agents={agents}
                   onCreated={(property) => {
                     setSelectedProperty(property)
                     setPropertySearch(`${property.address}, ${property.city}`)
