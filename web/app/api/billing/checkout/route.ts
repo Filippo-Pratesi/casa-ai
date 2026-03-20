@@ -11,9 +11,9 @@ const PRICE_IDS: Record<string, Record<string, string>> = {
     monthly: process.env.STRIPE_PRICE_STARTER_MONTHLY ?? '',
     annual:  process.env.STRIPE_PRICE_STARTER_ANNUAL  ?? '',
   },
-  agenzia: {
-    monthly: process.env.STRIPE_PRICE_AGENZIA_MONTHLY ?? '',
-    annual:  process.env.STRIPE_PRICE_AGENZIA_ANNUAL  ?? '',
+  growth: {
+    monthly: process.env.STRIPE_PRICE_GROWTH_MONTHLY ?? process.env.STRIPE_PRICE_AGENZIA_MONTHLY ?? '',
+    annual:  process.env.STRIPE_PRICE_GROWTH_ANNUAL  ?? process.env.STRIPE_PRICE_AGENZIA_ANNUAL  ?? '',
   },
   network: {
     monthly: process.env.STRIPE_PRICE_NETWORK_MONTHLY ?? '',
