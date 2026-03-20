@@ -20,6 +20,25 @@ import { ContactForm } from '@/components/contacts/contact-form'
 import { ContactTypeBadges } from '@/components/contacts/contact-type-badges'
 import { toast } from 'sonner'
 
+const FEATURES_LIST = [
+  { value: 'ascensore', label: 'Ascensore' },
+  { value: 'terrazzo', label: 'Terrazzo' },
+  { value: 'balcone', label: 'Balcone' },
+  { value: 'giardino', label: 'Giardino' },
+  { value: 'garage', label: 'Garage' },
+  { value: 'box', label: 'Box' },
+  { value: 'cantina', label: 'Cantina' },
+  { value: 'soffitta', label: 'Soffitta' },
+  { value: 'piscina', label: 'Piscina' },
+  { value: 'portiere', label: 'Portineria' },
+  { value: 'videocitofono', label: 'Videocitofono' },
+  { value: 'aria_condizionata', label: 'Aria condizionata' },
+  { value: 'riscaldamento_autonomo', label: 'Riscaldamento autonomo' },
+  { value: 'doppi_vetri', label: 'Doppi vetri' },
+  { value: 'taverna', label: 'Taverna' },
+  { value: 'posto_auto', label: 'Posto auto' },
+]
+
 interface NearbyProperty {
   id: string
   address: string
@@ -82,6 +101,14 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
 
   const [transactionType, setTransactionType] = useState('')
   const [propertyType, setPropertyType] = useState('')
+  const [sqm, setSqm] = useState('')
+  const [rooms, setRooms] = useState('')
+  const [bathrooms, setBathrooms] = useState('')
+  const [floor, setFloor] = useState('')
+  const [totalFloors, setTotalFloors] = useState('')
+  const [condition, setCondition] = useState('')
+  const [features, setFeatures] = useState<string[]>([])
+  const [estimatedValue, setEstimatedValue] = useState('')
 
   const [nearby, setNearby] = useState<NearbyResult | null>(null)
   const [loadingNearby, setLoadingNearby] = useState(false)
@@ -203,6 +230,14 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
           initial_note: initialNote.trim() || null,
           transaction_type: transactionType || null,
           property_type: propertyType || null,
+          sqm: sqm ? Number(sqm) : null,
+          rooms: rooms ? Number(rooms) : null,
+          bathrooms: bathrooms !== '' ? Number(bathrooms) : null,
+          floor: floor !== '' ? Number(floor) : null,
+          total_floors: totalFloors ? Number(totalFloors) : null,
+          condition: condition || null,
+          features,
+          estimated_value: estimatedValue ? Number(estimatedValue) : null,
           agent_id: selectedAgentId || null,
         }),
       })
@@ -407,6 +442,80 @@ export function NuovoImmobileClient({ agentDefaultZones, agents = [], isAdmin = 
               </Select>
             </div>
           )}
+        </Card>
+
+        {/* Property details */}
+        <Card className="p-5 space-y-4">
+          <h2 className="font-semibold text-sm">Dettagli immobile <span className="text-xs font-normal text-muted-foreground">(opzionale)</span></h2>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Superficie (m²)</Label>
+              <Input type="number" min="1" placeholder="Es. 85" value={sqm} onChange={(e) => setSqm(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Locali</Label>
+              <Input type="number" min="1" placeholder="Es. 4" value={rooms} onChange={(e) => setRooms(e.target.value)} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-1.5">
+              <Label>Bagni</Label>
+              <Input type="number" min="0" placeholder="Es. 2" value={bathrooms} onChange={(e) => setBathrooms(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Piano</Label>
+              <Input type="number" min="-5" placeholder="Es. 3" value={floor} onChange={(e) => setFloor(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Piani totali</Label>
+              <Input type="number" min="1" placeholder="Es. 6" value={totalFloors} onChange={(e) => setTotalFloors(e.target.value)} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Condizioni</Label>
+              <Select value={condition || 'none'} onValueChange={(v) => setCondition(!v || v === 'none' ? '' : v)}>
+                <SelectTrigger><SelectValue placeholder="Non specificato" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Non specificato</SelectItem>
+                  <SelectItem value="ottimo">Ottimo</SelectItem>
+                  <SelectItem value="buono">Buono</SelectItem>
+                  <SelectItem value="sufficiente">Sufficiente</SelectItem>
+                  <SelectItem value="da_ristrutturare">Da ristrutturare</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Valutazione (€)</Label>
+              <Input type="number" min="0" placeholder="Es. 250000" value={estimatedValue} onChange={(e) => setEstimatedValue(e.target.value)} />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Caratteristiche</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {FEATURES_LIST.map((f) => {
+                const active = features.includes(f.value)
+                return (
+                  <button
+                    key={f.value}
+                    type="button"
+                    onClick={() => setFeatures((prev) => active ? prev.filter((x) => x !== f.value) : [...prev, f.value])}
+                    className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${
+                      active
+                        ? 'bg-[oklch(0.57_0.20_33)] text-white border-[oklch(0.57_0.20_33)]'
+                        : 'bg-transparent text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
         </Card>
 
         {/* Nearby properties */}
