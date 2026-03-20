@@ -183,11 +183,14 @@ export function CadastralPanel({
   // Only render risk card if we actually have risk data
   const showRiskCard = hasRisks || hasPotenziale || loadingCadastral
 
+  const showOmiCard = !!(valuation || rentalValuation || loadingValuation || valuationError)
+  const bothCards = showRiskCard && showOmiCard
+
   return (
-    <div className="space-y-4">
+    <div className={bothCards ? 'grid grid-cols-2 gap-3 items-stretch' : 'space-y-4'}>
       {/* Card Rischi Territoriali */}
       {showRiskCard && (
-        <Card className="p-5 space-y-3">
+        <Card className="p-4 space-y-2.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ShieldAlert className="h-4 w-4 text-primary" />
@@ -198,95 +201,80 @@ export function CadastralPanel({
               size="sm"
               onClick={fetchCadastral}
               disabled={loadingCadastral}
-              className="h-7 text-xs"
+              className="h-6 text-xs px-1.5"
             >
               {loadingCadastral ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-              <span className="ml-1">Aggiorna</span>
             </Button>
           </div>
 
           {loadingCadastral && !cadastralData && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Recupero dati territoriali...
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Recupero dati...
             </div>
           )}
 
           {cadastralData && (
-            <div className="space-y-3">
-              {/* Rischi */}
+            <div className="space-y-2">
               {hasRisks && (
-                <div className="flex flex-wrap gap-3">
-                  {riskBadge(cadastralData.rischio_idrogeologico, 'Rischio idrogeologico')}
-                  {riskBadge(cadastralData.rischio_sismico, 'Rischio sismico')}
+                <div className="flex flex-col gap-1.5">
+                  {riskBadge(cadastralData.rischio_idrogeologico, 'Idrogeologico')}
+                  {riskBadge(cadastralData.rischio_sismico, 'Sismico')}
                 </div>
               )}
-
-              {/* Indice potenziale (solo se disponibile) */}
               {hasPotenziale && (
-                <div className="pt-2 border-t">
-                  <p className="text-xs text-muted-foreground">Potenziale immobiliare zona</p>
-                  <p className="text-sm font-medium">{Math.round(cadastralData.indice_potenziale_immobiliare!)}/100</p>
+                <div className="pt-1.5 border-t">
+                  <p className="text-[10px] text-muted-foreground">Potenziale zona</p>
+                  <p className="text-xs font-medium">{Math.round(cadastralData.indice_potenziale_immobiliare!)}/100</p>
                 </div>
               )}
-
-              {/* Fonte e data */}
-              <div className="flex items-center gap-1 text-xs text-muted-foreground pt-1">
-                <Info className="h-3 w-3 shrink-0" />
-                Dati zonali ISPRA — non specifici della singola unita immobiliare
+              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                <Info className="h-2.5 w-2.5 shrink-0" />
+                Dati ISPRA zonali
               </div>
-              {existingFetchedAt && (
-                <p className="text-xs text-muted-foreground">
-                  Aggiornati il {new Date(existingFetchedAt).toLocaleDateString('it-IT')}
-                </p>
-              )}
             </div>
           )}
         </Card>
       )}
 
       {/* Card Stime OMI */}
-      {(valuation || rentalValuation || loadingValuation || valuationError) && (
-        <Card className="p-4 space-y-3">
-          {/* Titolo dinamico con semestre */}
+      {showOmiCard && (
+        <Card className="p-4 space-y-2.5">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-primary shrink-0" />
-            <h3 className="font-semibold text-sm">
+            <h3 className="font-semibold text-sm leading-tight">
               {(valuation ?? rentalValuation)
                 ? (() => {
-                    const sem = (valuation ?? rentalValuation)!.semestre // es. "2025_2"
+                    const sem = (valuation ?? rentalValuation)!.semestre
                     const parts = sem.split('_')
-                    if (parts.length === 2) {
-                      return `Stime Dati OMI — ${parts[1]}° semestre ${parts[0]}`
-                    }
-                    return `Stime Dati OMI — ${sem}`
+                    return parts.length === 2
+                      ? `Stime OMI ${parts[1]}° sem. ${parts[0]}`
+                      : `Stime OMI — ${sem}`
                   })()
-                : 'Stime Dati OMI'}
+                : 'Stime OMI'}
             </h3>
           </div>
 
           {loadingValuation && !valuation && !rentalValuation && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Calcolo quotazione OMI...
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Calcolo in corso...
             </div>
           )}
 
           {valuationError && (
-            <div className="flex items-center gap-2 text-sm text-destructive">
-              <AlertTriangle className="h-4 w-4" />
+            <div className="flex items-center gap-2 text-xs text-destructive">
+              <AlertTriangle className="h-3 w-3" />
               {valuationError}
             </div>
           )}
 
-          {/* Acquisto + Affitto stacked */}
           {(valuation || rentalValuation) && (
             <div className="space-y-1.5">
-              {/* Acquisto */}
               {valuation && (
-                <div className="flex items-center justify-between rounded-md bg-primary/5 px-3 py-2">
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
-                    <TrendingUp className="h-3 w-3" />
+                <div className="flex items-center justify-between rounded-md bg-primary/5 px-2.5 py-1.5">
+                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground shrink-0">
+                    <TrendingUp className="h-2.5 w-2.5" />
                     Acquisto
                   </div>
                   <div className="text-right">
@@ -299,12 +287,10 @@ export function CadastralPanel({
                   </div>
                 </div>
               )}
-
-              {/* Affitto */}
               {rentalValuation && (
-                <div className="flex items-center justify-between rounded-md bg-emerald-500/5 px-3 py-2">
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
-                    <Home className="h-3 w-3" />
+                <div className="flex items-center justify-between rounded-md bg-emerald-500/5 px-2.5 py-1.5">
+                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground shrink-0">
+                    <Home className="h-2.5 w-2.5" />
                     Affitto/mese
                   </div>
                   <div className="text-right">
@@ -317,14 +303,10 @@ export function CadastralPanel({
                   </div>
                 </div>
               )}
-            </div>
-          )}
-
-          {/* Fonte + disclaimer */}
-          {(valuation || rentalValuation) && (
-            <div className="flex items-start gap-1.5 text-xs text-muted-foreground bg-muted/40 rounded p-2">
-              <Info className="h-3 w-3 mt-0.5 shrink-0" />
-              <p>Stime indicative OMI — Agenzia delle Entrate. Non costituisce perizia certificata.</p>
+              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                <Info className="h-2.5 w-2.5 shrink-0" />
+                Dati OMI — Agenzia delle Entrate
+              </div>
             </div>
           )}
         </Card>
