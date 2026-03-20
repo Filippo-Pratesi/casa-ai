@@ -42,6 +42,7 @@ interface ListingMatchPanelProps {
 
 export function ListingMatchPanel({ propertyId }: ListingMatchPanelProps) {
   const [loading, setLoading] = useState(true)
+  const [computing, setComputing] = useState(false)
   const [matches, setMatches] = useState<MatchResult[]>([])
   const [status, setStatus] = useState<'ready' | 'pending'>('pending')
   const [error, setError] = useState<string | null>(null)
@@ -64,6 +65,26 @@ export function ListingMatchPanel({ propertyId }: ListingMatchPanelProps) {
     }
   }
 
+  async function recompute() {
+    setComputing(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/match-engine/trigger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ property_id: propertyId }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Errore calcolo')
+      await loadMatches()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Errore ricalcolo')
+      setLoading(false)
+    } finally {
+      setComputing(false)
+    }
+  }
+
   useEffect(() => {
     loadMatches()
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -83,36 +104,43 @@ export function ListingMatchPanel({ propertyId }: ListingMatchPanelProps) {
           variant="ghost"
           size="sm"
           className="h-7 text-xs gap-1.5 text-muted-foreground"
-          onClick={loadMatches}
-          disabled={loading}
+          onClick={recompute}
+          disabled={loading || computing}
         >
-          <RefreshCw className={cn('h-3 w-3', loading && 'animate-spin')} />
+          <RefreshCw className={cn('h-3 w-3', (loading || computing) && 'animate-spin')} />
           Aggiorna
         </Button>
       </div>
 
-      {loading && (
+      {computing && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Calcolo AI in corso…
+        </div>
+      )}
+
+      {!computing && loading && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
           <Loader2 className="h-4 w-4 animate-spin" />
           Caricamento match…
         </div>
       )}
 
-      {!loading && error && (
+      {!loading && !computing && error && (
         <div className="text-sm text-destructive">{error}</div>
       )}
 
-      {!loading && status === 'pending' && matches.length === 0 && (
+      {!loading && !computing && status === 'pending' && matches.length === 0 && (
         <p className="text-sm text-muted-foreground">
-          I match vengono calcolati automaticamente ogni notte. Saranno disponibili al prossimo aggiornamento.
+          Nessun match calcolato. Premi &quot;Aggiorna&quot; per avviare il calcolo AI.
         </p>
       )}
 
-      {!loading && matches.length === 0 && status === 'ready' && (
+      {!loading && !computing && matches.length === 0 && status === 'ready' && (
         <p className="text-sm text-muted-foreground">Nessun cliente compatibile trovato.</p>
       )}
 
-      {!loading && matches.length > 0 && (
+      {!loading && !computing && matches.length > 0 && (
         <div className="space-y-2">
           {matches.map(m => (
             <div key={m.contact_id} className="rounded-lg border border-border/60 p-3 space-y-1.5">
