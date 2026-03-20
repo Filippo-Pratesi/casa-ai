@@ -279,53 +279,42 @@ export function CadastralPanel({
             </div>
           )}
 
-          {/* Acquisto + Affitto side by side */}
+          {/* Acquisto + Affitto stacked */}
           {(valuation || rentalValuation) && (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1.5">
               {/* Acquisto */}
-              {valuation ? (
-                <div className="bg-primary/5 rounded-lg p-3 space-y-1">
-                  <div className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+              {valuation && (
+                <div className="flex items-center justify-between rounded-md bg-primary/5 px-3 py-2">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
                     <TrendingUp className="h-3 w-3" />
                     Acquisto
                   </div>
-                  <p className="text-sm font-bold text-primary leading-tight">
-                    {formatCurrency(valuation.valore_min)}<br />
-                    {formatCurrency(valuation.valore_max)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatCurrency(valuation.valore_min_mq)}–{formatCurrency(valuation.valore_max_mq)} /mq
-                  </p>
-                  {valuation.stato_conservazione && (
-                    <Badge variant="outline" className="text-[10px] px-1 py-0 mt-1 capitalize">
-                      {valuation.stato_conservazione}
-                    </Badge>
-                  )}
-                </div>
-              ) : (
-                <div className="bg-muted/30 rounded-lg p-3 flex items-center justify-center text-xs text-muted-foreground">
-                  N/D
+                  <div className="text-right">
+                    <p className="text-xs font-semibold text-primary">
+                      {formatCurrency(valuation.valore_min)} – {formatCurrency(valuation.valore_max)}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {formatCurrency(valuation.valore_min_mq)}–{formatCurrency(valuation.valore_max_mq)} /mq
+                    </p>
+                  </div>
                 </div>
               )}
 
               {/* Affitto */}
-              {rentalValuation ? (
-                <div className="bg-emerald-500/5 rounded-lg p-3 space-y-1">
-                  <div className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+              {rentalValuation && (
+                <div className="flex items-center justify-between rounded-md bg-emerald-500/5 px-3 py-2">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
                     <Home className="h-3 w-3" />
                     Affitto/mese
                   </div>
-                  <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 leading-tight">
-                    {formatCurrency(rentalValuation.valore_min)}<br />
-                    {formatCurrency(rentalValuation.valore_max)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatCurrency(rentalValuation.valore_min_mq)}–{formatCurrency(rentalValuation.valore_max_mq)} /mq
-                  </p>
-                </div>
-              ) : (
-                <div className="bg-muted/30 rounded-lg p-3 flex items-center justify-center text-xs text-muted-foreground">
-                  N/D
+                  <div className="text-right">
+                    <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                      {formatCurrency(rentalValuation.valore_min)} – {formatCurrency(rentalValuation.valore_max)}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {formatCurrency(rentalValuation.valore_min_mq)}–{formatCurrency(rentalValuation.valore_max_mq)} /mq
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
