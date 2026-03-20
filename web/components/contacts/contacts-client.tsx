@@ -108,7 +108,10 @@ export function ContactsClient({ contacts, isAdmin, total, page, perPage }: Cont
 
   const filtered = useMemo(() => {
     const list = contacts.filter(c => {
-      if (activeTypes.size > 0 && !activeTypes.has(c.type)) return false
+      if (activeTypes.size > 0) {
+        const allTypes = c.types && c.types.length > 0 ? c.types : [c.type]
+        if (!allTypes.some(t => activeTypes.has(t))) return false
+      }
       if (citySearch.trim()) {
         const q = citySearch.trim().toLowerCase()
         const cities = (c.preferred_cities ?? []).join(' ').toLowerCase()
