@@ -14,6 +14,12 @@ export async function GET() {
 
   const wid = profile.workspace_id
 
+  // Upper bound: end of tomorrow (no future events beyond tomorrow shown in feed)
+  const endOfTomorrow = new Date()
+  endOfTomorrow.setDate(endOfTomorrow.getDate() + 1)
+  endOfTomorrow.setHours(23, 59, 59, 999)
+  const endOfTomorrowISO = endOfTomorrow.toISOString()
+
   // Fetch recent events from multiple sources in parallel
   const [
     propertyEvents,
@@ -22,34 +28,31 @@ export async function GET() {
     proposals,
     invoices,
   ] = await Promise.all([
-    // Property events — last 20, with property address as subtitle
+    // Property events — last 20, capped at end of tomorrow
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (admin as any).from('property_events')
       .select('id, event_type, title, description, event_date, property_id, property:properties!property_events_property_id_fkey(address, city)')
       .eq('workspace_id', wid)
+      .lte('event_date', endOfTomorrowISO)
       .order('event_date', { ascending: false })
       .limit(20),
 
-    // Contact events — last 20, with contact name as subtitle
+    // Contact events — last 20, capped at end of tomorrow
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (admin as any).from('contact_events')
       .select('id, event_type, title, body, event_date, contact_id, contact:contacts!contact_events_contact_id_fkey(id, name)')
       .eq('workspace_id', wid)
+      .lte('event_date', endOfTomorrowISO)
       .order('event_date', { ascending: false })
       .limit(20),
 
-    // Upcoming appointments — up to end of tomorrow
+    // Upcoming appointments — today and tomorrow only
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (admin as any).from('appointments')
       .select('id, title, type, starts_at, contact_name, contact_id, status')
       .eq('workspace_id', wid)
       .gte('starts_at', new Date().toISOString())
-      .lte('starts_at', (() => {
-        const endOfTomorrow = new Date()
-        endOfTomorrow.setDate(endOfTomorrow.getDate() + 1)
-        endOfTomorrow.setHours(23, 59, 59, 999)
-        return endOfTomorrow.toISOString()
-      })())
+      .lte('starts_at', endOfTomorrowISO)
       .neq('status', 'cancelled')
       .order('starts_at', { ascending: true })
       .limit(10),
