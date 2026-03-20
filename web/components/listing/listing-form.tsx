@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/select'
 import { PhotoUploader } from '@/components/listing/photo-uploader'
 import { PROPERTY_TYPES, FEATURES, TONES, CONDITIONS } from '@/components/listing/listing-constants'
+import { CityAutocomplete } from '@/components/banca-dati/city-autocomplete'
 
 // Map from banca dati property features to listing features
 const PROPERTY_TO_LISTING_FEATURES: Record<string, string> = {
