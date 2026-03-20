@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, ShieldAlert, RefreshCw, TrendingUp, Info, AlertTriangle } from 'lucide-react'
+import { Loader2, ShieldAlert, RefreshCw, TrendingUp, Info, AlertTriangle, Home } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // --- Types ---
@@ -93,6 +93,7 @@ export function CadastralPanel({
 }: CadastralPanelProps) {
   const [cadastralData, setCadastralData] = useState<CadastralData | null>(existingCadastralData)
   const [valuation, setValuation] = useState<ValuationData | null>(null)
+  const [rentalValuation, setRentalValuation] = useState<ValuationData | null>(null)
   const [loadingCadastral, setLoadingCadastral] = useState(false)
   const [loadingValuation, setLoadingValuation] = useState(false)
   const [valuationError, setValuationError] = useState<string | null>(null)
@@ -126,18 +127,32 @@ export function CadastralPanel({
     setLoadingValuation(true)
     setValuationError(null)
     try {
-      const params = new URLSearchParams({
+      const baseParams = new URLSearchParams({
         codice_comune: comune,
         zona_omi: zona,
         tipo_immobile: tipo,
         sqm: String(superficie),
       })
-      const res = await fetch(`/api/catasto/quotazione?${params}`)
-      const json = await res.json()
-      if (json.error) {
-        setValuationError(json.error)
-      } else if (json.data) {
-        setValuation(json.data)
+      const acquistoParams = new URLSearchParams({ ...Object.fromEntries(baseParams), operazione: 'acquisto' })
+      const affittoParams = new URLSearchParams({ ...Object.fromEntries(baseParams), operazione: 'affitto' })
+
+      const [resAcquisto, resAffitto] = await Promise.all([
+        fetch(`/api/catasto/quotazione?${acquistoParams}`),
+        fetch(`/api/catasto/quotazione?${affittoParams}`),
+      ])
+      const [jsonAcquisto, jsonAffitto] = await Promise.all([
+        resAcquisto.json(),
+        resAffitto.json(),
+      ])
+
+      if (jsonAcquisto.error) {
+        setValuationError(jsonAcquisto.error)
+      } else if (jsonAcquisto.data) {
+        setValuation(jsonAcquisto.data)
+      }
+
+      if (jsonAffitto.data) {
+        setRentalValuation(jsonAffitto.data)
       }
     } catch {
       setValuationError('Errore nel calcolo della quotazione')
@@ -231,14 +246,14 @@ export function CadastralPanel({
       )}
 
       {/* Card Stima di Valore */}
-      {(valuation || loadingValuation || valuationError) && (
-        <Card className="p-5 space-y-3">
+      {(valuation || rentalValuation || loadingValuation || valuationError) && (
+        <Card className="p-5 space-y-4">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-primary" />
             <h3 className="font-semibold text-sm">Stima Indicativa di Valore</h3>
           </div>
 
-          {loadingValuation && !valuation && (
+          {loadingValuation && !valuation && !rentalValuation && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
               Calcolo quotazione OMI...
@@ -252,14 +267,19 @@ export function CadastralPanel({
             </div>
           )}
 
+          {/* Acquisto */}
           {valuation && (
             <div className="space-y-3">
+              <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                <TrendingUp className="h-3 w-3" />
+                Acquisto
+              </div>
               <div className="bg-primary/5 rounded-lg p-4 text-center">
-                <p className="text-2xl font-bold text-primary">
+                <p className="text-xl font-bold text-primary">
                   {formatCurrency(valuation.valore_min)} — {formatCurrency(valuation.valore_max)}
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {formatCurrency(valuation.valore_min_mq)} — {formatCurrency(valuation.valore_max_mq)} al mq
+                  {formatCurrency(valuation.valore_min_mq)} — {formatCurrency(valuation.valore_max_mq)} /mq
                 </p>
               </div>
 
@@ -275,17 +295,51 @@ export function CadastralPanel({
                   </Badge>
                 </div>
                 {valuation.stato_conservazione && (
-                  <div>
+                  <div className="col-span-2">
                     <p className="text-xs text-muted-foreground">Stato conservazione</p>
                     <p className="font-medium capitalize">{valuation.stato_conservazione}</p>
                   </div>
                 )}
               </div>
+            </div>
+          )}
 
-              <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded p-2">
-                <Info className="h-3 w-3 mt-0.5 shrink-0" />
-                <p>{valuation.disclaimer}</p>
+          {/* Affitto */}
+          {rentalValuation && (
+            <div className="space-y-3 pt-3 border-t">
+              <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                <Home className="h-3 w-3" />
+                Affitto mensile stimato
               </div>
+              <div className="bg-emerald-500/5 rounded-lg p-4 text-center">
+                <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
+                  {formatCurrency(rentalValuation.valore_min)}/mese — {formatCurrency(rentalValuation.valore_max)}/mese
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {formatCurrency(rentalValuation.valore_min_mq)} — {formatCurrency(rentalValuation.valore_max_mq)} /mq/mese
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-xs text-muted-foreground">Semestre</p>
+                  <p className="font-medium">{rentalValuation.semestre}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Fonte</p>
+                  <Badge variant="outline" className="text-xs">
+                    {rentalValuation.fonte === 'csv_omi' ? 'CSV OMI' : '3eurotools'}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Disclaimer comune */}
+          {(valuation || rentalValuation) && (
+            <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded p-2">
+              <Info className="h-3 w-3 mt-0.5 shrink-0" />
+              <p>{(valuation ?? rentalValuation)!.disclaimer}</p>
             </div>
           )}
         </Card>
