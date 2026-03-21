@@ -16,11 +16,13 @@ export const metadata: Metadata = {
   title: 'CasaAI — Assistente AI per agenti immobiliari',
   description: 'Genera annunci, post social e contenuti di marketing in secondi.',
   manifest: '/manifest.json',
-  themeColor: '#0f172a',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
     title: 'CasaAI',
+  },
+  icons: {
+    apple: '/apple-touch-icon.png',
   },
 }
 
@@ -33,10 +35,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="it" suppressHydrationWarning>
-      <head>
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-      </head>
-      <body className={`${plusJakarta.variable} antialiased`}>
+<body className={`${plusJakarta.variable} antialiased`}>
         <Providers>
           <I18nProvider>
             {children}
