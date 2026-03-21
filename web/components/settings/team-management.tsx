@@ -24,6 +24,7 @@ interface Member {
   name: string
   email: string
   role: string
+  last_sign_in_at: string | null
 }
 
 interface Props {
@@ -177,6 +178,11 @@ export function TeamManagement({ members, currentUserId, currentRole }: Props) {
                 </span>
               </div>
               <p className="text-xs text-muted-foreground truncate mt-0.5">{member.email}</p>
+              <p className="text-[10px] text-muted-foreground/60 mt-0.5">
+                {member.last_sign_in_at
+                  ? `Ultimo accesso: ${new Date(member.last_sign_in_at).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+                  : 'Nessun accesso effettuato'}
+              </p>
             </div>
 
             {/* Actions */}

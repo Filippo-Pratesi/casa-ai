@@ -70,14 +70,24 @@ export default async function SettingsPage({
     group = groupData as Group | null
   }
 
-  let members: { id: string; name: string; email: string; role: string }[] = []
+  let members: { id: string; name: string; email: string; role: string; last_sign_in_at: string | null }[] = []
   if (isAdmin && profile?.workspace_id) {
     const { data: membersData } = await admin
       .from('users')
       .select('id, name, email, role')
       .eq('workspace_id', profile.workspace_id)
       .order('created_at', { ascending: true })
-    members = (membersData ?? []) as { id: string; name: string; email: string; role: string }[]
+    const rawMembers = (membersData ?? []) as { id: string; name: string; email: string; role: string }[]
+
+    // Fetch last_sign_in_at from auth.users for each member
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: authUsers } = await (admin.auth.admin as any).listUsers({ perPage: 1000 })
+    const authMap: Record<string, string | null> = {}
+    for (const u of (authUsers?.users ?? [])) {
+      authMap[u.id] = u.last_sign_in_at ?? null
+    }
+
+    members = rawMembers.map(m => ({ ...m, last_sign_in_at: authMap[m.id] ?? null }))
   }
 
   let agentCount = 0
