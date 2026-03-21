@@ -177,7 +177,7 @@ export function AppSidebar({
             <SidebarMenu className="space-y-0.5">
               <NavItem href="/contabilita" icon={Euro} label={t('nav.contabilita')} exact={false} />
               <NavItem href="/archive" icon={Archive} label={t('nav.archive')} exact={false} />
-              {isAdmin && <NavItem href="/admin" icon={Users} label={t('nav.team')} exact={false} />}
+              <NavItem href="/admin" icon={Users} label={t('nav.team')} exact={false} />
               <NavItem href="/settings" icon={Settings} label={t('nav.settings')} />
               {isAdmin && <NavItem href="/plans" icon={CreditCard} label={t('nav.plan')} />}
             </SidebarMenu>

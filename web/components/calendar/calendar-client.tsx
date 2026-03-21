@@ -52,7 +52,7 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
   const [googleEvents, setGoogleEvents] = useState<Array<{ id: string; summary: string; start: string; end: string }>>([])
 
   const isAdmin = role === 'admin' || role === 'group_admin'
-  const showAgentBar = isAdmin && !!agents && agents.length > 1
+  const showAgentBar = !!agents && agents.length > 1
 
   // Restore preferences from localStorage — defaults: week view, hide other agents
   useEffect(() => {

@@ -207,7 +207,7 @@ export const BancaDatiFilters = React.memo(function BancaDatiFilters({
         </div>
 
         {/* Agente (admin only) */}
-        {isAdmin && agents.length > 1 && (
+        {agents.length > 1 && (
           <div className="flex flex-col gap-0.5">
             <span className="text-[10px] font-medium text-muted-foreground px-0.5">Agente</span>
             <Select
