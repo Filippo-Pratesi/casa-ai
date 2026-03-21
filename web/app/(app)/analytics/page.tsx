@@ -46,13 +46,13 @@ export default async function AnalyticsPage({
 
   const isAdmin = profile.role === 'admin' || profile.role === 'group_admin'
 
-  // Agents list (for filter dropdown — admin only)
+  // Agents list (for filter dropdown — all workspace members)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: agentsData } = isAdmin ? await (admin as any)
+  const { data: agentsData } = await (admin as any)
     .from('users')
     .select('id, name')
     .eq('workspace_id', profile.workspace_id)
-    .order('name') : { data: [] }
+    .order('name')
   const agents = (agentsData ?? []) as { id: string; name: string }[]
 
   const params = await searchParams
@@ -148,7 +148,7 @@ export default async function AnalyticsPage({
             </p>
           </div>
         </div>
-        {isAdmin && agents.length > 1 && (
+        {agents.length > 1 && (
           <Suspense fallback={<div className="h-9 w-48 rounded-lg bg-muted animate-pulse" />}>
             <AnalyticsAgentFilter agents={agents} selectedAgentId={selectedAgentId} />
           </Suspense>
