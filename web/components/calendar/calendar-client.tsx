@@ -228,8 +228,10 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
               <button
                 key={v}
                 onClick={() => setViewAndSave(v)}
-                className={`rounded-lg px-3 py-1.5 font-medium transition-all duration-150 capitalize ${
-                  view === v ? 'bg-card shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                className={`rounded-lg px-4 py-2 font-semibold transition-all duration-150 capitalize ${
+                  view === v
+                    ? 'bg-card shadow-sm text-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
                 }`}
               >
                 {v === 'month' ? 'Mese' : 'Settimana'}
@@ -343,43 +345,40 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
                         key={key}
                         onClick={() => setSelectedDay(day)}
                         title={tooltipText || undefined}
-                        className={`group/day min-h-[72px] border-b border-r border-border/40 p-2 text-left transition-all duration-150 cursor-pointer ${
+                        className={`group/day min-h-[130px] border-b border-r border-border/40 p-3 text-left transition-all duration-200 cursor-pointer ${
                           isSelected
-                            ? 'bg-[oklch(0.57_0.20_33)] hover:bg-[oklch(0.52_0.20_33)]'
-                            : 'hover:bg-muted/50'
+                            ? 'bg-[oklch(0.57_0.20_33)] hover:bg-[oklch(0.52_0.20_33)] shadow-inner'
+                            : 'hover:bg-muted/60 hover:shadow-sm hover:z-10 hover:scale-[1.01]'
                         }`}
                       >
-                        <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold transition-all duration-150 ${
+                        <span className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold transition-all duration-150 ${
                           isSelected
                             ? 'text-white'
                             : isToday
-                              ? 'bg-[oklch(0.57_0.20_33)] text-white'
-                              : 'text-foreground group-hover/day:bg-muted'
+                              ? 'bg-[oklch(0.57_0.20_33)] text-white shadow-sm'
+                              : 'text-foreground group-hover/day:bg-muted group-hover/day:scale-110'
                         }`}>
                           {day.getDate()}
                         </span>
-                        <div className="mt-1 space-y-0.5">
-                          {dayAppts.slice(0, 2).map(a => {
+                        <div className="mt-1.5 space-y-1">
+                          {dayAppts.slice(0, 3).map(a => {
                             const typeDot = TYPE_DOT[a.type] ?? 'bg-muted-foreground/40'
                             return (
                               <div
                                 key={a.id}
-                                className={`flex items-center gap-1 rounded px-1 py-0.5 ${isSelected ? 'bg-white/20' : 'bg-black/[0.03]'}`}
+                                className={`flex items-center gap-1.5 rounded-md px-1.5 py-1 transition-all duration-150 ${isSelected ? 'bg-white/20 hover:bg-white/30' : 'bg-black/[0.04] hover:bg-black/[0.08]'}`}
                               >
                                 <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${isSelected ? 'bg-white' : typeDot}`} />
-                                <span className={`text-[10px] truncate leading-tight ${isSelected ? 'text-white' : 'text-muted-foreground'}`}>
+                                <span className={`text-[11px] truncate leading-tight font-medium ${isSelected ? 'text-white' : 'text-foreground/80'}`}>
                                   {formatTime(a.starts_at)} {a.title}
                                 </span>
                               </div>
                             )
                           })}
-                          {dayAppts.length > 2 && (
-                            <span className={`text-[10px] pl-1 ${isSelected ? 'text-white/60' : 'text-muted-foreground'}`}>
-                              +{dayAppts.length - 2} altri
+                          {dayAppts.length > 3 && (
+                            <span className={`text-[11px] pl-1 font-medium ${isSelected ? 'text-white/60' : 'text-muted-foreground'}`}>
+                              +{dayAppts.length - 3} altri
                             </span>
-                          )}
-                          {dayAppts.length === 0 && firstAppt === undefined && (
-                            <div className="h-1" />
                           )}
                         </div>
                       </button>
@@ -400,19 +399,19 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
                       <button
                         key={day.toDateString()}
                         onClick={() => setSelectedDay(day)}
-                        className={`py-3 text-center transition-all duration-150 ${isSel ? 'bg-[oklch(0.57_0.20_33)]' : 'hover:bg-muted/50'}`}
+                        className={`py-4 text-center transition-all duration-150 ${isSel ? 'bg-[oklch(0.57_0.20_33)]' : 'hover:bg-muted/60 hover:shadow-sm'}`}
                       >
-                        <p className={`text-[10px] font-semibold uppercase tracking-wide ${isSel ? 'text-white/60' : 'text-muted-foreground'}`}>
+                        <p className={`text-[11px] font-semibold uppercase tracking-wider ${isSel ? 'text-white/70' : 'text-muted-foreground'}`}>
                           {DAY_NAMES[(day.getDay() + 6) % 7]}
                         </p>
-                        <p className={`mt-0.5 text-base font-bold ${isSel ? 'text-white' : isToday ? 'text-[oklch(0.57_0.20_33)]' : ''}`}>
+                        <p className={`mt-1 text-lg font-extrabold ${isSel ? 'text-white' : isToday ? 'text-[oklch(0.57_0.20_33)]' : 'text-foreground'}`}>
                           {day.getDate()}
                         </p>
                       </button>
                     )
                   })}
                 </div>
-                <div className="grid grid-cols-7 min-h-[calc(100vh-220px)]">
+                <div className="grid grid-cols-7 min-h-[calc(100vh-180px)]">
                   {weekDays.map(day => {
                     const dayAppts = (apptsByDay.get(day.toDateString()) ?? []).sort((a, b) => a.starts_at.localeCompare(b.starts_at))
                     const isSel = isSameDay(day, selectedDay)
@@ -424,7 +423,7 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
                         key={day.toDateString()}
                         onClick={handleDayClick}
                         onDoubleClick={() => { setSelectedDay(day); setModalInitialDate(day); setEditingAppt(undefined); setShowModal(true) }}
-                        className={`border-r border-border/40 p-1.5 space-y-1 cursor-pointer transition-colors min-h-[300px] relative group ${isSel ? 'bg-muted/30' : 'hover:bg-muted/20'}`}
+                        className={`border-r border-border/40 p-2 space-y-1.5 cursor-pointer transition-all duration-150 min-h-[300px] relative group ${isSel ? 'bg-muted/40 shadow-inner' : 'hover:bg-muted/30 hover:shadow-sm'}`}
                       >
                         {dayAppts.map(a => {
                           const cardBg = (showAgentBar && a.agent_id)
@@ -436,13 +435,13 @@ export function CalendarClient({ listings, contacts, agents, role, userId, filte
                               key={a.id}
                               onClick={e => { e.stopPropagation(); openEditModal(a) }}
                               title={`${formatTime(a.starts_at)} ${a.title}`}
-                              className={`rounded-md border p-2 cursor-pointer hover:opacity-80 transition-opacity min-h-[40px] ${cardBg}`}
+                              className={`rounded-md border p-2 cursor-pointer transition-all duration-150 hover:scale-[1.02] hover:shadow-md hover:-translate-y-0.5 min-h-[44px] ${cardBg}`}
                             >
                               <div className="flex items-center gap-1">
-                                <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${typeDot}`} />
-                                <span className="text-[10px] font-medium truncate">{formatTime(a.starts_at)}</span>
+                                <span className={`h-2 w-2 rounded-full shrink-0 ${typeDot}`} />
+                                <span className="text-[11px] font-semibold truncate">{formatTime(a.starts_at)}</span>
                               </div>
-                              <p className="text-[10px] whitespace-normal line-clamp-2 leading-tight mt-0.5">{a.title}</p>
+                              <p className="text-[11px] whitespace-normal line-clamp-2 leading-tight mt-0.5 font-medium">{a.title}</p>
                             </div>
                           )
                         })}
