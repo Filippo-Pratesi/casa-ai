@@ -201,7 +201,7 @@ export default async function SettingsPage({
     { id: 'generale', label: 'Generale' },
     ...(isAdmin ? [{ id: 'team', label: 'Team' }] : []),
     { id: 'integrazioni', label: 'Integrazioni' },
-    { id: 'fatturazione', label: 'Fatturazione' },
+    ...(showPianoSection ? [{ id: 'fatturazione', label: 'Gestione Piano' }] : []),
   ]
 
   return (
@@ -391,8 +391,8 @@ export default async function SettingsPage({
         </div>
       )}
 
-      {/* Tab: Fatturazione */}
-      {tab === 'fatturazione' && isAdmin && (
+      {/* Tab: Gestione Piano */}
+      {tab === 'fatturazione' && showPianoSection && (
         <div className="space-y-6">
           {planConfig && (
             <Card>
