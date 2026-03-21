@@ -19,7 +19,7 @@ export default async function NewCampaignPage({
     .eq('id', user.id)
     .single()
   const profile = profileData as { role: string; workspace_id: string } | null
-  if (!profile || (profile.role !== 'admin' && profile.role !== 'group_admin')) redirect('/dashboard')
+  if (!profile) redirect('/dashboard')
 
   const params = searchParams ? await searchParams : {}
   const listingId = params.listing_id ?? null

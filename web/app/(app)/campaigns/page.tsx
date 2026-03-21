@@ -32,7 +32,7 @@ export default async function CampaignsPage() {
     .eq('id', user.id)
     .single()
   const profile = profileData as { role: string; workspace_id: string } | null
-  if (!profile || (profile.role !== 'admin' && profile.role !== 'group_admin')) redirect('/dashboard')
+  if (!profile) redirect('/dashboard')
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (admin as any)
