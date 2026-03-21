@@ -22,9 +22,7 @@ export default async function NewContactPage() {
   const isAdmin = profile?.role === 'admin' || profile?.role === 'group_admin'
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: agentsData } = isAdmin
-    ? await (admin as any).from('users').select('id, name').eq('workspace_id', profile!.workspace_id).order('name')
-    : { data: [] }
+  const { data: agentsData } = await (admin as any).from('users').select('id, name').eq('workspace_id', profile!.workspace_id).order('name')
   const agents = (agentsData ?? []) as { id: string; name: string }[]
 
   return (
