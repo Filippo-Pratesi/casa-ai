@@ -98,9 +98,9 @@ export async function PATCH(
     return NextResponse.json({ error: 'Non puoi modificare un admin di gruppo' }, { status: 403 })
   }
 
-  // Role changes: group_admin only
-  if (role !== undefined && profile.role !== 'group_admin') {
-    return NextResponse.json({ error: 'Solo un admin di gruppo può modificare i ruoli' }, { status: 403 })
+  // Role changes: any admin can change an agent's role; only group_admin can change another admin's role
+  if (role !== undefined && target.role === 'admin' && profile.role !== 'group_admin') {
+    return NextResponse.json({ error: 'Solo un admin di gruppo può modificare il ruolo di un admin' }, { status: 403 })
   }
   if (role !== undefined && !['admin', 'agent'].includes(role)) {
     return NextResponse.json({ error: 'Ruolo non valido' }, { status: 400 })

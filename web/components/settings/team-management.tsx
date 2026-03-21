@@ -64,6 +64,7 @@ export function TeamManagement({ members, currentUserId, currentRole }: Props) {
   const [editError, setEditError] = useState<string | null>(null)
 
   const isGroupAdmin = currentRole === 'group_admin'
+  const isAdmin = currentRole === 'admin' || currentRole === 'group_admin'
 
   async function handleInvite() {
     if (!inviteEmail || !inviteName) return
@@ -109,7 +110,7 @@ export function TeamManagement({ members, currentUserId, currentRole }: Props) {
     setEditLoading(true)
     setEditError(null)
     const body: Record<string, string> = { name: editName, email: editEmail }
-    if (isGroupAdmin) body.role = editRole
+    if (isAdmin) body.role = editRole
     const res = await fetch(`/api/workspace/members/${editMember.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -200,7 +201,7 @@ export function TeamManagement({ members, currentUserId, currentRole }: Props) {
                     <Pencil className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
                     Modifica
                   </DropdownMenuItem>
-                  {isGroupAdmin && member.role === 'agent' && (
+                  {isAdmin && member.role === 'agent' && (
                     <DropdownMenuItem onClick={() => handleRoleChange(member.id, 'admin')}>
                       <ShieldCheck className="h-3.5 w-3.5 mr-2 text-purple-600" />
                       Promuovi ad Admin
@@ -255,7 +256,7 @@ export function TeamManagement({ members, currentUserId, currentRole }: Props) {
                 className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.3)]"
               />
             </div>
-            {isGroupAdmin && (
+            {isAdmin && (
               <div>
                 <label className="text-xs font-medium text-muted-foreground block mb-1">Ruolo</label>
                 <select
@@ -313,7 +314,7 @@ export function TeamManagement({ members, currentUserId, currentRole }: Props) {
                 className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.3)]"
               />
             </div>
-            {isGroupAdmin && (
+            {isAdmin && (
               <div>
                 <label className="text-xs font-medium text-muted-foreground block mb-1">Ruolo</label>
                 <select
