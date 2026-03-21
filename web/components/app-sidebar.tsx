@@ -179,7 +179,6 @@ export function AppSidebar({
               <NavItem href="/archive" icon={Archive} label={t('nav.archive')} exact={false} />
               <NavItem href="/admin" icon={Users} label={t('nav.team')} exact={false} />
               <NavItem href="/settings" icon={Settings} label={t('nav.settings')} />
-              {isAdmin && <NavItem href="/plans" icon={CreditCard} label={t('nav.plan')} />}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

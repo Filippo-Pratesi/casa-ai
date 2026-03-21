@@ -237,7 +237,9 @@ export function AgentZoneAssignment({
               onValueChange={(v) => handleCityChange(!v || v === 'none' ? '' : v)}
             >
               <SelectTrigger className="h-9 text-sm">
-                <SelectValue placeholder="Seleziona città" />
+                <span className={cn('truncate', !newCity && 'text-muted-foreground')}>
+                  {newCity || 'Seleziona città'}
+                </span>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Seleziona città…</SelectItem>
