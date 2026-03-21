@@ -199,7 +199,7 @@ export default async function SettingsPage({
 
   const TABS = [
     { id: 'generale', label: 'Generale' },
-    { id: 'team', label: 'Team' },
+    ...(isAdmin ? [{ id: 'team', label: 'Team' }] : []),
     { id: 'integrazioni', label: 'Integrazioni' },
     { id: 'fatturazione', label: 'Fatturazione' },
   ]

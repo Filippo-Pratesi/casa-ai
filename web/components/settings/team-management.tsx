@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { UserPlus, MoreHorizontal, Trash2, ShieldCheck, ShieldOff, Loader2, Pencil } from 'lucide-react'
+import { ReassignAndRemoveDialog } from './reassign-and-remove-dialog'
 
 interface Member {
   id: string
@@ -55,6 +56,9 @@ export function TeamManagement({ members, currentUserId, currentRole }: Props) {
   const [inviteError, setInviteError] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
+  const [reassignOpen, setReassignOpen] = useState(false)
+  const [reassignMember, setReassignMember] = useState<Member | null>(null)
+
   const [editOpen, setEditOpen] = useState(false)
   const [editMember, setEditMember] = useState<Member | null>(null)
   const [editName, setEditName] = useState('')
@@ -88,12 +92,9 @@ export function TeamManagement({ members, currentUserId, currentRole }: Props) {
     router.refresh()
   }
 
-  async function handleRemove(memberId: string) {
-    if (!confirm('Rimuovere questo membro dal workspace?')) return
-    setActionLoading(memberId)
-    await fetch(`/api/workspace/members/${memberId}`, { method: 'DELETE' })
-    setActionLoading(null)
-    router.refresh()
+  function openReassign(member: Member) {
+    setReassignMember(member)
+    setReassignOpen(true)
   }
 
   function openEdit(member: Member) {
@@ -216,7 +217,7 @@ export function TeamManagement({ members, currentUserId, currentRole }: Props) {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="text-red-600 focus:text-red-600"
-                    onClick={() => handleRemove(member.id)}
+                    onClick={() => openReassign(member)}
                   >
                     <Trash2 className="h-3.5 w-3.5 mr-2" />
                     Rimuovi dal team
@@ -227,6 +228,15 @@ export function TeamManagement({ members, currentUserId, currentRole }: Props) {
           </div>
         ))}
       </div>
+
+      {/* Reassign + remove dialog */}
+      <ReassignAndRemoveDialog
+        open={reassignOpen}
+        onOpenChange={setReassignOpen}
+        member={reassignMember}
+        otherMembers={members.filter(m => m.id !== reassignMember?.id && m.id !== currentUserId)}
+        onSuccess={() => router.refresh()}
+      />
 
       {/* Edit member dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
