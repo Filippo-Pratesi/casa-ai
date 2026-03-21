@@ -13,6 +13,7 @@ import { ContactCronistoria } from '@/components/contacts/contact-cronistoria'
 import { CONTACT_TYPE_COLORS as TYPE_COLORS, CONTACT_TYPE_LABELS as TYPE_LABELS, birthdayDaysLeft } from '@/lib/contact-utils'
 import { ContactTypeBadges } from '@/components/contacts/contact-type-badges'
 import { PROPERTY_ROLE_LABELS } from '@/lib/property-role-labels'
+import { ProponiImmobileButton } from '@/components/contacts/proponi-immobile-button'
 
 interface MatchResult {
   property_id: string
@@ -242,7 +243,15 @@ export default async function ContactDetailPage({
           <span className="text-sm text-muted-foreground">Clienti</span>
         </div>
         <div className="flex items-center gap-2">
-          <Link href={`/contacts/${id}/edit`} className="rounded-xl bg-[oklch(0.57_0.20_33)] text-white px-4 py-2 text-sm font-semibold hover:bg-[oklch(0.52_0.20_33)] transition-colors inline-flex items-center gap-1.5">
+          {isBuyerLike && (
+            <ProponiImmobileButton
+              contactId={id}
+              contactName={contact.name}
+              contactEmail={contact.email}
+              contactPhone={contact.phone}
+            />
+          )}
+          <Link href={`/contacts/${id}/edit`} className="rounded-xl border border-border bg-background text-foreground px-4 py-2 text-sm font-semibold hover:bg-muted transition-colors inline-flex items-center gap-1.5">
             Modifica
           </Link>
           <DeleteContactButton contactId={id} name={contact.name} />
