@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -22,11 +22,23 @@ import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
+export interface IncaricoInitialValues {
+  incarico_type?: string | null
+  incarico_date?: string | null
+  incarico_expiry?: string | null
+  incarico_commission_percent?: number | null
+  incarico_notes?: string | null
+}
+
 interface IncaricoDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   advancing: boolean
   onConfirm: (payload: Record<string, unknown>) => void
+  /** 'crea' (default) shows "Avvia Incarico"; 'rinnova' shows "Rinnova Incarico" */
+  mode?: 'crea' | 'rinnova'
+  /** Pre-fill fields when renewing */
+  initialValues?: IncaricoInitialValues
 }
 
 export const IncaricoDialog = React.memo(function IncaricoDialog({
@@ -34,12 +46,32 @@ export const IncaricoDialog = React.memo(function IncaricoDialog({
   onOpenChange,
   advancing,
   onConfirm,
+  mode = 'crea',
+  initialValues,
 }: IncaricoDialogProps) {
   const [incaricoType, setIncaricoType] = useState<string>('esclusivo')
   const [incaricoDate, setIncaricoDate] = useState('')
   const [incaricoExpiry, setIncaricoExpiry] = useState('')
   const [incaricoCommission, setIncaricoCommission] = useState('')
   const [incaricoNotes, setIncaricoNotes] = useState('')
+
+  // Pre-populate when renewing
+  useEffect(() => {
+    if (open && mode === 'rinnova' && initialValues) {
+      setIncaricoType(initialValues.incarico_type ?? 'esclusivo')
+      setIncaricoDate(initialValues.incarico_date ?? '')
+      setIncaricoExpiry(initialValues.incarico_expiry ?? '')
+      setIncaricoCommission(initialValues.incarico_commission_percent != null ? String(initialValues.incarico_commission_percent) : '')
+      setIncaricoNotes(initialValues.incarico_notes ?? '')
+    } else if (open && mode === 'crea') {
+      // Reset for new incarico
+      setIncaricoType('esclusivo')
+      setIncaricoDate('')
+      setIncaricoExpiry('')
+      setIncaricoCommission('')
+      setIncaricoNotes('')
+    }
+  }, [open, mode, initialValues])
 
   async function handleConfirmIncarico() {
     if (!incaricoDate || !incaricoCommission) {
@@ -61,11 +93,14 @@ export const IncaricoDialog = React.memo(function IncaricoDialog({
     })
   }
 
+  const title = mode === 'rinnova' ? 'Rinnova Incarico' : 'Avvia Incarico'
+  const confirmLabel = mode === 'rinnova' ? 'Rinnova incarico' : 'Conferma incarico'
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Avvia Incarico</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 pt-2">
           <div className="space-y-1.5">
@@ -115,7 +150,7 @@ export const IncaricoDialog = React.memo(function IncaricoDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>Annulla</Button>
           <Button onClick={handleConfirmIncarico} disabled={advancing}>
             {advancing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-            Conferma incarico
+            {confirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

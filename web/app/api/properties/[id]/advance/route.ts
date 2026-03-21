@@ -127,6 +127,22 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
   const u = updated as Record<string, unknown>
   const address = (u.address as string | undefined) ?? 'Indirizzo sconosciuto'
 
+  // Auto-event: incarico_firmato when property moves to incarico
+  if (targetStage === 'incarico' && u.owner_contact_id) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (admin as any).from('contact_events').insert({
+      workspace_id: userProfile.workspace_id,
+      contact_id: u.owner_contact_id,
+      agent_id: user.id,
+      event_type: 'incarico_firmato',
+      title: `Incarico firmato: ${address}`,
+      body: u.incarico_expiry
+        ? `Scadenza: ${new Date(u.incarico_expiry as string).toLocaleDateString('it-IT')}`
+        : null,
+      related_property_id: id,
+    })
+  }
+
   // Auto-event: contact vendita_conclusa when property moves to venduto
   if (targetStage === 'venduto' && u.owner_contact_id) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

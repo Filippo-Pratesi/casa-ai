@@ -135,6 +135,33 @@ export function ImmobileDetailClient({
   // Incarico dialog
   const [incaricoOpen, setIncaricoOpen] = useState(false)
 
+  // Rinnova incarico dialog
+  const [rinnovaIncaricoOpen, setRinnovaIncaricoOpen] = useState(false)
+  const [rinnovando, setRinnovando] = useState(false)
+
+  async function handleRinnovaIncarico(payload: Record<string, unknown>) {
+    setRinnovando(true)
+    try {
+      const res = await fetch(`/api/properties/${property.id}/renew-incarico`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: 'Errore' }))
+        throw new Error(data.error ?? 'Errore rinnovo incarico')
+      }
+      const { property: updated } = await res.json()
+      setProperty(updated)
+      await reloadEvents()
+      toast.success('Incarico rinnovato')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Errore')
+    } finally {
+      setRinnovando(false)
+    }
+  }
+
   // Locato dialog
   const [locatoOpen, setLocatoOpen] = useState(false)
 
@@ -756,16 +783,26 @@ export function ImmobileDetailClient({
                       </span>
                     )}
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-xs gap-1 shrink-0"
-                    onClick={handleDownloadIncaricoPdf}
-                    disabled={generatingPdf}
-                  >
-                    {generatingPdf ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileDown className="h-3 w-3" />}
-                    Genera contratto
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs gap-1 shrink-0"
+                      onClick={() => setRinnovaIncaricoOpen(true)}
+                    >
+                      Rinnova
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs gap-1 shrink-0"
+                      onClick={handleDownloadIncaricoPdf}
+                      disabled={generatingPdf}
+                    >
+                      {generatingPdf ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileDown className="h-3 w-3" />}
+                      Genera contratto
+                    </Button>
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                   {property.incarico_type && <div><span className="text-muted-foreground">Tipo:</span> <span className="font-medium capitalize">{property.incarico_type}</span></div>}
@@ -966,6 +1003,22 @@ export function ImmobileDetailClient({
         onOpenChange={setIncaricoOpen}
         advancing={advancing}
         onConfirm={(payload) => doAdvanceStage('incarico', payload)}
+        mode="crea"
+      />
+
+      <IncaricoDialog
+        open={rinnovaIncaricoOpen}
+        onOpenChange={setRinnovaIncaricoOpen}
+        advancing={rinnovando}
+        onConfirm={handleRinnovaIncarico}
+        mode="rinnova"
+        initialValues={{
+          incarico_type: property.incarico_type as string | null | undefined,
+          incarico_date: property.incarico_date as string | null | undefined,
+          incarico_expiry: property.incarico_expiry as string | null | undefined,
+          incarico_commission_percent: property.incarico_commission_percent as number | null | undefined,
+          incarico_notes: property.incarico_notes as string | null | undefined,
+        }}
       />
 
       <LocatoDialog
