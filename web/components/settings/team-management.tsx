@@ -17,7 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { UserPlus, MoreHorizontal, Trash2, ShieldCheck, ShieldOff, Loader2 } from 'lucide-react'
+import { UserPlus, MoreHorizontal, Trash2, ShieldCheck, ShieldOff, Loader2, Pencil } from 'lucide-react'
 
 interface Member {
   id: string
@@ -54,6 +54,14 @@ export function TeamManagement({ members, currentUserId, currentRole }: Props) {
   const [inviteError, setInviteError] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
+  const [editOpen, setEditOpen] = useState(false)
+  const [editMember, setEditMember] = useState<Member | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editEmail, setEditEmail] = useState('')
+  const [editRole, setEditRole] = useState<'agent' | 'admin'>('agent')
+  const [editLoading, setEditLoading] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
+
   const isGroupAdmin = currentRole === 'group_admin'
 
   async function handleInvite() {
@@ -83,6 +91,36 @@ export function TeamManagement({ members, currentUserId, currentRole }: Props) {
     setActionLoading(memberId)
     await fetch(`/api/workspace/members/${memberId}`, { method: 'DELETE' })
     setActionLoading(null)
+    router.refresh()
+  }
+
+  function openEdit(member: Member) {
+    setEditMember(member)
+    setEditName(member.name)
+    setEditEmail(member.email)
+    setEditRole(member.role as 'agent' | 'admin')
+    setEditError(null)
+    setEditOpen(true)
+  }
+
+  async function handleEdit() {
+    if (!editMember || !editName || !editEmail) return
+    setEditLoading(true)
+    setEditError(null)
+    const body: Record<string, string> = { name: editName, email: editEmail }
+    if (isGroupAdmin) body.role = editRole
+    const res = await fetch(`/api/workspace/members/${editMember.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    const data = await res.json()
+    setEditLoading(false)
+    if (!res.ok) {
+      setEditError(data.error ?? 'Errore sconosciuto')
+      return
+    }
+    setEditOpen(false)
     router.refresh()
   }
 
@@ -152,6 +190,10 @@ export function TeamManagement({ members, currentUserId, currentRole }: Props) {
                   )}
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem onClick={() => openEdit(member)}>
+                    <Pencil className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                    Modifica
+                  </DropdownMenuItem>
                   {isGroupAdmin && member.role === 'agent' && (
                     <DropdownMenuItem onClick={() => handleRoleChange(member.id, 'admin')}>
                       <ShieldCheck className="h-3.5 w-3.5 mr-2 text-purple-600" />
@@ -164,9 +206,7 @@ export function TeamManagement({ members, currentUserId, currentRole }: Props) {
                       Declassa ad Agente
                     </DropdownMenuItem>
                   )}
-                  {isGroupAdmin && (member.role === 'agent' || member.role === 'admin') && (
-                    <DropdownMenuSeparator />
-                  )}
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="text-red-600 focus:text-red-600"
                     onClick={() => handleRemove(member.id)}
@@ -180,6 +220,64 @@ export function TeamManagement({ members, currentUserId, currentRole }: Props) {
           </div>
         ))}
       </div>
+
+      {/* Edit member dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Modifica membro</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground block mb-1">Nome completo</label>
+              <input
+                type="text"
+                value={editName}
+                onChange={e => setEditName(e.target.value)}
+                placeholder="Mario Rossi"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.3)]"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground block mb-1">Email</label>
+              <input
+                type="email"
+                value={editEmail}
+                onChange={e => setEditEmail(e.target.value)}
+                placeholder="mario@agenzia.it"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.3)]"
+              />
+            </div>
+            {isGroupAdmin && (
+              <div>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">Ruolo</label>
+                <select
+                  value={editRole}
+                  onChange={e => setEditRole(e.target.value as 'agent' | 'admin')}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[oklch(0.57_0.20_33/0.3)]"
+                >
+                  <option value="agent">Agente</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+            )}
+            {editError && (
+              <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{editError}</p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <button onClick={() => setEditOpen(false)} disabled={editLoading} className="rounded-xl border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-60">
+              Annulla
+            </button>
+            <button onClick={handleEdit} disabled={editLoading || !editName || !editEmail} className="btn-ai gap-2 disabled:opacity-60">
+              {editLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              {editLoading ? 'Salvataggio...' : 'Salva'}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Invite dialog */}
       <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
