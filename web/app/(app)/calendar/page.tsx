@@ -47,20 +47,18 @@ export default async function CalendarPage({
   let filterAgentName: string | undefined
   let agents: { id: string; name: string }[] = []
 
-  if (profile.role === 'admin' || profile.role === 'group_admin') {
-    const [agentRes, filterRes] = await Promise.all([
-      admin
-        .from('users')
-        .select('id, name')
-        .eq('workspace_id', profile.workspace_id)
-        .order('name', { ascending: true }),
-      agentId
-        ? admin.from('users').select('name').eq('id', agentId).single()
-        : Promise.resolve({ data: null }),
-    ])
-    agents = (agentRes.data ?? []) as { id: string; name: string }[]
-    filterAgentName = (filterRes.data as { name: string } | null)?.name
-  }
+  const [agentRes, filterRes] = await Promise.all([
+    admin
+      .from('users')
+      .select('id, name')
+      .eq('workspace_id', profile.workspace_id)
+      .order('name', { ascending: true }),
+    agentId && (profile.role === 'admin' || profile.role === 'group_admin')
+      ? admin.from('users').select('name').eq('id', agentId).single()
+      : Promise.resolve({ data: null }),
+  ])
+  agents = (agentRes.data ?? []) as { id: string; name: string }[]
+  filterAgentName = (filterRes.data as { name: string } | null)?.name
 
   return (
     <CalendarClient
