@@ -159,7 +159,7 @@ export function AppSidebar({
           <SidebarGroupContent>
             <SidebarMenu className="space-y-0.5">
               <NavItem href="/calendar" icon={CalendarDays} label={t('nav.calendar')} exact={false} />
-              {isAdmin && <NavItem href="/campaigns" icon={Megaphone} label={t('nav.campaigns')} exact={false} />}
+              <NavItem href="/campaigns" icon={Megaphone} label={t('nav.campaigns')} exact={false} />
               <NavItem href="/proposte" icon={FileText} label={t('nav.proposte')} exact={false} />
               <NavItem href="/todos" icon={CheckSquare} label={t('nav.todos')} badge={pendingTodos} exact={false} />
               <NavItem href="/notifications" icon={Bell} label={t('nav.notifications')} badge={unreadNotifications} />

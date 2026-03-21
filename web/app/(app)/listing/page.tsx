@@ -64,10 +64,6 @@ export default async function ListingHistoryPage({
     .order('created_at', { ascending: false })
     .limit(50)
 
-  if (!isAdmin) {
-    query = query.eq('agent_id', user.id)
-  }
-
   if (transaction_type === 'vendita' || transaction_type === 'affitto') {
     query = query.eq('transaction_type', transaction_type)
   }

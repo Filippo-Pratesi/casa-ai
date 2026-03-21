@@ -30,10 +30,8 @@ export async function GET(req: NextRequest) {
     .eq('workspace_id', profile.workspace_id)
     .order('starts_at', { ascending: true })
 
-  // Non-admins only see their own; admins can filter by agent_id
-  if (profile.role === 'agent') {
-    query = query.eq('agent_id', user.id)
-  } else if (agentIdFilter) {
+  // All workspace members see all appointments; admins can filter by agent_id
+  if (agentIdFilter) {
     query = query.eq('agent_id', agentIdFilter)
   }
 
