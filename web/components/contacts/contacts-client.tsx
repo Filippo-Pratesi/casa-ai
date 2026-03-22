@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
-import { UserPlus, Users, Phone, Mail, Euro, Home, Cake, LayoutGrid, List, Search, MapPin, ChevronLeft, ChevronRight } from 'lucide-react'
+import { UserPlus, Users, Phone, Mail, Euro, Home, Cake, LayoutGrid, List, Search, MapPin, ChevronLeft, ChevronRight, Globe } from 'lucide-react'
 import { useI18n } from '@/lib/i18n/context'
 import { Button } from '@/components/ui/button'
 import { ContactTypeBadges } from './contact-type-badges'
@@ -12,6 +12,8 @@ import { ContactsTable } from './contacts-table'
 import type { SortKey } from './contacts-filters'
 import { WhatsAppIcon } from '@/components/shared/whatsapp-icon'
 import { birthdayDaysLeft } from '@/lib/contact-utils'
+import { NetworkSearchModal } from './network-search-modal'
+import { EditRequestsPanel } from './edit-requests-panel'
 
 const TYPE_BORDER_CLASS: Record<string, string> = {
   buyer: 'contact-card-buyer',
@@ -52,9 +54,12 @@ interface ContactsClientProps {
   total: number
   page: number
   perPage: number
+  hasNetworkSharing?: boolean
+  currentUserId?: string
+  currentWorkspaceId?: string
 }
 
-export function ContactsClient({ contacts, isAdmin, total, page, perPage }: ContactsClientProps) {
+export function ContactsClient({ contacts, isAdmin, total, page, perPage, hasNetworkSharing = false, currentUserId, currentWorkspaceId }: ContactsClientProps) {
   const { t } = useI18n()
   const router = useRouter()
   const pathname = usePathname()
@@ -63,6 +68,7 @@ export function ContactsClient({ contacts, isAdmin, total, page, perPage }: Cont
   const [citySearch, setCitySearch] = useState('')
   const [budgetMax, setBudgetMax] = useState('')
   const [sortBy, setSortBy] = useState<SortKey>('date_desc')
+  const [networkSearchOpen, setNetworkSearchOpen] = useState(false)
 
   const totalPages = Math.ceil(total / perPage)
 
@@ -147,12 +153,31 @@ export function ContactsClient({ contacts, isAdmin, total, page, perPage }: Cont
               </button>
             </div>
           )}
+          {hasNetworkSharing && (
+            <Button variant="outline" size="sm" onClick={() => setNetworkSearchOpen(true)}>
+              <Globe className="h-4 w-4 mr-1.5" />
+              Ricerca Network
+            </Button>
+          )}
           <Link href="/contacts/new" className="btn-ai inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold">
             <UserPlus className="h-4 w-4" />
             {t('contacts.new')}
           </Link>
         </div>
       </div>
+
+      {hasNetworkSharing && (
+        <NetworkSearchModal open={networkSearchOpen} onClose={() => setNetworkSearchOpen(false)} />
+      )}
+
+      {/* Edit requests panel — visible when there are network sharing requests */}
+      {hasNetworkSharing && currentUserId && currentWorkspaceId && (
+        <EditRequestsPanel
+          currentUserId={currentUserId}
+          currentWorkspaceId={currentWorkspaceId}
+          isAdmin={isAdmin}
+        />
+      )}
 
       {/* Filter bar */}
       {contacts.length > 0 && (

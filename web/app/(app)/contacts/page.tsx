@@ -43,6 +43,17 @@ export default async function ContactsPage({
   if (!profile?.workspace_id) redirect('/auth/setup')
   const isAdmin = profile.role === 'admin' || profile.role === 'group_admin'
 
+  // Check if there is any active network sharing for this workspace
+  const myWs = profile.workspace_id
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: sharingData } = await (admin as any)
+    .from('group_contact_sharing')
+    .select('id')
+    .eq('enabled', true)
+    .or(`workspace_a_id.eq.${myWs},workspace_b_id.eq.${myWs}`)
+    .limit(1)
+  const hasNetworkSharing = (sharingData ?? []).length > 0
+
   const params = searchParams ? await searchParams : {}
   const page = Math.max(1, parseInt(params.page ?? '1', 10))
 
@@ -91,6 +102,9 @@ export default async function ContactsPage({
       total={totalContacts}
       page={page}
       perPage={PER_PAGE}
+      hasNetworkSharing={hasNetworkSharing}
+      currentUserId={user.id}
+      currentWorkspaceId={profile.workspace_id}
     />
   )
 }

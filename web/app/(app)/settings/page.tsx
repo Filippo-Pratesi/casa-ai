@@ -16,6 +16,7 @@ import { InvoiceRemindersToggle } from '@/components/settings/invoice-reminders-
 import { AgentZoneAssignment } from '@/components/settings/agent-zone-assignment'
 import { ZoneManagement } from '@/components/settings/zone-management'
 import { OmiUpload } from '@/components/settings/omi-upload'
+import { GroupManagement } from '@/components/settings/group-management'
 import { getPlanConfig } from '@/lib/plan-limits'
 import { getTranslations } from '@/lib/i18n/server'
 import type { Workspace, Group } from '@/lib/supabase/types'
@@ -200,6 +201,7 @@ export default async function SettingsPage({
   const TABS = [
     { id: 'generale', label: 'Generale' },
     ...(isAdmin ? [{ id: 'team', label: 'Team' }] : []),
+    ...(isGroupAdmin && profile?.group_id ? [{ id: 'gruppo', label: 'Gruppo' }] : []),
     { id: 'integrazioni', label: 'Integrazioni' },
     ...(showPianoSection ? [{ id: 'fatturazione', label: 'Gestione Piano' }] : []),
   ]
@@ -321,6 +323,23 @@ export default async function SettingsPage({
               </CardContent>
             </Card>
           )}
+        </div>
+      )}
+
+      {/* Tab: Gruppo */}
+      {tab === 'gruppo' && isGroupAdmin && profile?.group_id && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Gestione Gruppo</CardTitle>
+              <CardDescription>
+                Configura gli accessi cross-agenzia e la condivisione dei contatti tra le agenzie del network.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <GroupManagement groupId={profile.group_id} />
+            </CardContent>
+          </Card>
         </div>
       )}
 
