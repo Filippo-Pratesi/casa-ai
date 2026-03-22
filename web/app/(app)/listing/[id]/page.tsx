@@ -20,7 +20,6 @@ import { PriceHistory } from '@/components/listing/price-history'
 import { FloorPlanUploader } from '@/components/listing/floor-plan-uploader'
 import { ListingStats } from '@/components/listing/listing-stats'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { MlsToggle } from '@/components/listing/mls-toggle'
 import { ToneRegenerate } from '@/components/listing/tone-regenerate'
 import { ListingMatchPanel } from '@/components/listing/match-panel'
 import { ListingCronistoriaPanel } from '@/components/listing/listing-cronistoria-panel'
@@ -334,13 +333,6 @@ export default async function ListingDetailPage({
         </p>
       </div>
 
-      {/* MLS toggle (admins only) */}
-      {(profile?.role === 'admin' || profile?.role === 'group_admin') && (
-        <MlsToggle
-          listingId={listing.id}
-          initialShared={(listing as unknown as { shared_with_group: boolean }).shared_with_group ?? false}
-        />
-      )}
 
       {/* Listing stats */}
       <ListingStats

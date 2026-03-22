@@ -163,7 +163,6 @@ export function AppSidebar({
               <NavItem href="/proposte" icon={FileText} label={t('nav.proposte')} exact={false} />
               <NavItem href="/todos" icon={CheckSquare} label={t('nav.todos')} badge={pendingTodos} exact={false} />
               <NavItem href="/notifications" icon={Bell} label={t('nav.notifications')} badge={unreadNotifications} />
-              {hasGroup && <NavItem href="/mls" icon={Building2} label={t('nav.mls')} exact={false} />}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

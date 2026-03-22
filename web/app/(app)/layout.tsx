@@ -44,13 +44,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     }
 
     const [wsRes, groupRes] = await Promise.all([
-      supabase
+      admin
         .from('workspaces')
         .select('*')
         .eq('group_id', profile.group_id)
         .order('name'),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase as any)
+      (admin as any)
         .from('groups')
         .select('*')
         .eq('id', profile.group_id)
