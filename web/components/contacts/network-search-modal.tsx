@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import { Search, Building2, Phone, Mail, Euro, X, Loader2, ArrowLeft, ChevronRight, Send } from 'lucide-react'
+import { useState, useCallback, useMemo } from 'react'
+import { Search, Building2, Phone, Mail, Euro, X, Loader2, ArrowLeft, ChevronRight, Send, ArrowUpDown } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -13,13 +13,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
@@ -32,6 +25,7 @@ interface NetworkContact {
   type: string
   budget_min: number | null
   budget_max: number | null
+  preferred_cities: string[] | null
   workspace_id: string
   created_at: string
 }
@@ -57,6 +51,24 @@ const TYPE_COLORS: Record<string, string> = {
   other: 'bg-gray-100 text-gray-700',
 }
 
+const TYPE_PILL_INACTIVE: Record<string, string> = {
+  buyer: 'bg-blue-50 text-blue-700 border-blue-100',
+  seller: 'bg-green-50 text-green-700 border-green-100',
+  renter: 'bg-purple-50 text-purple-700 border-purple-100',
+  landlord: 'bg-amber-50 text-amber-700 border-amber-100',
+  other: 'bg-muted text-muted-foreground border-border',
+}
+
+const TYPE_PILL_ACTIVE: Record<string, string> = {
+  buyer: 'bg-blue-600 text-white border-blue-600',
+  seller: 'bg-green-600 text-white border-green-600',
+  renter: 'bg-purple-600 text-white border-purple-600',
+  landlord: 'bg-amber-500 text-white border-amber-500',
+  other: 'bg-[oklch(0.57_0.20_33)] text-white border-[oklch(0.57_0.20_33)]',
+}
+
+type SortKey = 'name_asc' | 'date_desc' | 'budget_desc' | 'budget_asc'
+
 function formatBudget(min: number | null, max: number | null) {
   if (!min && !max) return null
   const fmt = (n: number) => n >= 1000 ? `€${(n / 1000).toFixed(0)}k` : `€${n}`
@@ -80,10 +92,13 @@ interface NetworkSearchModalProps {
 
 export function NetworkSearchModal({ open, onClose }: NetworkSearchModalProps) {
   const [q, setQ] = useState('')
-  const [typeFilter, setTypeFilter] = useState('')
+  const [activeTypes, setActiveTypes] = useState<Set<string>>(new Set())
+  const [budgetMax, setBudgetMax] = useState('')
+  const [sortBy, setSortBy] = useState<SortKey>('name_asc')
   const [loading, setLoading] = useState(false)
-  const [results, setResults] = useState<NetworkContact[]>([])
+  const [allContacts, setAllContacts] = useState<NetworkContact[]>([])
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
+  const [myWorkspaceId, setMyWorkspaceId] = useState<string>('')
   const [searched, setSearched] = useState(false)
 
   // Detail view
@@ -96,29 +111,50 @@ export function NetworkSearchModal({ open, onClose }: NetworkSearchModalProps) {
   const [editNote, setEditNote] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
+  function toggleType(t: string) {
+    setActiveTypes(prev => {
+      const next = new Set(prev)
+      if (next.has(t)) next.delete(t)
+      else next.add(t)
+      return next
+    })
+  }
+
   const handleSearch = useCallback(async () => {
     setLoading(true)
     setSearched(true)
     try {
       const params = new URLSearchParams()
       if (q) params.set('q', q)
-      if (typeFilter) params.set('type', typeFilter)
+      if (activeTypes.size > 0) params.set('types', [...activeTypes].join(','))
+      if (budgetMax) params.set('budget_max', budgetMax)
       const res = await fetch(`/api/contacts/network-search?${params}`)
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      setResults(data.contacts ?? [])
+      setAllContacts(data.contacts ?? [])
       setWorkspaces(data.workspaces ?? [])
+      setMyWorkspaceId(data.myWorkspaceId ?? '')
     } catch (e) {
       toast.error((e as Error).message)
     } finally {
       setLoading(false)
     }
-  }, [q, typeFilter])
+  }, [q, activeTypes, budgetMax])
+
+  const results = useMemo(() => {
+    return [...allContacts].sort((a, b) => {
+      if (sortBy === 'name_asc') return a.name.localeCompare(b.name)
+      if (sortBy === 'date_desc') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      if (sortBy === 'budget_desc') return (b.budget_max ?? b.budget_min ?? 0) - (a.budget_max ?? a.budget_min ?? 0)
+      if (sortBy === 'budget_asc') return (a.budget_max ?? a.budget_min ?? 0) - (b.budget_max ?? b.budget_min ?? 0)
+      return 0
+    })
+  }, [allContacts, sortBy])
 
   function openDetail(contact: NetworkContact) {
     const ws = workspaces.find((w) => w.id === contact.workspace_id)
     setDetailContact(contact)
-    setDetailOwner(ws?.name ?? 'Agenzia')
+    setDetailOwner(contact.workspace_id === myWorkspaceId ? 'La tua agenzia' : (ws?.name ?? 'Agenzia'))
     setEditMode(false)
     setEditFields([
       { key: 'name', label: 'Nome', oldValue: contact.name, newValue: contact.name },
@@ -170,17 +206,21 @@ export function NetworkSearchModal({ open, onClose }: NetworkSearchModalProps) {
 
   function handleClose() {
     setQ('')
-    setTypeFilter('')
-    setResults([])
+    setActiveTypes(new Set())
+    setBudgetMax('')
+    setSortBy('name_asc')
+    setAllContacts([])
     setSearched(false)
     setDetailContact(null)
     setEditMode(false)
     onClose()
   }
 
+  const hasFilters = activeTypes.size > 0 || budgetMax
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {detailContact ? (
@@ -195,7 +235,7 @@ export function NetworkSearchModal({ open, onClose }: NetworkSearchModalProps) {
             <span>
               {detailContact
                 ? editMode ? 'Proponi modifica' : 'Dettaglio contatto'
-                : 'Ricerca Avanzata Network'}
+                : 'Ricerca Network'}
             </span>
           </DialogTitle>
         </DialogHeader>
@@ -203,14 +243,38 @@ export function NetworkSearchModal({ open, onClose }: NetworkSearchModalProps) {
         <div className="flex-1 overflow-y-auto">
           {/* Search view */}
           {!detailContact && (
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Cerca contatti nelle agenzie con cui è attiva la condivisione.
-              </p>
+            <div className="space-y-3">
+              {/* Type pills */}
+              <div className="flex flex-wrap gap-1.5">
+                {Object.entries(TYPE_LABELS).map(([key, label]) => {
+                  const active = activeTypes.has(key)
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => toggleType(key)}
+                      className={cn(
+                        'rounded-full border px-3 py-1 text-xs font-medium transition-all duration-150',
+                        active ? TYPE_PILL_ACTIVE[key] : (TYPE_PILL_INACTIVE[key] + ' hover:opacity-80')
+                      )}
+                    >
+                      {label}
+                    </button>
+                  )
+                })}
+                {hasFilters && (
+                  <button
+                    onClick={() => { setActiveTypes(new Set()); setBudgetMax('') }}
+                    className="flex items-center gap-1 rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:bg-muted transition-colors"
+                  >
+                    <X className="h-3 w-3" />
+                    Reset
+                  </button>
+                )}
+              </div>
 
-              {/* Search bar */}
-              <div className="flex gap-2">
-                <div className="relative flex-1">
+              {/* Search inputs */}
+              <div className="flex gap-2 flex-wrap">
+                <div className="relative flex-1 min-w-[200px]">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Nome, email o telefono..."
@@ -220,17 +284,29 @@ export function NetworkSearchModal({ open, onClose }: NetworkSearchModalProps) {
                     className="pl-9"
                   />
                 </div>
-                <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v ?? '')}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Tipo contatto" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Tutti i tipi</SelectItem>
-                    {Object.entries(TYPE_LABELS).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>{v}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="relative min-w-[140px]">
+                  <Euro className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                  <Input
+                    type="number"
+                    placeholder="Budget max (€)"
+                    value={budgetMax}
+                    onChange={(e) => setBudgetMax(e.target.value)}
+                    className="pl-8"
+                  />
+                </div>
+                <div className="relative min-w-[150px]">
+                  <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as SortKey)}
+                    className="w-full rounded-md border border-input bg-background pl-8 pr-3 py-2 text-sm appearance-none cursor-pointer h-10"
+                  >
+                    <option value="name_asc">Nome A→Z</option>
+                    <option value="date_desc">Più recenti</option>
+                    <option value="budget_desc">Budget alto</option>
+                    <option value="budget_asc">Budget basso</option>
+                  </select>
+                </div>
                 <Button onClick={handleSearch} disabled={loading}>
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                   Cerca
@@ -251,6 +327,7 @@ export function NetworkSearchModal({ open, onClose }: NetworkSearchModalProps) {
                   <p className="text-xs text-muted-foreground">{results.length} contatti trovati</p>
                   {results.map((contact) => {
                     const ws = workspaces.find((w) => w.id === contact.workspace_id)
+                    const isOwn = contact.workspace_id === myWorkspaceId
                     const types = contact.types ?? [contact.type]
                     const budget = formatBudget(contact.budget_min, contact.budget_max)
                     return (
@@ -262,7 +339,7 @@ export function NetworkSearchModal({ open, onClose }: NetworkSearchModalProps) {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
                             <span className="font-medium text-sm">{contact.name}</span>
-                            <div className="flex gap-1">
+                            <div className="flex gap-1 flex-wrap">
                               {types.map((t) => (
                                 <span key={t} className={cn('text-[10px] px-1.5 py-0.5 rounded-full font-medium', TYPE_COLORS[t] ?? TYPE_COLORS.other)}>
                                   {TYPE_LABELS[t] ?? t}
@@ -283,12 +360,10 @@ export function NetworkSearchModal({ open, onClose }: NetworkSearchModalProps) {
                                 {budget}
                               </span>
                             )}
-                            {ws && (
-                              <span className="flex items-center gap-1">
-                                <Building2 className="h-3 w-3" />
-                                {ws.name}
-                              </span>
-                            )}
+                            <span className="flex items-center gap-1">
+                              <Building2 className="h-3 w-3" />
+                              {isOwn ? <span className="text-foreground font-medium">La tua agenzia</span> : (ws?.name ?? '—')}
+                            </span>
                           </div>
                         </div>
                         <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
@@ -298,7 +373,7 @@ export function NetworkSearchModal({ open, onClose }: NetworkSearchModalProps) {
                 </div>
               ) : !searched ? (
                 <div className="text-center py-12 text-muted-foreground text-sm">
-                  Inserisci un termine di ricerca e premi Cerca
+                  Usa i filtri e premi Cerca per trovare contatti
                 </div>
               ) : null}
             </div>
@@ -307,13 +382,11 @@ export function NetworkSearchModal({ open, onClose }: NetworkSearchModalProps) {
           {/* Detail view */}
           {detailContact && !editMode && (
             <div className="space-y-4">
-              {/* Owner badge */}
               <div className="flex items-center gap-2 text-sm text-muted-foreground rounded-lg bg-muted/40 px-3 py-2 border border-border">
                 <Building2 className="h-4 w-4 shrink-0" />
                 <span>Questo contatto appartiene a <strong>{detailOwner}</strong></span>
               </div>
 
-              {/* Contact info */}
               <div className="space-y-3">
                 <div>
                   <p className="text-xs text-muted-foreground mb-0.5">Nome</p>
@@ -356,13 +429,21 @@ export function NetworkSearchModal({ open, onClose }: NetworkSearchModalProps) {
                     </p>
                   </div>
                 )}
+                {detailContact.preferred_cities && detailContact.preferred_cities.length > 0 && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-0.5">Zone di interesse</p>
+                    <p className="text-sm">{detailContact.preferred_cities.join(', ')}</p>
+                  </div>
+                )}
               </div>
 
-              <div className="flex justify-end pt-2 border-t border-border">
-                <Button onClick={() => setEditMode(true)} variant="outline" size="sm">
-                  Proponi modifica
-                </Button>
-              </div>
+              {detailOwner !== 'La tua agenzia' && (
+                <div className="flex justify-end pt-2 border-t border-border">
+                  <Button onClick={() => setEditMode(true)} variant="outline" size="sm">
+                    Proponi modifica
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 

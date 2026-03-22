@@ -20,8 +20,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Profilo non trovato' }, { status: 400 })
   }
 
-  // Find all workspaces with active sharing with the current workspace
   const myWs = profile.workspace_id
+
+  // Find all workspaces with active sharing with the current workspace
   const { data: sharingRows } = await admin
     .from('group_contact_sharing')
     .select('workspace_a_id, workspace_b_id')
@@ -34,33 +35,25 @@ export async function GET(req: NextRequest) {
     )
     .filter(Boolean)
 
-  if (sharedWorkspaceIds.length === 0) {
-    return NextResponse.json({ contacts: [], workspaces: [] })
-  }
+  // Always include own workspace in the search scope
+  const allWorkspaceIds = [myWs, ...sharedWorkspaceIds]
 
   // Parse query params
   const { searchParams } = new URL(req.url)
   const q = searchParams.get('q') ?? ''
-  const contactType = searchParams.get('type') ?? ''
-  const budgetMin = searchParams.get('budget_min') ? Number(searchParams.get('budget_min')) : null
+  const types = searchParams.get('types') ?? ''   // comma-separated list
   const budgetMax = searchParams.get('budget_max') ? Number(searchParams.get('budget_max')) : null
 
   // Build query
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let query = (admin as any)
     .from('contacts')
-    .select('id, name, email, phone, types, type, budget_min, budget_max, workspace_id, created_at')
-    .in('workspace_id', sharedWorkspaceIds)
-    .limit(50)
+    .select('id, name, email, phone, types, type, budget_min, budget_max, preferred_cities, workspace_id, created_at')
+    .in('workspace_id', allWorkspaceIds)
+    .limit(200)
 
   if (q) {
     query = query.or(`name.ilike.%${q}%,phone.ilike.%${q}%,email.ilike.%${q}%`)
-  }
-  if (contactType) {
-    query = query.contains('types', [contactType])
-  }
-  if (budgetMin !== null) {
-    query = query.gte('budget_max', budgetMin)
   }
   if (budgetMax !== null) {
     query = query.lte('budget_min', budgetMax)
@@ -72,12 +65,25 @@ export async function GET(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  // Client-side type filter (OR match across types array)
+  const typeList = types ? types.split(',').filter(Boolean) : []
+  const filtered = typeList.length === 0
+    ? (contacts ?? [])
+    : (contacts ?? []).filter((c: { types: string[] | null; type: string }) => {
+        const allTypes = c.types && c.types.length > 0 ? c.types : [c.type]
+        return allTypes.some((t: string) => typeList.includes(t))
+      })
+
   // Fetch workspace names for the results
-  const wsIds = [...new Set((contacts ?? []).map((c: { workspace_id: string }) => c.workspace_id))]
+  const wsIds = [...new Set(filtered.map((c: { workspace_id: string }) => c.workspace_id))]
   const { data: workspacesData } = await admin
     .from('workspaces')
     .select('id, name')
-    .in('id', wsIds)
+    .in('id', wsIds.length > 0 ? wsIds : ['_none_'])
 
-  return NextResponse.json({ contacts: contacts ?? [], workspaces: workspacesData ?? [] })
+  return NextResponse.json({
+    contacts: filtered,
+    workspaces: workspacesData ?? [],
+    myWorkspaceId: myWs,
+  })
 }
