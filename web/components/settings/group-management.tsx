@@ -51,7 +51,7 @@ interface SharingEntry {
 }
 
 interface GroupManagementProps {
-  groupId: string
+  groupId: string | null
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -219,6 +219,16 @@ export function GroupManagement({ groupId: _groupId }: GroupManagementProps) {
   // Available users (those already in the group = in memberships)
   const allUserIds = [...new Set(memberships.map((m) => m.user_id))]
   const allUsers = profiles.filter((p) => allUserIds.includes(p.id))
+
+  if (!_groupId) {
+    return (
+      <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+        <Building2 className="h-8 w-8 mx-auto mb-2 opacity-40" />
+        <p className="font-medium text-foreground mb-1">Nessun gruppo configurato</p>
+        <p>Contatta il supporto per attivare il tuo network e collegare le agenzie.</p>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-4">

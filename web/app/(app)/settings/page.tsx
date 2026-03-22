@@ -201,7 +201,7 @@ export default async function SettingsPage({
   const TABS = [
     { id: 'generale', label: 'Generale' },
     ...(isAdmin ? [{ id: 'team', label: 'Team' }] : []),
-    ...(isGroupAdmin && profile?.group_id ? [{ id: 'gruppo', label: 'Gruppo' }] : []),
+    ...(isGroupAdmin && profile?.workspaces?.plan === 'network' ? [{ id: 'gruppo', label: 'Gruppo' }] : []),
     { id: 'integrazioni', label: 'Integrazioni' },
     ...(showPianoSection ? [{ id: 'fatturazione', label: 'Gestione Piano' }] : []),
   ]
@@ -327,7 +327,7 @@ export default async function SettingsPage({
       )}
 
       {/* Tab: Gruppo */}
-      {tab === 'gruppo' && isGroupAdmin && profile?.group_id && (
+      {tab === 'gruppo' && isGroupAdmin && profile?.workspaces?.plan === 'network' && (
         <div className="space-y-6">
           <Card>
             <CardHeader>
@@ -337,7 +337,7 @@ export default async function SettingsPage({
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <GroupManagement groupId={profile.group_id} />
+              <GroupManagement groupId={profile.group_id ?? null} />
             </CardContent>
           </Card>
         </div>
