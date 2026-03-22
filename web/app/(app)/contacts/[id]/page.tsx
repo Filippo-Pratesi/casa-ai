@@ -449,8 +449,8 @@ export default async function ContactDetailPage({
         </div>
       )}
 
-      {/* Immobili compatibili — da Match Engine */}
-      {matchResults.length > 0 && (
+      {/* Immobili compatibili — da Match Engine (solo per contatti della propria agenzia) */}
+      {isOwnWorkspace && matchResults.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Home className="h-4 w-4 text-muted-foreground" />
@@ -495,23 +495,26 @@ export default async function ContactDetailPage({
         </div>
       )}
 
-      {/* Privacy consent */}
-      <PrivacyConsentSection
-        contactId={id}
-        initialConsent={contact.privacy_consent ?? false}
-        initialConsentDate={contact.privacy_consent_date ?? null}
-      />
+      {/* Privacy consent — solo per contatti della propria agenzia */}
+      {isOwnWorkspace && (
+        <PrivacyConsentSection
+          contactId={id}
+          initialConsent={contact.privacy_consent ?? false}
+          initialConsentDate={contact.privacy_consent_date ?? null}
+        />
+      )}
 
-      {/* Attachments */}
+      {/* Attachments — read-only per contatti cross-agenzia */}
       <AttachmentsSection
         entityId={id}
         apiBase={`/api/contacts/${id}/attachments`}
         downloadBase={`/api/contacts/${id}/attachments/download`}
         label="Documenti allegati"
+        readOnly={!isOwnWorkspace}
       />
 
-      {/* Immobili collegati dalla Banca Dati */}
-      {hasLinkedProperties && (
+      {/* Immobili collegati dalla Banca Dati — solo per contatti della propria agenzia */}
+      {isOwnWorkspace && hasLinkedProperties && (
         <div className="rounded-xl border border-border bg-muted/30 px-4 py-4 space-y-3">
           <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium flex items-center gap-1.5">
             <Building2 className="h-3.5 w-3.5" />

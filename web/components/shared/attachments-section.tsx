@@ -18,6 +18,7 @@ interface AttachmentsSectionProps {
   apiBase: string // e.g. /api/contacts/{id}/attachments or /api/listing/{id}/attachments
   downloadBase: string // e.g. /api/contacts/{id}/attachments/download
   label?: string
+  readOnly?: boolean
 }
 
 function formatBytes(bytes: number | null): string {
@@ -34,7 +35,7 @@ function fileIcon(mime: string | null) {
   return <FileText className="h-4 w-4 text-muted-foreground" />
 }
 
-export function AttachmentsSection({ entityId, apiBase, downloadBase, label = 'Allegati' }: AttachmentsSectionProps) {
+export function AttachmentsSection({ entityId, apiBase, downloadBase, label = 'Allegati', readOnly = false }: AttachmentsSectionProps) {
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -123,23 +124,27 @@ export function AttachmentsSection({ entityId, apiBase, downloadBase, label = 'A
             <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{attachments.length}</span>
           )}
         </div>
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          disabled={uploading}
-          className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-60 transition-colors"
-        >
-          {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-          {uploading ? 'Caricamento…' : 'Carica file'}
-        </button>
-        <input
-          ref={inputRef}
-          type="file"
-          multiple
-          className="hidden"
-          onChange={(e) => handleUpload(e.target.files)}
-          accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.zip,.rar,.txt,.csv"
-        />
+        {!readOnly && (
+          <>
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              disabled={uploading}
+              className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-60 transition-colors"
+            >
+              {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+              {uploading ? 'Caricamento…' : 'Carica file'}
+            </button>
+            <input
+              ref={inputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={(e) => handleUpload(e.target.files)}
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.zip,.rar,.txt,.csv"
+            />
+          </>
+        )}
       </div>
 
       {loading ? (
