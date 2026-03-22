@@ -461,7 +461,7 @@ export function GroupManagement({ groupId: _groupId }: GroupManagementProps) {
                 </SelectTrigger>
                 <SelectContent>
                   {allUsers.map((u) => (
-                    <SelectItem key={u.id} value={u.id}>
+                    <SelectItem key={u.id} value={u.id} textValue={u.name || u.email}>
                       {u.name} — {u.email}
                     </SelectItem>
                   ))}
@@ -476,7 +476,7 @@ export function GroupManagement({ groupId: _groupId }: GroupManagementProps) {
                 </SelectTrigger>
                 <SelectContent>
                   {workspaces.map((ws) => (
-                    <SelectItem key={ws.id} value={ws.id}>
+                    <SelectItem key={ws.id} value={ws.id} textValue={ws.name}>
                       {ws.name}
                     </SelectItem>
                   ))}
@@ -490,8 +490,8 @@ export function GroupManagement({ groupId: _groupId }: GroupManagementProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="agent">Agente</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="agent" textValue="Agente">Agente</SelectItem>
+                  <SelectItem value="admin" textValue="Admin">Admin</SelectItem>
                 </SelectContent>
               </Select>
             </div>
