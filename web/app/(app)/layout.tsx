@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getActiveWorkspaceId, applyActiveWorkspace } from '@/lib/supabase/active-workspace'
+import { getActiveWorkspaceId } from '@/lib/supabase/active-workspace'
 import { AppSidebar } from '@/components/app-sidebar'
 import { AppHeader } from '@/components/app-header'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
@@ -37,10 +37,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   let activeWorkspaceId = profile.workspace_id
 
   if (isGroupAdmin && profile.group_id) {
+    // activeWorkspaceId is already profile.workspace_id (updated in DB on switch).
+    // Cookie is kept as fallback for the sidebar display only.
     const cookieActiveId = await getActiveWorkspaceId()
     if (cookieActiveId) {
       activeWorkspaceId = cookieActiveId
-      await applyActiveWorkspace(supabase, cookieActiveId)
     }
 
     const [wsRes, groupRes] = await Promise.all([

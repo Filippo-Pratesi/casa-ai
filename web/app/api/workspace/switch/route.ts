@@ -43,6 +43,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Workspace non trovato nel gruppo' }, { status: 404 })
   }
 
+  // Update user's active workspace in the database — this is the source of truth.
+  // All pages/API routes read profile.workspace_id, so updating it here fixes
+  // data isolation across all 100+ routes without touching them individually.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (admin as any)
+    .from('users')
+    .update({ workspace_id })
+    .eq('id', user.id)
+
   const res = NextResponse.json({ success: true })
   res.cookies.set(ACTIVE_WORKSPACE_COOKIE, workspace_id, {
     httpOnly: true,
