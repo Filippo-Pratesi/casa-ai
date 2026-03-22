@@ -19,14 +19,34 @@ export default async function AdminPage() {
   const profile = profileData as { role: string; workspace_id: string } | null
   if (!profile) redirect('/dashboard')
 
-  // Fetch all workspace members
-  const { data: membersData } = await admin
+  // Fetch primary members (workspace_id = this workspace)
+  const { data: primaryMembers } = await admin
     .from('users')
     .select('*')
     .eq('workspace_id', profile.workspace_id)
     .order('created_at', { ascending: true })
 
-  const members = (membersData ?? []) as User[]
+  // Fetch cross-agency members added via workspace_members table
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: crossMemberships } = await (admin as any)
+    .from('workspace_members')
+    .select('user_id, role')
+    .eq('workspace_id', profile.workspace_id)
+
+  const crossUserIds = ((crossMemberships ?? []) as { user_id: string; role: string }[])
+    .map((m) => m.user_id)
+    .filter((id) => !(primaryMembers ?? []).some((u: User) => u.id === id))
+
+  let crossUsers: User[] = []
+  if (crossUserIds.length > 0) {
+    const { data: crossUsersData } = await admin
+      .from('users')
+      .select('*')
+      .in('id', crossUserIds)
+    crossUsers = (crossUsersData ?? []) as User[]
+  }
+
+  const members = [...(primaryMembers ?? []), ...crossUsers] as User[]
 
   // Fetch all listings (all time)
   const { data: allListings } = await admin
