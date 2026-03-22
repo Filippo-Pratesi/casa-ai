@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Check, ChevronsUpDown, Building2 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -19,20 +18,25 @@ interface WorkspaceSwitcherProps {
 }
 
 export function WorkspaceSwitcher({ workspaces, activeWorkspaceId, groupName }: WorkspaceSwitcherProps) {
-  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const active = workspaces.find((w) => w.id === activeWorkspaceId) ?? workspaces[0]
 
   async function switchTo(workspaceId: string) {
     if (workspaceId === activeWorkspaceId) return
     setLoading(true)
-    await fetch('/api/workspace/switch', {
+    const res = await fetch('/api/workspace/switch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ workspace_id: workspaceId }),
     })
-    router.refresh()
-    setLoading(false)
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      console.error('Switch workspace failed:', data?.error)
+      setLoading(false)
+      return
+    }
+    // Full reload needed so the browser picks up the new cookie from the response
+    window.location.href = '/dashboard'
   }
 
   return (

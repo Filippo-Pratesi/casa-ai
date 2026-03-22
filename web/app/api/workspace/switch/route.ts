@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { ACTIVE_WORKSPACE_COOKIE } from '@/lib/supabase/active-workspace'
 
 export async function POST(req: NextRequest) {
@@ -10,8 +11,11 @@ export async function POST(req: NextRequest) {
   const { workspace_id } = await req.json()
   if (!workspace_id) return NextResponse.json({ error: 'workspace_id richiesto' }, { status: 400 })
 
-  // Fetch current user's role and group_id
-  const { data: profileData } = await supabase
+  const admin = createAdminClient()
+
+  // Use admin client to bypass RLS — user may not be a member of all group workspaces
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: profileData } = await (admin as any)
     .from('users')
     .select('role, group_id')
     .eq('id', user.id)
@@ -27,8 +31,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Nessun gruppo associato' }, { status: 400 })
   }
 
-  // Validate target workspace belongs to this group
-  const { data: wsData } = await supabase
+  // Validate target workspace belongs to this group (admin client bypasses RLS)
+  const { data: wsData } = await admin
     .from('workspaces')
     .select('id')
     .eq('id', workspace_id)
