@@ -70,22 +70,38 @@ export default async function ContactDetailPage({
   const admin = createAdminClient()
   const { data: profileData } = await admin
     .from('users')
-    .select('workspace_id')
+    .select('workspace_id, role, group_id')
     .eq('id', user.id)
     .single()
 
-  const profile = profileData as { workspace_id: string } | null
+  const profile = profileData as { workspace_id: string; role: string; group_id: string | null } | null
   if (!profile?.workspace_id) notFound()
 
+  // Fetch contact by ID without workspace filter — we validate access below
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (admin as any)
     .from('contacts')
     .select('*, privacy_consent, privacy_consent_date, date_of_birth')
     .eq('id', id)
-    .eq('workspace_id', profile?.workspace_id)
     .single()
 
   if (error || !data) notFound()
+
+  // Validate access: own workspace OR contact sharing active between the two workspaces
+  const contactWorkspaceId: string = data.workspace_id
+  const isOwnWorkspace = contactWorkspaceId === profile.workspace_id
+  if (!isOwnWorkspace) {
+    // Check group_contact_sharing — workspace pair stored with a_id < b_id
+    const [wsA, wsB] = [profile.workspace_id, contactWorkspaceId].sort()
+    const { data: sharingRow } = await admin
+      .from('group_contact_sharing')
+      .select('id')
+      .eq('workspace_a_id', wsA)
+      .eq('workspace_b_id', wsB)
+      .eq('enabled', true)
+      .single()
+    if (!sharingRow) notFound()
+  }
 
   const contact = data as Contact
 
@@ -97,7 +113,7 @@ export default async function ContactDetailPage({
   const buildMatchResultsQuery = () => (admin as any)
     .from('match_results')
     .select('property_id, combined_score, ai_adjustment, ai_reason, properties(address, city, estimated_value, sqm, rooms, property_type)')
-    .eq('workspace_id', profile?.workspace_id)
+    .eq('workspace_id', contactWorkspaceId)
     .eq('contact_id', id)
     .order('combined_score', { ascending: false })
     .limit(5)
@@ -128,7 +144,7 @@ export default async function ContactDetailPage({
     (admin as any)
       .from('properties')
       .select('id, address, city, zone, stage, transaction_type')
-      .eq('workspace_id', profile?.workspace_id)
+      .eq('workspace_id', contactWorkspaceId)
       .eq('owner_contact_id', id)
       .order('updated_at', { ascending: false })
       .limit(20),
@@ -136,7 +152,7 @@ export default async function ContactDetailPage({
     (admin as any)
       .from('properties')
       .select('id, address, city, zone, stage, transaction_type')
-      .eq('workspace_id', profile?.workspace_id)
+      .eq('workspace_id', contactWorkspaceId)
       .eq('tenant_contact_id', id)
       .order('updated_at', { ascending: false })
       .limit(20),
@@ -144,7 +160,7 @@ export default async function ContactDetailPage({
     (admin as any)
       .from('property_contacts')
       .select('role, properties!property_contacts_property_id_fkey(id, address, city, zone, stage, transaction_type)')
-      .eq('workspace_id', profile?.workspace_id)
+      .eq('workspace_id', contactWorkspaceId)
       .eq('contact_id', id)
       .limit(20),
     // Cronistoria contatto
@@ -153,7 +169,7 @@ export default async function ContactDetailPage({
       .from('contact_events')
       .select('id, event_type, title, body, event_date, created_at, related_property_id, related_listing_id, agent:users!contact_events_agent_id_fkey(name)')
       .eq('contact_id', id)
-      .eq('workspace_id', profile?.workspace_id)
+      .eq('workspace_id', contactWorkspaceId)
       .order('event_date', { ascending: false })
       .limit(100),
   ])
@@ -243,7 +259,7 @@ export default async function ContactDetailPage({
           <span className="text-sm text-muted-foreground">Clienti</span>
         </div>
         <div className="flex items-center gap-2">
-          {isBuyerLike && (
+          {isOwnWorkspace && isBuyerLike && (
             <ProponiImmobileButton
               contactId={id}
               contactName={contact.name}
@@ -251,12 +267,24 @@ export default async function ContactDetailPage({
               contactPhone={contact.phone}
             />
           )}
-          <Link href={`/contacts/${id}/edit`} className="rounded-xl border border-border bg-background text-foreground px-4 py-2 text-sm font-semibold hover:bg-muted transition-colors inline-flex items-center gap-1.5">
-            Modifica
-          </Link>
-          <DeleteContactButton contactId={id} name={contact.name} />
+          {isOwnWorkspace && (
+            <>
+              <Link href={`/contacts/${id}/edit`} className="rounded-xl border border-border bg-background text-foreground px-4 py-2 text-sm font-semibold hover:bg-muted transition-colors inline-flex items-center gap-1.5">
+                Modifica
+              </Link>
+              <DeleteContactButton contactId={id} name={contact.name} />
+            </>
+          )}
         </div>
       </div>
+
+      {/* Cross-agency read-only banner */}
+      {!isOwnWorkspace && (
+        <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-4 py-2.5 text-sm text-amber-800">
+          <Building2 className="h-4 w-4 shrink-0" />
+          <span>Questo contatto appartiene a un&apos;altra agenzia del network — visualizzazione in sola lettura.</span>
+        </div>
+      )}
 
       {/* Hero card */}
       <div className="animate-in-2 rounded-2xl border border-border bg-card overflow-hidden">

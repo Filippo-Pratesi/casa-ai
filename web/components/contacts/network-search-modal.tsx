@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useCallback, useMemo } from 'react'
-import { Search, Building2, Phone, Mail, Euro, X, Loader2, ArrowLeft, ChevronRight, Send, ArrowUpDown } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Search, Building2, Phone, Euro, X, Loader2, ChevronRight, ArrowUpDown } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -10,9 +11,6 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
@@ -78,19 +76,13 @@ function formatBudget(min: number | null, max: number | null) {
   return null
 }
 
-interface EditField {
-  key: string
-  label: string
-  oldValue: string
-  newValue: string
-}
-
 interface NetworkSearchModalProps {
   open: boolean
   onClose: () => void
 }
 
 export function NetworkSearchModal({ open, onClose }: NetworkSearchModalProps) {
+  const router = useRouter()
   const [q, setQ] = useState('')
   const [activeTypes, setActiveTypes] = useState<Set<string>>(new Set())
   const [budgetMax, setBudgetMax] = useState('')
@@ -100,16 +92,6 @@ export function NetworkSearchModal({ open, onClose }: NetworkSearchModalProps) {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
   const [myWorkspaceId, setMyWorkspaceId] = useState<string>('')
   const [searched, setSearched] = useState(false)
-
-  // Detail view
-  const [detailContact, setDetailContact] = useState<NetworkContact | null>(null)
-  const [detailOwner, setDetailOwner] = useState<string>('')
-
-  // Edit proposal
-  const [editMode, setEditMode] = useState(false)
-  const [editFields, setEditFields] = useState<EditField[]>([])
-  const [editNote, setEditNote] = useState('')
-  const [submitting, setSubmitting] = useState(false)
 
   function toggleType(t: string) {
     setActiveTypes(prev => {
@@ -151,57 +133,9 @@ export function NetworkSearchModal({ open, onClose }: NetworkSearchModalProps) {
     })
   }, [allContacts, sortBy])
 
-  function openDetail(contact: NetworkContact) {
-    const ws = workspaces.find((w) => w.id === contact.workspace_id)
-    setDetailContact(contact)
-    setDetailOwner(contact.workspace_id === myWorkspaceId ? 'La tua agenzia' : (ws?.name ?? 'Agenzia'))
-    setEditMode(false)
-    setEditFields([
-      { key: 'name', label: 'Nome', oldValue: contact.name, newValue: contact.name },
-      { key: 'email', label: 'Email', oldValue: contact.email ?? '', newValue: contact.email ?? '' },
-      { key: 'phone', label: 'Telefono', oldValue: contact.phone ?? '', newValue: contact.phone ?? '' },
-    ])
-    setEditNote('')
-  }
-
-  function updateEditField(key: string, newValue: string) {
-    setEditFields((prev) =>
-      prev.map((f) => (f.key === key ? { ...f, newValue } : f))
-    )
-  }
-
-  async function handleSubmitEdit() {
-    if (!detailContact) return
-    const changedFields = editFields.filter((f) => f.newValue.trim() !== f.oldValue.trim())
-    if (changedFields.length === 0) {
-      toast.info('Nessuna modifica da proporre')
-      return
-    }
-    const changes: Record<string, { old: string; new: string }> = {}
-    for (const f of changedFields) {
-      changes[f.key] = { old: f.oldValue, new: f.newValue.trim() }
-    }
-    setSubmitting(true)
-    try {
-      const res = await fetch('/api/contacts/edit-request', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contact_id: detailContact.id,
-          changes,
-          note: editNote || null,
-        }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
-      toast.success('Proposta di modifica inviata! L\'agenzia proprietaria riceverà una notifica.')
-      setDetailContact(null)
-      setEditMode(false)
-    } catch (e) {
-      toast.error((e as Error).message)
-    } finally {
-      setSubmitting(false)
-    }
+  function handleContactClick(contact: NetworkContact) {
+    onClose()
+    router.push(`/contacts/${contact.id}`)
   }
 
   function handleClose() {
@@ -211,8 +145,6 @@ export function NetworkSearchModal({ open, onClose }: NetworkSearchModalProps) {
     setSortBy('name_asc')
     setAllContacts([])
     setSearched(false)
-    setDetailContact(null)
-    setEditMode(false)
     onClose()
   }
 
@@ -222,280 +154,142 @@ export function NetworkSearchModal({ open, onClose }: NetworkSearchModalProps) {
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {detailContact ? (
-              <button
-                onClick={() => setDetailContact(null)}
-                className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground text-sm font-normal mr-1 transition-colors"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Indietro
-              </button>
-            ) : null}
-            <span>
-              {detailContact
-                ? editMode ? 'Proponi modifica' : 'Dettaglio contatto'
-                : 'Ricerca Network'}
-            </span>
-          </DialogTitle>
+          <DialogTitle>Ricerca Network</DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto">
-          {/* Search view */}
-          {!detailContact && (
-            <div className="space-y-3">
-              {/* Type pills */}
-              <div className="flex flex-wrap gap-1.5">
-                {Object.entries(TYPE_LABELS).map(([key, label]) => {
-                  const active = activeTypes.has(key)
-                  return (
-                    <button
-                      key={key}
-                      onClick={() => toggleType(key)}
-                      className={cn(
-                        'rounded-full border px-3 py-1 text-xs font-medium transition-all duration-150',
-                        active ? TYPE_PILL_ACTIVE[key] : (TYPE_PILL_INACTIVE[key] + ' hover:opacity-80')
-                      )}
-                    >
-                      {label}
-                    </button>
-                  )
-                })}
-                {hasFilters && (
+        <div className="flex-1 overflow-y-auto space-y-3">
+          {/* Type pills */}
+          <div className="flex flex-wrap gap-1.5">
+            {Object.entries(TYPE_LABELS).map(([key, label]) => {
+              const active = activeTypes.has(key)
+              return (
+                <button
+                  key={key}
+                  onClick={() => toggleType(key)}
+                  className={cn(
+                    'rounded-full border px-3 py-1 text-xs font-medium transition-all duration-150',
+                    active ? TYPE_PILL_ACTIVE[key] : (TYPE_PILL_INACTIVE[key] + ' hover:opacity-80')
+                  )}
+                >
+                  {label}
+                </button>
+              )
+            })}
+            {hasFilters && (
+              <button
+                onClick={() => { setActiveTypes(new Set()); setBudgetMax('') }}
+                className="flex items-center gap-1 rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:bg-muted transition-colors"
+              >
+                <X className="h-3 w-3" />
+                Reset
+              </button>
+            )}
+          </div>
+
+          {/* Search inputs */}
+          <div className="flex gap-2 flex-wrap">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Nome, email o telefono..."
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                className="pl-9"
+              />
+            </div>
+            <div className="relative min-w-[140px]">
+              <Euro className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+              <Input
+                type="number"
+                placeholder="Budget max (€)"
+                value={budgetMax}
+                onChange={(e) => setBudgetMax(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+            <div className="relative min-w-[150px]">
+              <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortKey)}
+                className="w-full rounded-md border border-input bg-background pl-8 pr-3 py-2 text-sm appearance-none cursor-pointer h-10"
+              >
+                <option value="name_asc">Nome A→Z</option>
+                <option value="date_desc">Più recenti</option>
+                <option value="budget_desc">Budget alto</option>
+                <option value="budget_asc">Budget basso</option>
+              </select>
+            </div>
+            <Button onClick={handleSearch} disabled={loading}>
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+              Cerca
+            </Button>
+          </div>
+
+          {/* Results */}
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : searched && results.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground text-sm">
+              Nessun contatto trovato
+            </div>
+          ) : results.length > 0 ? (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">{results.length} contatti trovati</p>
+              {results.map((contact) => {
+                const ws = workspaces.find((w) => w.id === contact.workspace_id)
+                const isOwn = contact.workspace_id === myWorkspaceId
+                const types = contact.types ?? [contact.type]
+                const budget = formatBudget(contact.budget_min, contact.budget_max)
+                return (
                   <button
-                    onClick={() => { setActiveTypes(new Set()); setBudgetMax('') }}
-                    className="flex items-center gap-1 rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:bg-muted transition-colors"
+                    key={contact.id}
+                    onClick={() => handleContactClick(contact)}
+                    className="w-full text-left rounded-lg border border-border px-4 py-3 hover:bg-muted/50 transition-colors flex items-center gap-3 group"
                   >
-                    <X className="h-3 w-3" />
-                    Reset
-                  </button>
-                )}
-              </div>
-
-              {/* Search inputs */}
-              <div className="flex gap-2 flex-wrap">
-                <div className="relative flex-1 min-w-[200px]">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Nome, email o telefono..."
-                    value={q}
-                    onChange={(e) => setQ(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                    className="pl-9"
-                  />
-                </div>
-                <div className="relative min-w-[140px]">
-                  <Euro className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-                  <Input
-                    type="number"
-                    placeholder="Budget max (€)"
-                    value={budgetMax}
-                    onChange={(e) => setBudgetMax(e.target.value)}
-                    className="pl-8"
-                  />
-                </div>
-                <div className="relative min-w-[150px]">
-                  <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as SortKey)}
-                    className="w-full rounded-md border border-input bg-background pl-8 pr-3 py-2 text-sm appearance-none cursor-pointer h-10"
-                  >
-                    <option value="name_asc">Nome A→Z</option>
-                    <option value="date_desc">Più recenti</option>
-                    <option value="budget_desc">Budget alto</option>
-                    <option value="budget_asc">Budget basso</option>
-                  </select>
-                </div>
-                <Button onClick={handleSearch} disabled={loading}>
-                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                  Cerca
-                </Button>
-              </div>
-
-              {/* Results */}
-              {loading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
-              ) : searched && results.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground text-sm">
-                  Nessun contatto trovato
-                </div>
-              ) : results.length > 0 ? (
-                <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">{results.length} contatti trovati</p>
-                  {results.map((contact) => {
-                    const ws = workspaces.find((w) => w.id === contact.workspace_id)
-                    const isOwn = contact.workspace_id === myWorkspaceId
-                    const types = contact.types ?? [contact.type]
-                    const budget = formatBudget(contact.budget_min, contact.budget_max)
-                    return (
-                      <button
-                        key={contact.id}
-                        onClick={() => openDetail(contact)}
-                        className="w-full text-left rounded-lg border border-border px-4 py-3 hover:bg-muted/50 transition-colors flex items-center gap-3 group"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium text-sm">{contact.name}</span>
-                            <div className="flex gap-1 flex-wrap">
-                              {types.map((t) => (
-                                <span key={t} className={cn('text-[10px] px-1.5 py-0.5 rounded-full font-medium', TYPE_COLORS[t] ?? TYPE_COLORS.other)}>
-                                  {TYPE_LABELS[t] ?? t}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                            {contact.phone && (
-                              <span className="flex items-center gap-1">
-                                <Phone className="h-3 w-3" />
-                                {contact.phone}
-                              </span>
-                            )}
-                            {budget && (
-                              <span className="flex items-center gap-1">
-                                <Euro className="h-3 w-3" />
-                                {budget}
-                              </span>
-                            )}
-                            <span className="flex items-center gap-1">
-                              <Building2 className="h-3 w-3" />
-                              {isOwn ? <span className="text-foreground font-medium">La tua agenzia</span> : (ws?.name ?? '—')}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium text-sm">{contact.name}</span>
+                        <div className="flex gap-1 flex-wrap">
+                          {types.map((t) => (
+                            <span key={t} className={cn('text-[10px] px-1.5 py-0.5 rounded-full font-medium', TYPE_COLORS[t] ?? TYPE_COLORS.other)}>
+                              {TYPE_LABELS[t] ?? t}
                             </span>
-                          </div>
+                          ))}
                         </div>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
-                      </button>
-                    )
-                  })}
-                </div>
-              ) : !searched ? (
-                <div className="text-center py-12 text-muted-foreground text-sm">
-                  Usa i filtri e premi Cerca per trovare contatti
-                </div>
-              ) : null}
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        {contact.phone && (
+                          <span className="flex items-center gap-1">
+                            <Phone className="h-3 w-3" />
+                            {contact.phone}
+                          </span>
+                        )}
+                        {budget && (
+                          <span className="flex items-center gap-1">
+                            <Euro className="h-3 w-3" />
+                            {budget}
+                          </span>
+                        )}
+                        <span className="flex items-center gap-1">
+                          <Building2 className="h-3 w-3" />
+                          {isOwn ? <span className="text-foreground font-medium">La tua agenzia</span> : (ws?.name ?? '—')}
+                        </span>
+                      </div>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
+                  </button>
+                )
+              })}
             </div>
-          )}
-
-          {/* Detail view */}
-          {detailContact && !editMode && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground rounded-lg bg-muted/40 px-3 py-2 border border-border">
-                <Building2 className="h-4 w-4 shrink-0" />
-                <span>Questo contatto appartiene a <strong>{detailOwner}</strong></span>
-              </div>
-
-              <div className="space-y-3">
-                <div>
-                  <p className="text-xs text-muted-foreground mb-0.5">Nome</p>
-                  <p className="font-semibold text-base">{detailContact.name}</p>
-                </div>
-                {detailContact.email && (
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-0.5">Email</p>
-                    <p className="flex items-center gap-1.5 text-sm">
-                      <Mail className="h-3.5 w-3.5 text-muted-foreground" />
-                      {detailContact.email}
-                    </p>
-                  </div>
-                )}
-                {detailContact.phone && (
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-0.5">Telefono</p>
-                    <p className="flex items-center gap-1.5 text-sm">
-                      <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-                      {detailContact.phone}
-                    </p>
-                  </div>
-                )}
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Tipo</p>
-                  <div className="flex gap-1.5 flex-wrap">
-                    {(detailContact.types ?? [detailContact.type]).map((t) => (
-                      <Badge key={t} variant="secondary" className={cn(TYPE_COLORS[t] ?? TYPE_COLORS.other)}>
-                        {TYPE_LABELS[t] ?? t}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-                {(detailContact.budget_min || detailContact.budget_max) && (
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-0.5">Budget</p>
-                    <p className="flex items-center gap-1.5 text-sm">
-                      <Euro className="h-3.5 w-3.5 text-muted-foreground" />
-                      {formatBudget(detailContact.budget_min, detailContact.budget_max)}
-                    </p>
-                  </div>
-                )}
-                {detailContact.preferred_cities && detailContact.preferred_cities.length > 0 && (
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-0.5">Zone di interesse</p>
-                    <p className="text-sm">{detailContact.preferred_cities.join(', ')}</p>
-                  </div>
-                )}
-              </div>
-
-              {detailOwner !== 'La tua agenzia' && (
-                <div className="flex justify-end pt-2 border-t border-border">
-                  <Button onClick={() => setEditMode(true)} variant="outline" size="sm">
-                    Proponi modifica
-                  </Button>
-                </div>
-              )}
+          ) : !searched ? (
+            <div className="text-center py-12 text-muted-foreground text-sm">
+              Usa i filtri e premi Cerca per trovare contatti
             </div>
-          )}
-
-          {/* Edit proposal view */}
-          {detailContact && editMode && (
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Proponi una modifica ai dati del contatto. La richiesta verrà inviata all&apos;agenzia <strong>{detailOwner}</strong> per approvazione.
-              </p>
-
-              {editFields.map((field) => (
-                <div key={field.key} className="space-y-1.5">
-                  <Label>{field.label}</Label>
-                  <div className="flex gap-2 items-center">
-                    <Input
-                      value={field.oldValue}
-                      readOnly
-                      className="opacity-50 text-xs"
-                      placeholder="—"
-                    />
-                    <X className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <Input
-                      value={field.newValue}
-                      onChange={(e) => updateEditField(field.key, e.target.value)}
-                      placeholder="Nuovo valore"
-                      className={cn(field.newValue !== field.oldValue && 'border-orange-400 ring-1 ring-orange-200')}
-                    />
-                  </div>
-                </div>
-              ))}
-
-              <div className="space-y-1.5">
-                <Label>Nota (opzionale)</Label>
-                <Textarea
-                  value={editNote}
-                  onChange={(e) => setEditNote(e.target.value)}
-                  placeholder="Aggiungi una nota per l'agenzia..."
-                  rows={2}
-                />
-              </div>
-
-              <div className="flex justify-between pt-2 border-t border-border">
-                <Button variant="outline" size="sm" onClick={() => setEditMode(false)}>
-                  Annulla
-                </Button>
-                <Button size="sm" onClick={handleSubmitEdit} disabled={submitting}>
-                  {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Send className="h-4 w-4 mr-1" />}
-                  Invia proposta
-                </Button>
-              </div>
-            </div>
-          )}
+          ) : null}
         </div>
       </DialogContent>
     </Dialog>
