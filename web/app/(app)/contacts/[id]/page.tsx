@@ -14,6 +14,7 @@ import { CONTACT_TYPE_COLORS as TYPE_COLORS, CONTACT_TYPE_LABELS as TYPE_LABELS,
 import { ContactTypeBadges } from '@/components/contacts/contact-type-badges'
 import { PROPERTY_ROLE_LABELS } from '@/lib/property-role-labels'
 import { ProponiImmobileButton } from '@/components/contacts/proponi-immobile-button'
+import { ProposeEditButton } from '@/components/contacts/propose-edit-button'
 
 interface MatchResult {
   property_id: string
@@ -118,8 +119,29 @@ export default async function ContactDetailPage({
     .order('combined_score', { ascending: false })
     .limit(5)
 
-  // Fetch all independent data in parallel (A1)
+  // Build property queries — for cross-agency contacts, only show incarico stage
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let ownerPropsQuery = (admin as any)
+    .from('properties')
+    .select('id, address, city, zone, stage, transaction_type')
+    .eq('workspace_id', contactWorkspaceId)
+    .eq('owner_contact_id', id)
+    .order('updated_at', { ascending: false })
+    .limit(20)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let tenantPropsQuery = (admin as any)
+    .from('properties')
+    .select('id, address, city, zone, stage, transaction_type')
+    .eq('workspace_id', contactWorkspaceId)
+    .eq('tenant_contact_id', id)
+    .order('updated_at', { ascending: false })
+    .limit(20)
+  if (!isOwnWorkspace) {
+    ownerPropsQuery = ownerPropsQuery.eq('stage', 'incarico')
+    tenantPropsQuery = tenantPropsQuery.eq('stage', 'incarico')
+  }
+
+  // Fetch all independent data in parallel (A1)
   const [
     { data: agentData },
     { data: appointmentsData },
@@ -140,22 +162,8 @@ export default async function ContactDetailPage({
       .order('starts_at', { ascending: false })
       .limit(10),
     isBuyerLike ? buildMatchResultsQuery() : Promise.resolve({ data: [] }),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (admin as any)
-      .from('properties')
-      .select('id, address, city, zone, stage, transaction_type')
-      .eq('workspace_id', contactWorkspaceId)
-      .eq('owner_contact_id', id)
-      .order('updated_at', { ascending: false })
-      .limit(20),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (admin as any)
-      .from('properties')
-      .select('id, address, city, zone, stage, transaction_type')
-      .eq('workspace_id', contactWorkspaceId)
-      .eq('tenant_contact_id', id)
-      .order('updated_at', { ascending: false })
-      .limit(20),
+    ownerPropsQuery,
+    tenantPropsQuery,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (admin as any)
       .from('property_contacts')
@@ -178,11 +186,34 @@ export default async function ContactDetailPage({
 
   // Normalize cronistoria events
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const cronistoriaEvents = ((cronistoriaData ?? []) as any[]).map((e) => ({
+  let cronistoriaEvents = ((cronistoriaData ?? []) as any[]).map((e) => ({
     ...e,
     agent_name: e.agent?.name ?? null,
     agent: undefined,
   }))
+
+  // For cross-agency contacts: filter out events linked to properties not in 'incarico'
+  if (!isOwnWorkspace) {
+    const propertyIdsInEvents = [...new Set(
+      cronistoriaEvents
+        .filter((e) => e.related_property_id)
+        .map((e) => e.related_property_id as string)
+    )]
+    const incaricoPropertyIds = new Set<string>()
+    if (propertyIdsInEvents.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: propStages } = await (admin as any)
+        .from('properties')
+        .select('id, stage')
+        .in('id', propertyIdsInEvents)
+      for (const p of (propStages ?? []) as { id: string; stage: string }[]) {
+        if (p.stage === 'incarico') incaricoPropertyIds.add(p.id)
+      }
+    }
+    cronistoriaEvents = cronistoriaEvents.filter((e) =>
+      !e.related_property_id || incaricoPropertyIds.has(e.related_property_id)
+    )
+  }
   const appointments = (appointmentsData ?? []) as { id: string; title: string; starts_at: string; type: string }[]
   const rawMatchResults = (matchingListingsResult.data ?? []) as MatchResult[]
 
@@ -213,7 +244,7 @@ export default async function ContactDetailPage({
   const ownerProperties: LinkedProperty[] = (ownerProps ?? []) as LinkedProperty[]
   const tenantProperties: LinkedProperty[] = (tenantProps ?? []) as LinkedProperty[]
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const otherProperties: LinkedProperty[] = ((contactLinks ?? []) as any[])
+  let otherProperties: LinkedProperty[] = ((contactLinks ?? []) as any[])
     .filter((cl) => cl.properties)
     .map((cl) => ({ ...cl.properties, role: cl.role }))
     // exclude properties already shown as owner/tenant
@@ -221,6 +252,11 @@ export default async function ContactDetailPage({
       !ownerProperties.some((op) => op.id === p.id) &&
       !tenantProperties.some((tp) => tp.id === p.id)
     )
+
+  // For cross-agency contacts: only show incarico properties
+  if (!isOwnWorkspace) {
+    otherProperties = otherProperties.filter((p) => p.stage === 'incarico')
+  }
 
   const hasLinkedProperties = ownerProperties.length > 0 || tenantProperties.length > 0 || otherProperties.length > 0
 
@@ -267,13 +303,15 @@ export default async function ContactDetailPage({
               contactPhone={contact.phone}
             />
           )}
-          {isOwnWorkspace && (
+          {isOwnWorkspace ? (
             <>
               <Link href={`/contacts/${id}/edit`} className="rounded-xl border border-border bg-background text-foreground px-4 py-2 text-sm font-semibold hover:bg-muted transition-colors inline-flex items-center gap-1.5">
                 Modifica
               </Link>
               <DeleteContactButton contactId={id} name={contact.name} />
             </>
+          ) : (
+            <ProposeEditButton contactId={id} contactName={contact.name} />
           )}
         </div>
       </div>
@@ -513,8 +551,8 @@ export default async function ContactDetailPage({
         readOnly={!isOwnWorkspace}
       />
 
-      {/* Immobili collegati dalla Banca Dati — solo per contatti della propria agenzia */}
-      {isOwnWorkspace && hasLinkedProperties && (
+      {/* Immobili collegati dalla Banca Dati — cross-agenzia mostra solo incarico */}
+      {hasLinkedProperties && (
         <div className="rounded-xl border border-border bg-muted/30 px-4 py-4 space-y-3">
           <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium flex items-center gap-1.5">
             <Building2 className="h-3.5 w-3.5" />

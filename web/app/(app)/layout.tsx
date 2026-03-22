@@ -60,10 +60,32 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
     groupWorkspaces = (wsRes.data ?? []) as Workspace[]
     group = groupRes.data as Group | null
+  } else {
+    // For regular users: check workspace_members for cross-workspace access
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: membershipData } = await (admin as any)
+      .from('workspace_members')
+      .select('workspace_id')
+      .eq('user_id', user.id)
+
+    const extraWorkspaceIds = ((membershipData ?? []) as { workspace_id: string }[])
+      .map((m) => m.workspace_id)
+      .filter((wid) => wid !== profile.workspace_id)
+
+    if (extraWorkspaceIds.length > 0) {
+      const allWorkspaceIds = [profile.workspace_id, ...extraWorkspaceIds]
+      const { data: wsData } = await admin
+        .from('workspaces')
+        .select('*')
+        .in('id', allWorkspaceIds)
+        .order('name')
+      groupWorkspaces = (wsData ?? []) as Workspace[]
+      activeWorkspaceId = profile.workspace_id
+    }
   }
 
   // Determine the active workspace object to show in sidebar
-  const activeWorkspace = isGroupAdmin
+  const activeWorkspace = groupWorkspaces.length > 1
     ? (groupWorkspaces.find((w) => w.id === activeWorkspaceId) ?? profile.workspaces)
     : profile.workspaces
 

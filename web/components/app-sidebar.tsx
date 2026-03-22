@@ -95,7 +95,7 @@ export function AppSidebar({
   return (
     <Sidebar className="border-r border-sidebar-border">
       <SidebarHeader className="pb-0 pt-1">
-        {isGroupAdmin && groupWorkspaces.length > 0 ? (
+        {groupWorkspaces.length > 1 ? (
           <WorkspaceSwitcher
             workspaces={groupWorkspaces}
             activeWorkspaceId={activeWorkspaceId}

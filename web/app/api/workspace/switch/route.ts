@@ -13,34 +13,45 @@ export async function POST(req: NextRequest) {
 
   const admin = createAdminClient()
 
-  // Use admin client to bypass RLS — user may not be a member of all group workspaces
+  // Use admin client to bypass RLS
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: profileData } = await (admin as any)
     .from('users')
-    .select('role, group_id')
+    .select('role, group_id, workspace_id')
     .eq('id', user.id)
     .single()
 
-  const profile = profileData as { role: string; group_id: string | null } | null
+  const profile = profileData as { role: string; group_id: string | null; workspace_id: string } | null
+  if (!profile) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 400 })
 
-  if (profile?.role !== 'group_admin') {
-    return NextResponse.json({ error: 'Solo i group admin possono cambiare workspace' }, { status: 403 })
-  }
-
-  if (!profile.group_id) {
-    return NextResponse.json({ error: 'Nessun gruppo associato' }, { status: 400 })
-  }
-
-  // Validate target workspace belongs to this group (admin client bypasses RLS)
-  const { data: wsData } = await admin
-    .from('workspaces')
-    .select('id')
-    .eq('id', workspace_id)
-    .eq('group_id', profile.group_id)
-    .single()
-
-  if (!wsData) {
-    return NextResponse.json({ error: 'Workspace non trovato nel gruppo' }, { status: 404 })
+  if (profile.role === 'group_admin') {
+    // group_admin: validate target workspace belongs to their group
+    if (!profile.group_id) {
+      return NextResponse.json({ error: 'Nessun gruppo associato' }, { status: 400 })
+    }
+    const { data: wsData } = await admin
+      .from('workspaces')
+      .select('id')
+      .eq('id', workspace_id)
+      .eq('group_id', profile.group_id)
+      .single()
+    if (!wsData) {
+      return NextResponse.json({ error: 'Workspace non trovato nel gruppo' }, { status: 404 })
+    }
+  } else {
+    // Regular user: can switch to their primary workspace or any workspace they have via workspace_members
+    if (workspace_id !== profile.workspace_id) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: memberData } = await (admin as any)
+        .from('workspace_members')
+        .select('workspace_id')
+        .eq('user_id', user.id)
+        .eq('workspace_id', workspace_id)
+        .single()
+      if (!memberData) {
+        return NextResponse.json({ error: 'Non hai accesso a questo workspace' }, { status: 403 })
+      }
+    }
   }
 
   // Update user's active workspace in the database — this is the source of truth.
