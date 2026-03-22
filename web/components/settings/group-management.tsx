@@ -457,7 +457,9 @@ export function GroupManagement({ groupId: _groupId }: GroupManagementProps) {
               <Label>Utente</Label>
               <Select value={addUserId} onValueChange={(v) => setAddUserId(v ?? '')}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Seleziona utente" />
+                  <SelectValue placeholder="Seleziona utente">
+                    {addUserId ? (() => { const u = allUsers.find(x => x.id === addUserId); return u ? `${u.name} — ${u.email}` : 'Seleziona utente' })() : 'Seleziona utente'}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {allUsers.map((u) => (
@@ -472,7 +474,9 @@ export function GroupManagement({ groupId: _groupId }: GroupManagementProps) {
               <Label>Agenzia</Label>
               <Select value={addWorkspaceId} onValueChange={(v) => setAddWorkspaceId(v ?? '')}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Seleziona agenzia" />
+                  <SelectValue placeholder="Seleziona agenzia">
+                    {addWorkspaceId ? (workspaces.find(w => w.id === addWorkspaceId)?.name ?? 'Seleziona agenzia') : 'Seleziona agenzia'}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {workspaces.map((ws) => (
@@ -487,7 +491,9 @@ export function GroupManagement({ groupId: _groupId }: GroupManagementProps) {
               <Label>Ruolo</Label>
               <Select value={addRole} onValueChange={(v) => setAddRole(v as 'agent' | 'admin')}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue>
+                    {addRole === 'agent' ? 'Agente' : 'Admin'}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="agent" textValue="Agente">Agente</SelectItem>
