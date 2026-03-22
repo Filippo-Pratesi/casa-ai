@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'sonner'
-import { Building2, Users, Share2, Plus, Trash2, Loader2, UserCheck } from 'lucide-react'
+import { Building2, Users, Share2, Plus, Trash2, Loader2, UserCheck, PlusCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
@@ -21,6 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 
 interface Workspace {
@@ -84,6 +85,33 @@ export function GroupManagement({ groupId: _groupId }: GroupManagementProps) {
   // Remove confirm
   const [removeTarget, setRemoveTarget] = useState<{ user_id: string; workspace_id: string; name: string; ws: string } | null>(null)
   const [removeLoading, setRemoveLoading] = useState(false)
+
+  // New workspace dialog
+  const [newWsOpen, setNewWsOpen] = useState(false)
+  const [newWsName, setNewWsName] = useState('')
+  const [newWsLoading, setNewWsLoading] = useState(false)
+
+  async function handleCreateWorkspace() {
+    if (!newWsName.trim()) return
+    setNewWsLoading(true)
+    try {
+      const res = await fetch('/api/group/workspaces', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newWsName.trim() }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      toast.success(`Agenzia "${data.workspace.name}" creata`)
+      setNewWsOpen(false)
+      setNewWsName('')
+      await loadAccessi()
+    } catch (e) {
+      toast.error((e as Error).message)
+    } finally {
+      setNewWsLoading(false)
+    }
+  }
 
   const loadAccessi = useCallback(async () => {
     setLoadingAccessi(true)
@@ -232,8 +260,9 @@ export function GroupManagement({ groupId: _groupId }: GroupManagementProps) {
 
   return (
     <div className="space-y-4">
-      {/* Section toggle */}
-      <div className="flex gap-1 rounded-lg border border-border bg-muted/40 p-1 w-fit">
+      {/* Header with new agency button */}
+      <div className="flex items-center justify-between">
+        <div className="flex gap-1 rounded-lg border border-border bg-muted/40 p-1 w-fit">
         <button
           onClick={() => setActiveSection('accessi')}
           className={cn(
@@ -254,6 +283,11 @@ export function GroupManagement({ groupId: _groupId }: GroupManagementProps) {
           <Share2 className="h-3.5 w-3.5" />
           Condivisione Contatti
         </button>
+        </div>
+        <Button size="sm" variant="outline" onClick={() => setNewWsOpen(true)}>
+          <PlusCircle className="h-4 w-4 mr-1" />
+          Nuova agenzia
+        </Button>
       </div>
 
       {/* Section: Accessi Cross-Agenzia */}
@@ -466,6 +500,33 @@ export function GroupManagement({ groupId: _groupId }: GroupManagementProps) {
             <Button variant="outline" onClick={() => setAddOpen(false)}>Annulla</Button>
             <Button onClick={handleAddAccess} disabled={addLoading || !addUserId || !addWorkspaceId}>
               {addLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Aggiungi'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: New Workspace */}
+      <Dialog open={newWsOpen} onOpenChange={(o) => { setNewWsOpen(o); if (!o) setNewWsName('') }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Crea nuova agenzia</DialogTitle>
+            <DialogDescription>
+              La nuova agenzia verrà aggiunta al gruppo con piano network. Potrai invitare agenti in seguito.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label>Nome agenzia</Label>
+            <Input
+              value={newWsName}
+              onChange={(e) => setNewWsName(e.target.value)}
+              placeholder="Es. Immobiliare Roma Sud"
+              onKeyDown={(e) => e.key === 'Enter' && handleCreateWorkspace()}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewWsOpen(false)}>Annulla</Button>
+            <Button onClick={handleCreateWorkspace} disabled={newWsLoading || !newWsName.trim()}>
+              {newWsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Crea agenzia'}
             </Button>
           </DialogFooter>
         </DialogContent>
